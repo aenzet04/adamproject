@@ -2,42 +2,50 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CartItem, PaymentAllocation, Product } from '../types';
 
-export interface HeldOrder {
-  id: string;
-  heldAt: string;
-  customerName?: string;
-  tableNumber?: string;
-  items: CartItem[];
-  subtotal: number;
-}
+export type DiscountMode = 'percent' | 'nominal';
+export type TaxMode = 'percent' | 'nominal';
 
 interface PosCartState {
   items: CartItem[];
   customerName: string;
   tableNumber: string;
-  taxRate: number; // default 11%
-  serviceChargeRate: number; // default 0%
-  roundingEnabled: boolean;
+  notes: string;
+  discountMode: DiscountMode;
+  discountValue: number; // percentage (e.g. 10) or nominal amount (e.g. 15000)
+  taxMode: TaxMode;
+  taxValue: number; // percentage (e.g. 11) or nominal amount (e.g. 5000)
+  serviceChargeRate: number; // percentage, e.g., 5.0
+  roundingMethod: 'none' | 'round_50' | 'round_100' | 'round_up_100';
   payments: PaymentAllocation[];
-  heldOrders: HeldOrder[];
+  heldOrders: Array<{
+    id: string;
+    timestamp: string;
+    items: CartItem[];
+    customerName: string;
+    tableNumber: string;
+    grandTotal: number;
+  }>;
 
   // Actions
   addItem: (product: Product, quantity?: number) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
   removeItem: (productId: string) => void;
-  setItemDiscount: (productId: string, discountRate: number, discountAmount: number) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
+  setItemNotes: (productId: string, notes: string) => void;
   setCustomerInfo: (name: string, table?: string) => void;
-  setTaxRate: (rate: number) => void;
+  setDiscount: (mode: DiscountMode, value: number) => void;
+  setTax: (mode: TaxMode, value: number) => void;
   setServiceChargeRate: (rate: number) => void;
+  setRoundingMethod: (method: 'none' | 'round_50' | 'round_100' | 'round_up_100') => void;
   addPayment: (payment: PaymentAllocation) => void;
   removePayment: (index: number) => void;
   clearCart: () => void;
   holdOrder: () => void;
-  restoreHeldOrder: (heldOrderId: string) => void;
+  restoreHeldOrder: (heldId: string) => void;
 
   // Computed Selectors
   getSubtotal: () => number;
   getTotalDiscount: () => number;
+  getTaxableAmount: () => number;
   getTaxAmount: () => number;
   getServiceChargeAmount: () => number;
   getRoundingAmount: () => number;
@@ -52,37 +60,46 @@ export const usePosCartStore = create<PosCartState>()(
       items: [],
       customerName: '',
       tableNumber: '',
-      taxRate: 11.0,
-      serviceChargeRate: 0.0,
-      roundingEnabled: true,
+      notes: '',
+      discountMode: 'nominal',
+      discountValue: 0,
+      taxMode: 'percent',
+      taxValue: 11, // default PPN 11%
+      serviceChargeRate: 0,
+      roundingMethod: 'round_100',
       payments: [],
       heldOrders: [],
 
       addItem: (product, quantity = 1) => {
-        set((state) => {
-          const existingIndex = state.items.findIndex((i) => i.productId === product.id);
-          if (existingIndex > -1) {
-            const updatedItems = [...state.items];
-            const item = updatedItems[existingIndex];
-            const newQty = item.quantity + quantity;
-            const subtotal = item.unitPrice * newQty - item.discountAmount;
-            updatedItems[existingIndex] = { ...item, quantity: newQty, subtotal };
-            return { items: updatedItems };
-          }
+        const currentItems = get().items;
+        const existingIndex = currentItems.findIndex((item) => item.productId === product.id);
 
+        if (existingIndex > -1) {
+          const updatedItems = [...currentItems];
+          const newQty = updatedItems[existingIndex].quantity + quantity;
+          updatedItems[existingIndex] = {
+            ...updatedItems[existingIndex],
+            quantity: newQty,
+            subtotal: newQty * updatedItems[existingIndex].unitPrice,
+          };
+          set({ items: updatedItems });
+        } else {
           const newItem: CartItem = {
             productId: product.id,
             productName: product.name,
             sku: product.sku,
-            unitPrice: product.sellingPrice,
             quantity,
-            discountRate: 0,
+            unitPrice: product.sellingPrice,
             discountAmount: 0,
-            subtotal: product.sellingPrice * quantity,
-            unitCogs: product.averageCost || product.standardCost,
+            unitCogs: product.standardCost,
+            subtotal: quantity * product.sellingPrice,
           };
-          return { items: [...state.items, newItem] };
-        });
+          set({ items: [...currentItems, newItem] });
+        }
+      },
+
+      removeItem: (productId) => {
+        set({ items: get().items.filter((item) => item.productId !== productId) });
       },
 
       updateQuantity: (productId, quantity) => {
@@ -90,46 +107,48 @@ export const usePosCartStore = create<PosCartState>()(
           get().removeItem(productId);
           return;
         }
-        set((state) => ({
-          items: state.items.map((item) => {
-            if (item.productId !== productId) return item;
-            const subtotal = item.unitPrice * quantity - item.discountAmount;
-            return { ...item, quantity, subtotal };
-          }),
-        }));
+        const updatedItems = get().items.map((item) => {
+          if (item.productId === productId) {
+            return {
+              ...item,
+              quantity,
+              subtotal: quantity * item.unitPrice,
+            };
+          }
+          return item;
+        });
+        set({ items: updatedItems });
       },
 
-      removeItem: (productId) => {
-        set((state) => ({
-          items: state.items.filter((i) => i.productId !== productId),
-        }));
+      setItemNotes: (productId, notes) => {
+        set({
+          items: get().items.map((item) =>
+            item.productId === productId ? { ...item, notes } : item
+          ),
+        });
       },
 
-      setItemDiscount: (productId, discountRate, discountAmount) => {
-        set((state) => ({
-          items: state.items.map((item) => {
-            if (item.productId !== productId) return item;
-            const subtotal = item.unitPrice * item.quantity - discountAmount;
-            return { ...item, discountRate, discountAmount, subtotal };
-          }),
-        }));
+      setCustomerInfo: (name, table = '') => {
+        set({ customerName: name, tableNumber: table });
       },
 
-      setCustomerInfo: (customerName, tableNumber = '') => {
-        set({ customerName, tableNumber });
+      setDiscount: (mode, value) => {
+        set({ discountMode: mode, discountValue: Math.max(0, value) });
       },
 
-      setTaxRate: (taxRate) => set({ taxRate }),
-      setServiceChargeRate: (serviceChargeRate) => set({ serviceChargeRate }),
+      setTax: (mode, value) => {
+        set({ taxMode: mode, taxValue: Math.max(0, value) });
+      },
+
+      setServiceChargeRate: (rate) => set({ serviceChargeRate: Math.max(0, rate) }),
+      setRoundingMethod: (method) => set({ roundingMethod: method }),
 
       addPayment: (payment) => {
-        set((state) => ({ payments: [...state.payments, payment] }));
+        set({ payments: [...get().payments, payment] });
       },
 
       removePayment: (index) => {
-        set((state) => ({
-          payments: state.payments.filter((_, i) => i !== index),
-        }));
+        set({ payments: get().payments.filter((_, idx) => idx !== index) });
       },
 
       clearCart: () => {
@@ -137,98 +156,111 @@ export const usePosCartStore = create<PosCartState>()(
           items: [],
           customerName: '',
           tableNumber: '',
+          notes: '',
+          discountValue: 0,
           payments: [],
         });
       },
 
       holdOrder: () => {
-        const { items, customerName, tableNumber, getSubtotal } = get();
+        const { items, customerName, tableNumber } = get();
         if (items.length === 0) return;
 
-        const held: HeldOrder = {
-          id: `HOLD-${Date.now()}`,
-          heldAt: new Date().toISOString(),
-          customerName,
-          tableNumber,
-          items,
-          subtotal: getSubtotal(),
+        const heldOrder = {
+          id: `HOLD-${Date.now().toString().slice(-4)}`,
+          timestamp: new Date().toISOString(),
+          items: [...items],
+          customerName: customerName || 'Walk-in',
+          tableNumber: tableNumber || 'Take Away',
+          grandTotal: get().getGrandTotal(),
         };
 
-        set((state) => ({
-          heldOrders: [held, ...state.heldOrders],
+        set({
+          heldOrders: [heldOrder, ...get().heldOrders],
           items: [],
           customerName: '',
           tableNumber: '',
+          discountValue: 0,
           payments: [],
-        }));
+        });
       },
 
-      restoreHeldOrder: (heldOrderId) => {
-        const { heldOrders } = get();
-        const target = heldOrders.find((h) => h.id === heldOrderId);
-        if (!target) return;
+      restoreHeldOrder: (heldId) => {
+        const held = get().heldOrders.find((h) => h.id === heldId);
+        if (!held) return;
 
-        set((state) => ({
-          items: target.items,
-          customerName: target.customerName || '',
-          tableNumber: target.tableNumber || '',
-          heldOrders: state.heldOrders.filter((h) => h.id !== heldOrderId),
-          payments: [],
-        }));
+        set({
+          items: held.items,
+          customerName: held.customerName,
+          tableNumber: held.tableNumber,
+          heldOrders: get().heldOrders.filter((h) => h.id !== heldId),
+        });
       },
 
-      // Calculations
       getSubtotal: () => {
-        return get().items.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
+        return get().items.reduce((sum, item) => sum + item.subtotal, 0);
       },
 
       getTotalDiscount: () => {
-        return get().items.reduce((acc, item) => acc + item.discountAmount, 0);
+        const subtotal = get().getSubtotal();
+        const { discountMode, discountValue } = get();
+        if (discountMode === 'percent') {
+          return Math.round((subtotal * Math.min(100, discountValue)) / 100);
+        }
+        return Math.min(subtotal, discountValue);
+      },
+
+      getTaxableAmount: () => {
+        return Math.max(0, get().getSubtotal() - get().getTotalDiscount());
       },
 
       getTaxAmount: () => {
-        const netBase = get().getSubtotal() - get().getTotalDiscount();
-        return Math.round(netBase * (get().taxRate / 100));
+        const taxable = get().getTaxableAmount();
+        const { taxMode, taxValue } = get();
+        if (taxMode === 'percent') {
+          return Math.round((taxable * taxValue) / 100);
+        }
+        return Math.min(taxable, taxValue);
       },
 
       getServiceChargeAmount: () => {
-        const netBase = get().getSubtotal() - get().getTotalDiscount();
-        return Math.round(netBase * (get().serviceChargeRate / 100));
+        const taxable = get().getTaxableAmount();
+        return Math.round((taxable * get().serviceChargeRate) / 100);
       },
 
       getRoundingAmount: () => {
-        if (!get().roundingEnabled) return 0;
         const rawTotal =
-          get().getSubtotal() -
-          get().getTotalDiscount() +
-          get().getTaxAmount() +
-          get().getServiceChargeAmount();
-        const rounded = Math.round(rawTotal / 100) * 100;
-        return rounded - rawTotal;
+          get().getTaxableAmount() + get().getTaxAmount() + get().getServiceChargeAmount();
+        const method = get().roundingMethod;
+
+        if (method === 'round_100') {
+          const rem = rawTotal % 100;
+          if (rem === 0) return 0;
+          return rem < 50 ? -rem : 100 - rem;
+        } else if (method === 'round_up_100') {
+          const rem = rawTotal % 100;
+          return rem === 0 ? 0 : 100 - rem;
+        }
+        return 0;
       },
 
       getGrandTotal: () => {
-        return (
-          get().getSubtotal() -
-          get().getTotalDiscount() +
-          get().getTaxAmount() +
-          get().getServiceChargeAmount() +
-          get().getRoundingAmount()
-        );
+        const rawTotal =
+          get().getTaxableAmount() + get().getTaxAmount() + get().getServiceChargeAmount();
+        return rawTotal + get().getRoundingAmount();
       },
 
       getTotalPaid: () => {
-        return get().payments.reduce((acc, p) => acc + (p.amount - p.changeGiven), 0);
+        return get().payments.reduce((sum, p) => sum + p.amount, 0);
       },
 
       getRemainingBalance: () => {
-        const grandTotal = get().getGrandTotal();
-        const totalPaid = get().getTotalPaid();
-        return Math.max(0, grandTotal - totalPaid);
+        const remaining = get().getGrandTotal() - get().getTotalPaid();
+        return Math.max(0, remaining);
       },
     }),
     {
-      name: 'adam_pos_cart_state',
+      name: 'modula_pos_cart_store',
     }
   )
 );
