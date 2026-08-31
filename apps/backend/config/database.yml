@@ -1,0 +1,28 @@
+default: &default
+  adapter: mysql2
+  encoding: utf8mb4
+  collation: utf8mb4_unicode_ci
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 16 } %>
+  username: <%= ENV.fetch("MYSQL_USER") { "root" } %>
+  password: <%= ENV.fetch("MYSQL_PASSWORD") { "" } %>
+  host: <%= ENV.fetch("MYSQL_HOST") { "127.0.0.1" } %>
+  port: <%= ENV.fetch("MYSQL_PORT") { 3306 } %>
+  variables:
+    sql_mode: "STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION"
+  reconnect: true
+  connect_timeout: 5
+
+development:
+  <<: *default
+  database: adam_erp_pos_development
+
+test:
+  <<: *default
+  database: adam_erp_pos_test
+
+production:
+  <<: *default
+  database: adam_erp_pos_production
+  username: <%= ENV.fetch("MYSQL_USER") { "adam_admin" } %>
+  password: <%= ENV["MYSQL_PASSWORD"] %>
+  host: <%= ENV["MYSQL_HOST"] %>

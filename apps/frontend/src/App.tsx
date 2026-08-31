@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { MultiTierSwitcher } from './components/navigation/MultiTierSwitcher';
 import { PosTerminal } from './components/pos/PosTerminal';
 import { FinancialStatementsViewer } from './components/finance/FinancialStatementsViewer';
+import { SwaggerApiViewer } from './components/swagger/SwaggerApiViewer';
+import { DatabaseManager } from './components/database/DatabaseManager';
 import { useTenantStore } from './stores/useTenantStore';
 
 export default function App() {
-  const [activeModule, setActiveModule] = useState<'pos' | 'finance' | 'inventory' | 'hr' | 'audit'>('pos');
+  const [activeModule, setActiveModule] = useState<'pos' | 'finance' | 'inventory' | 'hr' | 'audit' | 'swagger' | 'database'>('pos');
   const { setHierarchicalData } = useTenantStore();
 
   useEffect(() => {
-    // Initialize default enterprise hierarchy
     setHierarchicalData({
       tenant: {
         id: 't-01',
@@ -43,15 +44,15 @@ export default function App() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* 2. LEFT SIDEBAR NAVIGATION */}
-        <aside className="w-60 bg-slate-900 border-r border-slate-800 flex flex-col justify-between p-3">
+        <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between p-3">
           <div className="space-y-1">
-            <div className="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              Modul Enterprise
+            <div className="px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              Modul Bisnis & Operasional
             </div>
 
             <button
               onClick={() => setActiveModule('pos')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'pos'
                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
@@ -63,7 +64,7 @@ export default function App() {
 
             <button
               onClick={() => setActiveModule('finance')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'finance'
                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
@@ -75,7 +76,7 @@ export default function App() {
 
             <button
               onClick={() => setActiveModule('inventory')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'inventory'
                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
@@ -87,7 +88,7 @@ export default function App() {
 
             <button
               onClick={() => setActiveModule('hr')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'hr'
                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
@@ -99,7 +100,7 @@ export default function App() {
 
             <button
               onClick={() => setActiveModule('audit')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'audit'
                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
@@ -108,21 +109,49 @@ export default function App() {
               <span>🛡️</span>
               <span>Audit Trail & Anti-Fraud</span>
             </button>
+
+            <div className="pt-3 px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              Developer & Database Tools
+            </div>
+
+            <button
+              onClick={() => setActiveModule('swagger')}
+              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeModule === 'swagger'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              <span>⚡</span>
+              <span>Swagger / OpenAPI Console</span>
+            </button>
+
+            <button
+              onClick={() => setActiveModule('database')}
+              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeModule === 'database'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              <span>🐬</span>
+              <span>MySQL / MariaDB Manager</span>
+            </button>
           </div>
 
           {/* System Status Footnote */}
           <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-[11px] space-y-1">
             <div className="flex justify-between text-slate-400">
-              <span>Stack:</span>
-              <span className="font-semibold text-emerald-400">Rails 8 + React 19</span>
+              <span>Database:</span>
+              <span className="font-semibold text-emerald-400">MySQL / MariaDB</span>
             </div>
             <div className="flex justify-between text-slate-400">
-              <span>DB Mode:</span>
-              <span className="text-slate-300">RLS Multi-Tenant</span>
+              <span>Backend API:</span>
+              <span className="text-emerald-400">Ruby (3001)</span>
             </div>
             <div className="flex justify-between text-slate-400">
-              <span>GL Posting:</span>
-              <span className="text-emerald-400">Real-time Active</span>
+              <span>Swagger OAS3:</span>
+              <span className="text-blue-400">Ready</span>
             </div>
           </div>
         </aside>
@@ -131,6 +160,8 @@ export default function App() {
         <main className="flex-1 overflow-y-auto bg-slate-950">
           {activeModule === 'pos' && <PosTerminal />}
           {activeModule === 'finance' && <FinancialStatementsViewer />}
+          {activeModule === 'swagger' && <SwaggerApiViewer />}
+          {activeModule === 'database' && <DatabaseManager />}
           {activeModule === 'inventory' && (
             <div className="p-8 text-center text-slate-400">
               <div className="text-4xl mb-3">📦</div>
