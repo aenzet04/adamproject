@@ -4,6 +4,7 @@ import type { CartItem, PaymentAllocation, Product } from '../types';
 
 export type DiscountMode = 'percent' | 'nominal';
 export type TaxMode = 'percent' | 'nominal';
+export type OrderSalesChannel = 'DINE_IN' | 'TAKE_AWAY' | 'GRABFOOD' | 'GOFOOD' | 'SHOPEEFOOD' | 'MAXIM';
 
 export interface HeldOrder {
   id: string;
@@ -13,6 +14,7 @@ export interface HeldOrder {
   customerName: string;
   customerTier?: string;
   tableNumber: string;
+  orderChannel: OrderSalesChannel;
   subtotal: number;
   discount: number;
   tax: number;
@@ -26,6 +28,7 @@ interface PosCartState {
   customerId?: string;
   customerTier?: string;
   tableNumber: string;
+  orderChannel: OrderSalesChannel;
   notes: string;
   discountMode: DiscountMode;
   discountValue: number;
@@ -42,6 +45,7 @@ interface PosCartState {
   updateQuantity: (productId: string, quantity: number) => void;
   setItemNotes: (productId: string, notes: string) => void;
   setCustomerInfo: (name: string, table?: string, customerId?: string, customerTier?: string) => void;
+  setOrderChannel: (channel: OrderSalesChannel) => void;
   setDiscount: (mode: DiscountMode, value: number) => void;
   setTax: (mode: TaxMode, value: number) => void;
   setServiceChargeRate: (rate: number) => void;
@@ -63,98 +67,62 @@ interface PosCartState {
   getGrandTotal: () => number;
   getTotalPaid: () => number;
   getRemainingBalance: () => number;
+  getChangeGiven: () => number;
 }
-
-const INITIAL_HELD_ORDERS: HeldOrder[] = [
-  {
-    id: 'TAB-MEJA-03',
-    timestamp: '2026-09-01T02:40:00Z',
-    customerName: 'Bpk. Irwan Hidayat',
-    customerId: 'cst-01',
-    customerTier: 'VIP',
-    tableNumber: 'Meja 03 (Indoor)',
-    subtotal: 138000,
-    discount: 13800,
-    tax: 13662,
-    grandTotal: 137900,
-    notes: 'Tamu VIP, minta bill dipending sampai selesai meeting',
-    items: [
-      {
-        productId: 'prod-001',
-        productName: 'Espresso Single Origin Gayo',
-        quantity: 2,
-        unitPrice: 28000,
-        discountAmount: 0,
-        subtotal: 56000,
-      },
-      {
-        productId: 'prod-004',
-        productName: 'Nasi Goreng Wagyu Spesial',
-        quantity: 1,
-        unitPrice: 68000,
-        discountAmount: 0,
-        subtotal: 68000,
-      },
-      {
-        productId: 'prod-003',
-        productName: 'Croissant Butter Paris',
-        quantity: 1,
-        unitPrice: 32000,
-        discountAmount: 0,
-        subtotal: 32000,
-      },
-    ],
-  },
-  {
-    id: 'TAB-MEJA-07',
-    timestamp: '2026-09-01T03:10:00Z',
-    customerName: 'Ibu Dian Permata',
-    customerId: 'cst-02',
-    customerTier: 'Platinum',
-    tableNumber: 'Meja 07 (Outdoor)',
-    subtotal: 77000,
-    discount: 0,
-    tax: 8470,
-    grandTotal: 85500,
-    notes: 'Kopi Aren Latte less sugar',
-    items: [
-      {
-        productId: 'prod-005',
-        productName: 'Kopi Aren Nusantara Latte',
-        quantity: 1,
-        unitPrice: 35000,
-        discountAmount: 0,
-        subtotal: 35000,
-      },
-      {
-        productId: 'prod-002',
-        productName: 'Iced Caramel Macchiato',
-        quantity: 1,
-        unitPrice: 42000,
-        discountAmount: 0,
-        subtotal: 42000,
-      },
-    ],
-  },
-];
 
 export const usePosCartStore = create<PosCartState>()(
   persist(
     (set, get) => ({
-      items: [],
-      customerName: '',
-      customerId: undefined,
-      customerTier: undefined,
-      tableNumber: '',
+      items: [
+        {
+          productId: 'prod-001',
+          productName: 'Espresso Single Origin Gayo',
+          quantity: 2,
+          unitPrice: 28000,
+          discountAmount: 0,
+          subtotal: 56000,
+        },
+        {
+          productId: 'prod-004',
+          productName: 'Matcha Green Tea Fusion',
+          quantity: 1,
+          unitPrice: 38000,
+          discountAmount: 0,
+          subtotal: 38000,
+        },
+      ],
+      customerName: 'Bpk. Irwan (Meja 04)',
+      customerId: 'crm-01',
+      customerTier: 'Gold',
+      tableNumber: 'Table 04',
+      orderChannel: 'DINE_IN',
       notes: '',
-      discountMode: 'nominal',
+      discountMode: 'percent',
       discountValue: 0,
       taxMode: 'percent',
-      taxValue: 11,
+      taxValue: 11, // PPN 11%
       serviceChargeRate: 0,
       roundingMethod: 'round_100',
       payments: [],
-      heldOrders: INITIAL_HELD_ORDERS,
+      heldOrders: [
+        {
+          id: 'hold-sample-01',
+          timestamp: '2026-08-31 14:15',
+          customerName: 'Ibu Dian Sastro (VIP)',
+          customerTier: 'VIP',
+          tableNumber: 'Meja VIP 01',
+          orderChannel: 'DINE_IN',
+          items: [
+            { productId: 'prod-002', productName: 'Signature Palm Sugar Latte', quantity: 2, unitPrice: 35000, discountAmount: 0, subtotal: 70000 },
+            { productId: 'prod-008', productName: 'Smoked Beef Croissant', quantity: 2, unitPrice: 42000, discountAmount: 0, subtotal: 84000 },
+          ],
+          subtotal: 154000,
+          discount: 0,
+          tax: 16940,
+          grandTotal: 171000,
+          notes: 'Open table menunggu tamu rekan bisnis',
+        },
+      ],
 
       addItem: (product, quantity = 1) => {
         const currentItems = get().items;
@@ -163,10 +131,12 @@ export const usePosCartStore = create<PosCartState>()(
         if (existingIndex > -1) {
           const updatedItems = [...currentItems];
           const newQty = updatedItems[existingIndex].quantity + quantity;
+          const unitPrice = updatedItems[existingIndex].unitPrice;
+          const discountAmt = updatedItems[existingIndex].discountAmount || 0;
           updatedItems[existingIndex] = {
             ...updatedItems[existingIndex],
             quantity: newQty,
-            subtotal: newQty * updatedItems[existingIndex].unitPrice,
+            subtotal: newQty * unitPrice - discountAmt,
           };
           set({ items: updatedItems });
         } else {
@@ -193,12 +163,14 @@ export const usePosCartStore = create<PosCartState>()(
           get().removeItem(productId);
           return;
         }
+
         const updatedItems = get().items.map((item) => {
           if (item.productId === productId) {
+            const discountAmt = item.discountAmount || 0;
             return {
               ...item,
               quantity,
-              subtotal: quantity * item.unitPrice,
+              subtotal: quantity * item.unitPrice - discountAmt,
             };
           }
           return item;
@@ -208,14 +180,21 @@ export const usePosCartStore = create<PosCartState>()(
 
       setItemNotes: (productId, notes) => {
         set({
-          items: get().items.map((item) =>
-            item.productId === productId ? { ...item, notes } : item
-          ),
+          items: get().items.map((item) => (item.productId === productId ? { ...item, notes } : item)),
         });
       },
 
-      setCustomerInfo: (name, table = '', customerId, customerTier) => {
-        set({ customerName: name, tableNumber: table, customerId, customerTier });
+      setCustomerInfo: (name, table, customerId, customerTier) => {
+        set({
+          customerName: name,
+          tableNumber: table || get().tableNumber,
+          customerId: customerId || get().customerId,
+          customerTier: customerTier || get().customerTier,
+        });
+      },
+
+      setOrderChannel: (channel) => {
+        set({ orderChannel: channel });
       },
 
       setDiscount: (mode, value) => {
@@ -226,8 +205,13 @@ export const usePosCartStore = create<PosCartState>()(
         set({ taxMode: mode, taxValue: Math.max(0, value) });
       },
 
-      setServiceChargeRate: (rate) => set({ serviceChargeRate: Math.max(0, rate) }),
-      setRoundingMethod: (method) => set({ roundingMethod: method }),
+      setServiceChargeRate: (rate) => {
+        set({ serviceChargeRate: Math.max(0, rate) });
+      },
+
+      setRoundingMethod: (method) => {
+        set({ roundingMethod: method });
+      },
 
       addPayment: (payment) => {
         set({ payments: [...get().payments, payment] });
@@ -240,53 +224,51 @@ export const usePosCartStore = create<PosCartState>()(
       clearCart: () => {
         set({
           items: [],
-          customerName: '',
+          payments: [],
+          customerName: 'Walk-in Guest',
           customerId: undefined,
           customerTier: undefined,
-          tableNumber: '',
+          tableNumber: 'Take Away',
           notes: '',
           discountValue: 0,
-          payments: [],
         });
       },
 
       holdCurrentOrder: (customParams) => {
-        const { items, customerName, tableNumber, customerId, customerTier } = get();
-        if (items.length === 0) throw new Error('Keranjang kosong.');
+        const subtotal = get().getSubtotal();
+        const discount = get().getTotalDiscount();
+        const tax = get().getTaxAmount();
+        const grandTotal = get().getGrandTotal();
 
-        const finalName = customParams?.name || customerName || 'Pelanggan Walk-in';
-        const finalTable = customParams?.table || tableNumber || `Meja ${Date.now().toString().slice(-2)}`;
-        const finalCustId = customParams?.customerId || customerId;
-        const finalTier = customParams?.customerTier || customerTier;
-
-        const heldOrder: HeldOrder = {
-          id: `HOLD-${finalTable.replace(/\s+/g, '-').toUpperCase()}-${Date.now().toString().slice(-4)}`,
-          timestamp: new Date().toISOString(),
-          items: [...items],
-          customerId: finalCustId,
-          customerName: finalName,
-          customerTier: finalTier,
-          tableNumber: finalTable,
-          subtotal: get().getSubtotal(),
-          discount: get().getTotalDiscount(),
-          tax: get().getTaxAmount(),
-          grandTotal: get().getGrandTotal(),
+        const held: HeldOrder = {
+          id: `hold-${Date.now().toString().slice(-4)}`,
+          timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+          items: [...get().items],
+          customerId: customParams?.customerId || get().customerId,
+          customerName: customParams?.name || get().customerName || 'Walk-in Guest',
+          customerTier: customParams?.customerTier || get().customerTier,
+          tableNumber: customParams?.table || get().tableNumber || 'Table 01',
+          orderChannel: get().orderChannel,
+          subtotal,
+          discount,
+          tax,
+          grandTotal,
           notes: customParams?.notes || get().notes,
         };
 
         set({
-          heldOrders: [heldOrder, ...get().heldOrders],
+          heldOrders: [held, ...get().heldOrders],
           items: [],
-          customerName: '',
+          payments: [],
+          customerName: 'Walk-in Guest',
           customerId: undefined,
           customerTier: undefined,
-          tableNumber: '',
+          tableNumber: 'Table 01',
           notes: '',
           discountValue: 0,
-          payments: [],
         });
 
-        return heldOrder;
+        return held;
       },
 
       restoreHeldOrder: (heldId) => {
@@ -299,7 +281,9 @@ export const usePosCartStore = create<PosCartState>()(
           customerId: held.customerId,
           customerTier: held.customerTier,
           tableNumber: held.tableNumber,
+          orderChannel: held.orderChannel || 'DINE_IN',
           notes: held.notes || '',
+          payments: [],
           heldOrders: get().heldOrders.filter((h) => h.id !== heldId),
         });
       },
@@ -308,13 +292,15 @@ export const usePosCartStore = create<PosCartState>()(
         set({ heldOrders: get().heldOrders.filter((h) => h.id !== heldId) });
       },
 
+      // Calculations
       getSubtotal: () => {
-        return get().items.reduce((sum, item) => sum + item.subtotal, 0);
+        return get().items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
       },
 
       getTotalDiscount: () => {
         const subtotal = get().getSubtotal();
         const { discountMode, discountValue } = get();
+
         if (discountMode === 'percent') {
           return Math.round((subtotal * Math.min(100, discountValue)) / 100);
         }
@@ -328,10 +314,11 @@ export const usePosCartStore = create<PosCartState>()(
       getTaxAmount: () => {
         const taxable = get().getTaxableAmount();
         const { taxMode, taxValue } = get();
+
         if (taxMode === 'percent') {
           return Math.round((taxable * taxValue) / 100);
         }
-        return Math.min(taxable, taxValue);
+        return taxValue;
       },
 
       getServiceChargeAmount: () => {
@@ -340,25 +327,27 @@ export const usePosCartStore = create<PosCartState>()(
       },
 
       getRoundingAmount: () => {
-        const rawTotal =
-          get().getTaxableAmount() + get().getTaxAmount() + get().getServiceChargeAmount();
-        const method = get().roundingMethod;
+        const rawTotal = get().getTaxableAmount() + get().getTaxAmount() + get().getServiceChargeAmount();
+        const { roundingMethod } = get();
 
-        if (method === 'round_100') {
-          const rem = rawTotal % 100;
-          if (rem === 0) return 0;
-          return rem < 50 ? -rem : 100 - rem;
-        } else if (method === 'round_up_100') {
-          const rem = rawTotal % 100;
-          return rem === 0 ? 0 : 100 - rem;
+        if (roundingMethod === 'round_100') {
+          const remainder = rawTotal % 100;
+          return remainder === 0 ? 0 : 100 - remainder;
+        }
+        if (roundingMethod === 'round_50') {
+          const remainder = rawTotal % 50;
+          return remainder === 0 ? 0 : 50 - remainder;
         }
         return 0;
       },
 
       getGrandTotal: () => {
-        const rawTotal =
-          get().getTaxableAmount() + get().getTaxAmount() + get().getServiceChargeAmount();
-        return rawTotal + get().getRoundingAmount();
+        return (
+          get().getTaxableAmount() +
+          get().getTaxAmount() +
+          get().getServiceChargeAmount() +
+          get().getRoundingAmount()
+        );
       },
 
       getTotalPaid: () => {
@@ -366,8 +355,13 @@ export const usePosCartStore = create<PosCartState>()(
       },
 
       getRemainingBalance: () => {
-        const remaining = get().getGrandTotal() - get().getTotalPaid();
-        return Math.max(0, remaining);
+        return Math.max(0, get().getGrandTotal() - get().getTotalPaid());
+      },
+
+      getChangeGiven: () => {
+        const grandTotal = get().getGrandTotal();
+        const totalPaid = get().getTotalPaid();
+        return Math.max(0, totalPaid - grandTotal);
       },
     }),
     {
