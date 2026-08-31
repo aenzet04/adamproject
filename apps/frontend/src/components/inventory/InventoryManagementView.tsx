@@ -6,6 +6,7 @@ import {
   VendorAgent,
   ProductCategory,
   InventoryItem,
+  PurchaseInbound,
   PurchaseInboundItem,
 } from '../../stores/useInventoryStore';
 import { useTenantStore } from '../../stores/useTenantStore';
@@ -28,8 +29,12 @@ export const InventoryManagementView: React.FC = () => {
 
   const { availableWarehouses } = useTenantStore();
 
-  const [activeTab, setActiveTab] = useState<'catalog' | 'restock' | 'transfer' | 'vendors'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'restock' | 'inbound_history' | 'transfer' | 'vendors'>('catalog');
   const [restockFlowMode, setRestockFlowMode] = useState<'existing_quick' | 'category_first' | 'batch_inbound'>('existing_quick');
+
+  // Selected Inbound Detail Modal State
+  const [selectedInboundDetail, setSelectedInboundDetail] = useState<PurchaseInbound | null>(null);
+  const [selectedVendorDetail, setSelectedVendorDetail] = useState<VendorAgent | null>(null);
 
   // MODE 1: EXISTING PRODUCT RESTOCK
   const [selectedExistingProdId, setSelectedExistingProdId] = useState(products[0]?.id || '');
@@ -145,6 +150,7 @@ export const InventoryManagementView: React.FC = () => {
       quantity: existingQty,
       unitCost: existingUnitCost,
       totalCost: existingQty * existingUnitCost,
+      items: [{ productId: prod.id, productName: prod.name, quantity: existingQty, unitCost: existingUnitCost, subtotalCost: existingQty * existingUnitCost }],
       photoUrl: existingPhoto,
       invoicePdfName: existingPdfName,
       invoicePdfDataUrl: existingPdfData,
@@ -152,7 +158,7 @@ export const InventoryManagementView: React.FC = () => {
     });
 
     toast.success('Stok Berhasil Masuk', `+${existingQty} ${prod.uom} ${prod.name}`);
-    setActiveTab('catalog');
+    setActiveTab('inbound_history');
   };
 
   // Submit Mode 2: Category First New Product Creation
@@ -229,7 +235,7 @@ export const InventoryManagementView: React.FC = () => {
     );
 
     toast.success('Batch Restock Berhasil', `${batchItems.length} barang masuk gudang.`);
-    setActiveTab('catalog');
+    setActiveTab('inbound_history');
   };
 
   // Filtered Products for Catalog
@@ -257,7 +263,7 @@ export const InventoryManagementView: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Tambah stok barang dengan 3 alur fleksibel (Cepat dari Katalog, Mulai dari Kategori ala Olsera, atau Batch Masal), mutasi gudang, dan CRM vendor.
+            Riwayat belanja multi-item per supplier/faktur, bukti belanja foto/PDF, 3 alur tambah barang, dan mutasi gudang.
           </p>
         </div>
 
@@ -265,7 +271,7 @@ export const InventoryManagementView: React.FC = () => {
           <button
             onClick={() => {
               setActiveTab('restock');
-              setRestockFlowMode('category_first');
+              setRestockFlowMode('existing_quick');
             }}
             className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-2xl text-xs shadow-md shadow-red-600/20 active:scale-95 flex items-center space-x-1.5"
           >
@@ -290,6 +296,18 @@ export const InventoryManagementView: React.FC = () => {
         </button>
 
         <button
+          onClick={() => setActiveTab('inbound_history')}
+          className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+            activeTab === 'inbound_history'
+              ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <span>🧾</span>
+          <span>Riwayat Belanja & Bukti Faktur ({inbounds.length})</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('restock')}
           className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
             activeTab === 'restock'
@@ -298,7 +316,7 @@ export const InventoryManagementView: React.FC = () => {
           }`}
         >
           <span>📥</span>
-          <span>Tambah Stok & Buat Barang Baru</span>
+          <span>Tambah Stok Baru (3 Alur)</span>
         </button>
 
         <button
@@ -322,7 +340,7 @@ export const InventoryManagementView: React.FC = () => {
           }`}
         >
           <span>🤝</span>
-          <span>Direktori Vendor & Supplier ({vendors.length})</span>
+          <span>Direktori Vendor & Seller ({vendors.length})</span>
         </button>
       </div>
 
@@ -439,7 +457,68 @@ export const InventoryManagementView: React.FC = () => {
         </div>
       )}
 
-      {/* 4. TAB 2: REDESIGNED MULTI-MODE RESTOCK & ADD PRODUCT (ALA OLSERA / MOKA) */}
+      {/* 4. TAB 2: INBOUND PURCHASE HISTORY & MULTI-ITEM PROOF DETAIL */}
+      {activeTab === 'inbound_history' && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
+                <span>🧾</span>
+                <span>Riwayat Pembelian & Pemasukan Stok Terakhir dari Supplier</span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                Buka faktur untuk melihat daftar seluruh item belanja, waktu transaksi, dan bukti dokumen/foto fisik.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {inbounds.map((inb) => (
+              <div
+                key={inb.id}
+                className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 hover:border-red-500/50 transition-all text-xs"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-mono font-bold text-red-600 dark:text-red-400 text-sm">
+                      {inb.invoiceNumber}
+                    </span>
+                    <span className="font-bold text-slate-800 dark:text-slate-100">
+                      🏢 {inb.vendorName}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-600 dark:text-slate-300">
+                    📦 <b>{inb.productName}</b> • Total Qty: <b>{inb.quantity} unit</b>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono">
+                    📍 {inb.warehouseName} • Diterima: {new Date(inb.receivedAt).toLocaleString('id-ID')}
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
+                  <div className="text-right font-mono">
+                    <span className="text-[10px] text-slate-400 block">Total Faktur:</span>
+                    <span className="text-sm font-black text-red-600 dark:text-red-400">
+                      Rp {inb.totalCost.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedInboundDetail(inb)}
+                    className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2 rounded-xl shadow-md shadow-red-600/20 active:scale-95 flex items-center space-x-1.5"
+                  >
+                    <span>🔍</span>
+                    <span>Buka Rincian Belanja</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 5. TAB 3: RESTOCK & ADD PRODUCT (3 MODES) */}
       {activeTab === 'restock' && (
         <div className="space-y-4">
           {/* FLOW MODE SWITCHER */}
@@ -1081,7 +1160,7 @@ export const InventoryManagementView: React.FC = () => {
         </div>
       )}
 
-      {/* 5. TAB 3: TRANSFER & INTER-WAREHOUSE BARTER */}
+      {/* 6. TAB 4: TRANSFER & INTER-WAREHOUSE BARTER */}
       {activeTab === 'transfer' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
           <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
@@ -1268,15 +1347,15 @@ export const InventoryManagementView: React.FC = () => {
         </div>
       )}
 
-      {/* 6. TAB 4: VENDORS DIRECTORY */}
+      {/* 7. TAB 5: VENDORS DIRECTORY & PURCHASE HISTORY */}
       {activeTab === 'vendors' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
           <div className="flex justify-between items-center">
             <div>
               <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                Direktori Vendor & Agen Supplier Resmi
+                Direktori Vendor, Seller & Rekap Belanja Supplier
               </h3>
-              <p className="text-xs text-slate-400">Manajemen kontrak vendor, kontak agen, dan termin pembayaran.</p>
+              <p className="text-xs text-slate-400">Manajemen kontrak supplier, kontak agen, dan riwayat belanja faktur.</p>
             </div>
             <button
               onClick={() => setIsAddVendorOpen(true)}
@@ -1287,40 +1366,272 @@ export const InventoryManagementView: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {vendors.map((v) => (
-              <div
-                key={v.id}
-                className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-xs"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100">{v.name}</h4>
-                    <div className="text-[11px] text-slate-500">PIC: {v.contactPerson}</div>
+            {vendors.map((v) => {
+              const vendorInbounds = inbounds.filter((i) => i.vendorId === v.id || i.vendorName === v.name);
+
+              return (
+                <div
+                  key={v.id}
+                  className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-xs"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100">{v.name}</h4>
+                      <div className="text-[11px] text-slate-500">PIC: {v.contactPerson}</div>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                      {v.paymentTerms}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-                    {v.paymentTerms}
-                  </span>
+
+                  <div className="text-[11px] text-slate-600 dark:text-slate-400 font-mono space-y-0.5">
+                    <div>📱 {v.phone}</div>
+                    {v.email && <div>✉️ {v.email}</div>}
+                    {v.address && <div>📍 {v.address}</div>}
+                  </div>
+
+                  <div className="p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex justify-between items-center text-[10px] font-mono">
+                    <span className="text-slate-400">Riwayat Transaksi:</span>
+                    <span className="font-bold text-red-600 dark:text-red-400">{vendorInbounds.length} Faktur Pembelian</span>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedVendorDetail(v)}
+                      className="text-red-600 dark:text-red-400 font-bold hover:underline text-[11px]"
+                    >
+                      📋 Buka Riwayat Belanja
+                    </button>
+                    <button
+                      onClick={() => {
+                        window.open(`https://wa.me/62${v.phone.replace(/^0/, '')}?text=Halo%20${v.contactPerson}%20dari%20${v.name},%20kami%20ingin%20reorder%20stok.`, '_blank');
+                      }}
+                      className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline text-[11px]"
+                    >
+                      💬 Order via WA
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL INBOUND DETAIL (STOK TERAKHIR & BUKTI BELANJA) */}
+      {selectedInboundDetail && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-4 text-xs max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-xl">🧾</span>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                    Rincian Belanja Faktur: {selectedInboundDetail.invoiceNumber}
+                  </h3>
+                  <p className="text-[10px] text-slate-400">
+                    Diterima pada {new Date(selectedInboundDetail.receivedAt).toLocaleString('id-ID')}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedInboundDetail(null)} className="text-slate-400 font-bold">✕</button>
+            </div>
+
+            {/* Vendor & Warehouse Info */}
+            <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <div>
+                <span className="text-[10px] text-slate-400 block font-mono">Vendor Supplier:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-100 text-xs">
+                  🏢 {selectedInboundDetail.vendorName}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 block font-mono">Gudang Penerima:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-100 text-xs">
+                  📍 {selectedInboundDetail.warehouseName}
+                </span>
+              </div>
+            </div>
+
+            {/* Items Breakdown Table */}
+            <div className="space-y-1.5">
+              <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px] font-mono">
+                Daftar Barang yang Dibelanjakan
+              </span>
+              <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                <table className="w-full text-left text-[11px] font-mono">
+                  <thead className="bg-slate-200/60 dark:bg-slate-800/80 text-slate-500 uppercase text-[9px]">
+                    <tr>
+                      <th className="p-2.5 font-sans">Nama Barang</th>
+                      <th className="p-2.5 text-center">Jumlah</th>
+                      <th className="p-2.5 text-right">Harga Beli Satuan</th>
+                      <th className="p-2.5 text-right">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200/60 dark:divide-slate-800/60">
+                    {selectedInboundDetail.items && selectedInboundDetail.items.length > 0 ? (
+                      selectedInboundDetail.items.map((it, idx) => (
+                        <tr key={idx}>
+                          <td className="p-2.5 font-sans font-bold text-slate-800 dark:text-slate-100">
+                            {it.productName}
+                          </td>
+                          <td className="p-2.5 text-center">{it.quantity} unit</td>
+                          <td className="p-2.5 text-right">Rp {it.unitCost.toLocaleString('id-ID')}</td>
+                          <td className="p-2.5 text-right font-bold text-red-600 dark:text-red-400">
+                            Rp {it.subtotalCost.toLocaleString('id-ID')}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="p-2.5 font-sans font-bold text-slate-800 dark:text-slate-100">
+                          {selectedInboundDetail.productName}
+                        </td>
+                        <td className="p-2.5 text-center">{selectedInboundDetail.quantity} unit</td>
+                        <td className="p-2.5 text-right">Rp {selectedInboundDetail.unitCost.toLocaleString('id-ID')}</td>
+                        <td className="p-2.5 text-right font-bold text-red-600 dark:text-red-400">
+                          Rp {selectedInboundDetail.totalCost.toLocaleString('id-ID')}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Total */}
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 rounded-2xl border border-red-200 dark:border-red-800/50 flex justify-between items-center">
+              <span className="font-bold text-red-900 dark:text-red-200 text-xs">Total Pembelian Faktur:</span>
+              <span className="text-base font-black font-mono text-red-600 dark:text-red-400">
+                Rp {selectedInboundDetail.totalCost.toLocaleString('id-ID')}
+              </span>
+            </div>
+
+            {/* Proof Section (Photo & PDF) */}
+            <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px] font-mono block">
+                Bukti Belanja & Dokumen Lampiran
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+                  <span className="font-bold text-slate-700 dark:text-slate-300 block">📷 Foto Fisik Barang:</span>
+                  {selectedInboundDetail.photoUrl ? (
+                    <img
+                      src={selectedInboundDetail.photoUrl}
+                      alt="Bukti fisik"
+                      className="w-full h-32 object-cover rounded-xl border border-slate-200 dark:border-slate-700"
+                    />
+                  ) : (
+                    <div className="h-32 bg-slate-100 dark:bg-slate-900 rounded-xl flex items-center justify-center text-slate-400 text-[10px]">
+                      Tidak ada lampiran foto
+                    </div>
+                  )}
                 </div>
 
-                <div className="text-[11px] text-slate-600 dark:text-slate-400 font-mono">
-                  <div>📱 {v.phone}</div>
-                  {v.email && <div>✉️ {v.email}</div>}
-                  {v.address && <div>📍 {v.address}</div>}
-                </div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 flex flex-col justify-between">
+                  <div>
+                    <span className="font-bold text-slate-700 dark:text-slate-300 block">📄 Dokumen Faktur (PDF):</span>
+                    <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 font-mono">
+                      {selectedInboundDetail.invoicePdfName || 'Faktur_Pembelian_Supplier.pdf'}
+                    </div>
+                  </div>
 
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                  <span className="text-[10px] text-slate-400">Kategori: <b>{v.category}</b></span>
                   <button
+                    type="button"
                     onClick={() => {
-                      window.open(`https://wa.me/62${v.phone.replace(/^0/, '')}?text=Halo%20${v.contactPerson}%20dari%20${v.name},%20kami%20ingin%20reorder%20stok.`, '_blank');
+                      if (selectedInboundDetail.invoicePdfDataUrl) {
+                        const win = window.open();
+                        win?.document.write(`<iframe src="${selectedInboundDetail.invoicePdfDataUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                      } else {
+                        toast.info('Pratinjau Dokumen', `Membuka lampiran arsip ${selectedInboundDetail.invoiceNumber}`);
+                      }
                     }}
-                    className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline text-[11px]"
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5"
                   >
-                    💬 Order via WA
+                    <span>👁️</span>
+                    <span>Buka / Pratinjau Faktur PDF</span>
                   </button>
                 </div>
               </div>
-            ))}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedInboundDetail(null)}
+                className="bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold px-5 py-2 rounded-xl"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL VENDOR PURCHASE HISTORY */}
+      {selectedVendorDetail && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-4 text-xs max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  Riwayat Belanja ke Vendor: {selectedVendorDetail.name}
+                </h3>
+                <p className="text-[10px] text-slate-400">
+                  PIC: {selectedVendorDetail.contactPerson} • {selectedVendorDetail.phone}
+                </p>
+              </div>
+              <button onClick={() => setSelectedVendorDetail(null)} className="text-slate-400 font-bold">✕</button>
+            </div>
+
+            <div className="space-y-2">
+              {inbounds.filter((i) => i.vendorId === selectedVendorDetail.id || i.vendorName === selectedVendorDetail.name).length === 0 ? (
+                <div className="p-8 text-center text-slate-400">Belum ada riwayat pembelian ke vendor ini.</div>
+              ) : (
+                inbounds
+                  .filter((i) => i.vendorId === selectedVendorDetail.id || i.vendorName === selectedVendorDetail.name)
+                  .map((inb) => (
+                    <div
+                      key={inb.id}
+                      className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex justify-between items-center"
+                    >
+                      <div>
+                        <div className="font-bold text-red-600 dark:text-red-400 font-mono">{inb.invoiceNumber}</div>
+                        <div className="text-slate-700 dark:text-slate-300 font-semibold">{inb.productName}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">
+                          {new Date(inb.receivedAt).toLocaleDateString('id-ID')} • {inb.warehouseName}
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="font-mono font-bold text-xs">Rp {inb.totalCost.toLocaleString('id-ID')}</div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedVendorDetail(null);
+                            setSelectedInboundDetail(inb);
+                          }}
+                          className="text-red-600 dark:text-red-400 font-bold text-[10px] hover:underline"
+                        >
+                          Lihat Bukti Belanja ➔
+                        </button>
+                      </div>
+                    </div>
+                  ))
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setSelectedVendorDetail(null)}
+                className="bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold px-5 py-2 rounded-xl"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}
