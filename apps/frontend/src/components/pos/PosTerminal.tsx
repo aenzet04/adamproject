@@ -455,6 +455,10 @@ export const PosTerminal: React.FC = () => {
     setIsProcessing(false);
     setIsPaymentModalOpen(false);
     clearCart();
+  };
+  const handleSplitBillCompleted = () => {
+    setIsSplitBillOpen(false);
+    handleFinalizeCheckout();
     setItemNotes({});
     setIsReceiptOpen(true);
   };
@@ -883,6 +887,10 @@ export const PosTerminal: React.FC = () => {
             <button
               onClick={() => {
                 clearCart();
+  };
+  const handleSplitBillCompleted = () => {
+    setIsSplitBillOpen(false);
+    handleFinalizeCheckout();
                 toast.info('Batal', 'Keranjang dibersihkan.');
               }}
               disabled={items.length === 0}

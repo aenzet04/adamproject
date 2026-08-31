@@ -29,6 +29,8 @@ export default function App() {
     'pos' | 'crm' | 'finance' | 'inventory' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'benchmark' | 'tickets' | 'trash' | 'swagger' | 'database' | 'docs'
   >('owner');
 
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   const { setHierarchicalData } = useTenantStore();
   const { theme, setTheme } = useThemeStore();
   const { modules, subscriptionTier, remainingMonths, setSubscriptionTier } = useModuleLicenseStore();
@@ -97,16 +99,42 @@ export default function App() {
 
   const userRole = currentUser.role;
 
+  const handleSelectModule = (mod: any) => {
+    setActiveModule(mod);
+    setIsMobileSidebarOpen(false);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors relative">
       <PageTransitionPreloader activeModuleKey={activeModule} />
       <ToastContainer />
       <MultiTierSwitcher />
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* LEFT SIDEBAR NAVIGATION */}
-        <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-3 transition-colors shadow-sm overflow-y-auto">
-          <div className="space-y-1">
+      {/* Floating Mobile Sidebar Toggle Button */}
+      <button
+        onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        className="md:hidden fixed bottom-4 left-4 z-50 bg-red-600 hover:bg-red-500 text-white p-3.5 rounded-full shadow-2xl shadow-red-600/50 flex items-center justify-center transition-all active:scale-90"
+        title="Buka Menu Modul"
+      >
+        <span className="text-base">{isMobileSidebarOpen ? '✕' : '☰'}</span>
+      </button>
+
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* MOBILE SIDEBAR BACKDROP */}
+        {isMobileSidebarOpen && (
+          <div
+            onClick={() => setIsMobileSidebarOpen(false)}
+            className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-40"
+          />
+        )}
+
+        {/* LEFT SIDEBAR NAVIGATION (DESKTOP & MOBILE DRAWER) */}
+        <aside
+          className={`fixed md:relative top-0 bottom-0 left-0 z-40 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-3 transition-transform duration-200 shadow-xl md:shadow-sm overflow-y-auto ${
+            isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          }`}
+        >
+          <div className="space-y-1 pt-12 md:pt-0">
             {/* EXECUTIVE & MANAGEMENT */}
             {(userRole === 'owner' || userRole === 'super_user') && (
               <div className="space-y-1">
@@ -115,7 +143,7 @@ export default function App() {
                 </div>
 
                 <button
-                  onClick={() => setActiveModule('owner')}
+                  onClick={() => handleSelectModule('owner')}
                   className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                     activeModule === 'owner'
                       ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
@@ -131,7 +159,7 @@ export default function App() {
             {(userRole === 'admin_brand' || userRole === 'owner' || userRole === 'super_user') && (
               <div className="space-y-1 pt-1">
                 <button
-                  onClick={() => setActiveModule('brand_admin')}
+                  onClick={() => handleSelectModule('brand_admin')}
                   className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                     activeModule === 'brand_admin'
                       ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
@@ -147,7 +175,7 @@ export default function App() {
             {userRole === 'super_user' && (
               <div className="space-y-1 pt-1">
                 <button
-                  onClick={() => setActiveModule('superuser')}
+                  onClick={() => handleSelectModule('superuser')}
                   className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                     activeModule === 'superuser'
                       ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
@@ -166,7 +194,7 @@ export default function App() {
             </div>
 
             <button
-              onClick={() => setActiveModule('pos')}
+              onClick={() => handleSelectModule('pos')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'pos'
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
@@ -181,7 +209,7 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setActiveModule('crm')}
+              onClick={() => handleSelectModule('crm')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'crm'
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
@@ -196,7 +224,7 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setActiveModule('inventory')}
+              onClick={() => handleSelectModule('inventory')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'inventory'
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
@@ -212,7 +240,7 @@ export default function App() {
 
             {(userRole === 'owner' || userRole === 'super_user') && (
               <button
-                onClick={() => setActiveModule('finance')}
+                onClick={() => handleSelectModule('finance')}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                   activeModule === 'finance'
                     ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
@@ -233,7 +261,7 @@ export default function App() {
             </div>
 
             <button
-              onClick={() => setActiveModule('tickets')}
+              onClick={() => handleSelectModule('tickets')}
               className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'tickets'
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
@@ -245,7 +273,7 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setActiveModule('trash')}
+              onClick={() => handleSelectModule('trash')}
               className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'trash'
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
@@ -262,7 +290,7 @@ export default function App() {
             </div>
 
             <button
-              onClick={() => setActiveModule('benchmark')}
+              onClick={() => handleSelectModule('benchmark')}
               className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'benchmark'
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
@@ -274,7 +302,7 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setActiveModule('reviews')}
+              onClick={() => handleSelectModule('reviews')}
               className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'reviews'
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
@@ -286,7 +314,7 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setActiveModule('docs')}
+              onClick={() => handleSelectModule('docs')}
               className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'docs'
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
@@ -300,7 +328,7 @@ export default function App() {
             {userRole === 'super_user' && (
               <>
                 <button
-                  onClick={() => setActiveModule('swagger')}
+                  onClick={() => handleSelectModule('swagger')}
                   className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                     activeModule === 'swagger'
                       ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
@@ -312,7 +340,7 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setActiveModule('database')}
+                  onClick={() => handleSelectModule('database')}
                   className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                     activeModule === 'database'
                       ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
