@@ -6,6 +6,7 @@ export type BrandStaffRole =
   | 'general_manager'
   | 'branch_manager'
   | 'admin_system'
+  | 'warehouse_staff'
   | 'cashier'
   | 'staff';
 
@@ -133,6 +134,23 @@ const INITIAL_EMPLOYEES: BrandEmployee[] = [
     transferHistory: [],
   },
   {
+    id: 'emp-09',
+    brandId: 'b-01',
+    brandName: 'Kopi Nusantara Roastery',
+    name: 'Hendra Saputra',
+    email: 'hendra.gudang@kopinusantara.id',
+    phone: '081233445566',
+    role: 'warehouse_staff',
+    roleTitle: 'Staf Gudang & SCM Supplier Lead',
+    branchId: 'br-01',
+    branchName: 'Outlet Grand Indonesia',
+    shift: 'Shift Pagi (06:30 - 15:00)',
+    status: 'on_duty',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&auto=format&fit=crop&q=80',
+    joinedDate: '2025-05-01',
+    transferHistory: [],
+  },
+  {
     id: 'emp-05',
     brandId: 'b-01',
     brandName: 'Kopi Nusantara Roastery',
@@ -181,23 +199,6 @@ const INITIAL_EMPLOYEES: BrandEmployee[] = [
     status: 'on_break',
     avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=120&auto=format&fit=crop&q=80',
     joinedDate: '2025-08-01',
-    transferHistory: [],
-  },
-  {
-    id: 'emp-08',
-    brandId: 'b-01',
-    brandName: 'Kopi Nusantara Roastery',
-    name: 'Yoga Saputra',
-    email: 'yoga.barista@outlet.kopinusantara.id',
-    phone: '081699887766',
-    role: 'staff',
-    roleTitle: 'Barista Espresso Specialist',
-    branchId: 'br-03',
-    branchName: 'Store Kelapa Gading',
-    shift: 'Shift Siang (14:00 - 22:00)',
-    status: 'active',
-    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=120&auto=format&fit=crop&q=80',
-    joinedDate: '2025-09-15',
     transferHistory: [],
   },
 ];
