@@ -10,6 +10,7 @@ import { SuperUserDashboard } from './components/superuser/SuperUserDashboard';
 import { BrandAdminDashboard } from './components/admin/BrandAdminDashboard';
 import { CustomerManagementView } from './components/crm/CustomerManagementView';
 import { InventoryManagementView } from './components/inventory/InventoryManagementView';
+import { StockOpnameView } from './components/inventory/StockOpnameView';
 import { CustomerReviewPage } from './components/reviews/CustomerReviewPage';
 import { BenchmarkViewer } from './components/benchmark/BenchmarkViewer';
 import { BugTicketingCenter } from './components/tickets/BugTicketingCenter';
@@ -27,7 +28,7 @@ import { toast } from './stores/useToastStore';
 export default function App() {
   const { isAuthenticated, currentUser, logout } = useAuthStore();
   const [activeModule, setActiveModule] = useState<
-    'pos' | 'crm' | 'finance' | 'inventory' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'benchmark' | 'tickets' | 'trash' | 'swagger' | 'database' | 'docs'
+    'pos' | 'crm' | 'finance' | 'inventory' | 'opname' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'benchmark' | 'tickets' | 'trash' | 'swagger' | 'database' | 'docs'
   >('owner');
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -273,13 +274,31 @@ export default function App() {
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
-              title="Gudang, Stok & Vendor"
+              title="Gudang, Stok & SCM"
             >
               <div className="flex items-center space-x-2.5">
                 <span className="text-base">📦</span>
                 {!isSidebarCollapsed && <span>Gudang & SCM</span>}
               </div>
               {!isSidebarCollapsed && isModuleLocked('inventory') && <span className="text-[10px]">🔒</span>}
+            </button>
+
+            {/* STOK OPNAME SIDEBAR MENU */}
+            <button
+              onClick={() => handleSelectModule('opname')}
+              className={`w-full flex items-center ${
+                isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+              } py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeModule === 'opname'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+              title="Stok Opname Fisik Gudang"
+            >
+              <div className="flex items-center space-x-2.5">
+                <span className="text-base">📋</span>
+                {!isSidebarCollapsed && <span>Stok Opname</span>}
+              </div>
             </button>
 
             {(userRole === 'owner' || userRole === 'super_user') && (
@@ -449,6 +468,7 @@ export default function App() {
               <InventoryManagementView />
             )
           )}
+          {activeModule === 'opname' && <StockOpnameView />}
           {activeModule === 'benchmark' && <BenchmarkViewer />}
           {activeModule === 'tickets' && <BugTicketingCenter />}
           {activeModule === 'trash' && <SoftDeleteManager />}
