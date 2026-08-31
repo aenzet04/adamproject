@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useCustomerStore } from '../../stores/useCustomerStore';
 import { useModuleLicenseStore } from '../../stores/useModuleLicenseStore';
 import { useReviewStore } from '../../stores/useReviewStore';
+import { useShiftStore, OwnerRealtimeAlert } from '../../stores/useShiftStore';
+import { toast } from '../../stores/useToastStore';
 
 interface StockCandle {
   date: string;
@@ -44,6 +46,7 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
   const { getTopSpenders } = useCustomerStore();
   const { subscriptionTier, remainingMonths, expiryDate } = useModuleLicenseStore();
   const { reviews } = useReviewStore();
+  const { alerts, markAlertsAsRead } = useShiftStore();
 
   const topSpenders = getTopSpenders(4, selectedBranchFilter);
 
@@ -65,11 +68,11 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
               Executive Owner Analytics & AI Strategic Advisor
             </h2>
             <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
-              TradingView Analytics Core
+              Realtime Command Center
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Grafik candlestick interaktif bergaya bursa saham, moving averages (MA5), volume transaksi, dan AI advisor.
+            Pantau realtime keterlambatan shift kasir, sisa stok gudang, grafik candlestick bursa saham, dan koordinasi tim.
           </p>
         </div>
 
@@ -88,7 +91,70 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. KEY METRICS CARDS */}
+      {/* 2. REALTIME LIVE NOTIFICATIONS FEED (KETERLAMBATAN SHIFT & SISA STOK OWNER) */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 md:p-5 shadow-sm space-y-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 font-mono">
+              🔔 Real-Time Live Feed Notifikasi Operasional Owner ({alerts.length})
+            </h3>
+          </div>
+          <button
+            onClick={() => {
+              markAlertsAsRead();
+              toast.info('Notifikasi Ditandai', 'Semua notifikasi ditandai telah dibaca.');
+            }}
+            className="text-[11px] text-red-600 dark:text-red-400 font-bold hover:underline"
+          >
+            Tandai Sudah Dibaca
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {alerts.map((al) => (
+            <div
+              key={al.id}
+              className={`p-3.5 rounded-2xl border flex flex-col justify-between space-y-2 text-xs transition-all ${
+                al.severity === 'warning'
+                  ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/60'
+                  : al.severity === 'critical'
+                  ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800/60'
+                  : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800/60'
+              }`}
+            >
+              <div>
+                <div className="flex justify-between items-start">
+                  <span className="font-bold text-slate-800 dark:text-slate-100">{al.title}</span>
+                  <span className="text-[9px] font-mono text-slate-400">
+                    {new Date(al.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1">{al.message}</p>
+              </div>
+
+              <div className="pt-2 border-t border-black/5 dark:border-white/5 flex justify-between items-center text-[10px]">
+                <span className="font-bold font-mono text-slate-500">📍 {al.branchName}</span>
+                {al.type === 'SHIFT_LATE' && (
+                  <button
+                    onClick={() => {
+                      window.open('https://wa.me/6281234567890?text=Halo,%20mohon%20konfirmasi%20jadwal%20shift%20anda.', '_blank');
+                    }}
+                    className="text-red-600 dark:text-red-400 font-bold hover:underline"
+                  >
+                    💬 Kontak Kasir
+                  </button>
+                )}
+                {al.type === 'LOW_STOCK' && (
+                  <span className="text-rose-600 dark:text-rose-400 font-bold">🚨 Urgent PO</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 3. KEY METRICS CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-3xl shadow-sm space-y-1.5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
@@ -134,7 +200,7 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. TRADINGVIEW / STOCK MARKET STYLE INTERACTIVE CANDLESTICK CHART */}
+      {/* 4. TRADINGVIEW / STOCK MARKET STYLE INTERACTIVE CANDLESTICK CHART */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 md:p-6 shadow-sm space-y-4">
         {/* TradingView Top Controls Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -231,7 +297,6 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
           {/* Main Price / Candlestick Area */}
           <div className="flex-1 flex items-end space-x-2 md:space-x-3 relative border-b border-slate-200 dark:border-slate-800/80 pb-2">
             {STOCK_CANDLE_DATA.map((c, idx) => {
-              // Calculate % heights based on price range
               const highPct = Math.min(100, Math.max(5, ((c.high - chartMin) / priceRange) * 100));
               const lowPct = Math.min(100, Math.max(0, ((c.low - chartMin) / priceRange) * 100));
               const openPct = ((c.open - chartMin) / priceRange) * 100;
@@ -250,10 +315,8 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
                   onMouseLeave={() => setHoveredCandle(null)}
                   className="flex-1 min-w-[28px] h-full flex flex-col items-center justify-end relative cursor-crosshair group"
                 >
-                  {/* Candlestick Mode */}
                   {chartType === 'candlestick' ? (
                     <div className="relative w-full h-full flex justify-center items-end">
-                      {/* Upper & Lower Wick Line */}
                       <div
                         style={{
                           bottom: `${lowPct}%`,
@@ -264,7 +327,6 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
                         }`}
                       />
 
-                      {/* Real Candlestick Body (Open to Close) */}
                       <div
                         style={{
                           bottom: `${bodyBottom}%`,
@@ -278,7 +340,6 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
                       />
                     </div>
                   ) : (
-                    /* Bar Chart Mode */
                     <div className="w-full flex items-end justify-center h-full">
                       <div
                         style={{ height: `${closePct}%` }}
@@ -291,7 +352,6 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Day Label */}
                   <span className="text-[9px] font-mono text-slate-400 mt-2 truncate w-full text-center group-hover:text-red-500 font-bold">
                     {c.dayName}
                   </span>
@@ -300,7 +360,7 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
             })}
           </div>
 
-          {/* Volume Bars Area (Bottom of Stock Chart) */}
+          {/* Volume Bars Area */}
           <div className="h-14 flex items-end space-x-2 md:space-x-3 pt-1 border-t border-dashed border-slate-200 dark:border-slate-800">
             {STOCK_CANDLE_DATA.map((c, idx) => {
               const volPct = Math.round((c.volume / maxVolume) * 100);
@@ -324,7 +384,7 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. TOP SPENDER LEADERBOARD & AI ADVISOR GRID */}
+      {/* 5. TOP SPENDER LEADERBOARD & AI ADVISOR GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* TOP SPENDER LEADERBOARD */}
         <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
