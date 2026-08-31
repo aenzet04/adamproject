@@ -1,8 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useTenantStore } from '../../stores/useTenantStore';
 import { useThemeStore } from '../../stores/useThemeStore';
+import { useDensityStore } from '../../stores/useDensityStore';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { UserProfileModal } from '../profile/UserProfileModal';
 
 export const MultiTierSwitcher: React.FC = () => {
   const {
@@ -19,12 +22,15 @@ export const MultiTierSwitcher: React.FC = () => {
   } = useTenantStore();
 
   const { theme, toggleTheme } = useThemeStore();
+  const { viewMode, toggleViewMode } = useDensityStore();
+  const { currentUser } = useAuthStore();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const filteredBranches = availableBranches.filter((b) => b.brandId === currentBrand?.id);
   const filteredWarehouses = availableWarehouses.filter((w) => w.branchId === currentBranch?.id);
 
   return (
-    <header className="h-14 border-b bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 px-4 flex items-center justify-between transition-colors shadow-sm">
+    <header className="h-14 border-b bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 px-4 flex items-center justify-between transition-colors shadow-sm z-30">
       <div className="flex items-center space-x-3">
         {/* Tier 1: Holding / Tenant */}
         <div className="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
@@ -101,7 +107,17 @@ export const MultiTierSwitcher: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2.5">
+        {/* Jira Sleek Density Toggle (Simple vs Detailed) */}
+        <button
+          onClick={toggleViewMode}
+          className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-sm active:scale-95"
+          title="Ganti Mode Tampilan (Sleek Simple vs Detailed Enterprise)"
+        >
+          <span>{viewMode === 'simple' ? '⚡' : '🔍'}</span>
+          <span>{viewMode === 'simple' ? 'Simple Mode' : 'Detailed Mode'}</span>
+        </button>
+
         {/* Dark / Light Mode Toggle Button */}
         <button
           onClick={toggleTheme}
@@ -109,18 +125,31 @@ export const MultiTierSwitcher: React.FC = () => {
           title="Ganti Tema Tampilan"
         >
           <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
-          <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
         </button>
 
-        <span className="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-          ● Online Synced
-        </span>
-
-        <div className="text-right">
-          <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Kasir: Siti Rahma</div>
-          <div className="text-[10px] text-slate-500 dark:text-slate-400">Shift #1 (ID: POS-JKT-01)</div>
-        </div>
+        {/* User Profile Avatar & Role Badge Trigger */}
+        <button
+          onClick={() => setIsProfileOpen(true)}
+          className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 p-1.5 pr-3 rounded-2xl transition-all shadow-sm group text-left"
+        >
+          <img
+            src={currentUser.avatarUrl}
+            alt={currentUser.name}
+            className="w-8 h-8 rounded-xl object-cover border border-emerald-500 shadow-sm"
+          />
+          <div>
+            <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-1">
+              <span>{currentUser.name.split(' ')[0]}</span>
+              <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded font-bold uppercase">
+                {currentUser.role.replace('_', ' ')}
+              </span>
+            </div>
+            <div className="text-[10px] text-slate-400">Klik untuk SOP & Profil</div>
+          </div>
+        </button>
       </div>
+
+      {isProfileOpen && <UserProfileModal onClose={() => setIsProfileOpen(false)} />}
     </header>
   );
 };
