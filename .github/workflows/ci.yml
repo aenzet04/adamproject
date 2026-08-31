@@ -1,0 +1,40 @@
+name: Enterprise CI & Automated Build Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        cache-dependency-path: apps/frontend/package-lock.json
+
+    - name: Install Frontend Dependencies
+      working-directory: apps/frontend
+      run: npm ci
+
+    - name: Verify TypeScript Compilation & Production Build
+      working-directory: apps/frontend
+      run: |
+        npx tsc --noEmit
+        npm run build
+
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 3.2
+
+    - name: Run Backend Engine Benchmark & Verification
+      run: ruby benchmark_ruby_gl.rb
