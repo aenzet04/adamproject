@@ -14,7 +14,7 @@ export interface Brand {
   tenantId: string;
   name: string;
   code: string;
-  industryType: 'fnb' | 'retail' | 'services' | 'fashion' | 'barbershop' | 'clinic' | 'other';
+  industryType: 'fnb' | 'retail' | 'services' | 'fashion' | 'barbershop' | 'clinic' | 'other' | string;
   businessSector?: string;
   tagline?: string;
   description?: string;
@@ -76,92 +76,44 @@ export interface Product {
   id: string;
   tenantId: string;
   brandId: string;
-  categoryId: string;
-  sku: string;
-  barcode: string;
   name: string;
+  sku: string;
+  barcode?: string;
+  productType: 'inventory' | 'non_inventory' | 'composite' | 'service';
+  uomBase: string;
   sellingPrice: number;
   standardCost: number;
-  taxRate: number;
-  uom: string;
+  trackInventory: boolean;
   isActive: boolean;
-  requiresKitchenPrint: boolean;
-  stock?: number;
   stockOnHand?: number;
-  productType?: 'goods' | 'raw_material' | 'service';
+  averageCost?: number;
 }
 
 export interface CategorizedProduct extends Product {
   imageEmoji: string;
   categoryName: string;
-  stockOnHand: number;
-  productType?: 'goods' | 'raw_material' | 'service';
 }
 
 export interface CartItem {
-  id?: string;
   productId: string;
-  name?: string;
   productName: string;
   sku?: string;
-  unitPrice: number;
   quantity: number;
-  subtotal: number;
+  unitPrice: number;
+  discountAmount: number;
+  discountRate?: number;
+  taxAmount?: number;
   unitCogs?: number;
-  discountPercent?: number;
-  discountAmount?: number;
-  note?: string;
+  subtotal: number;
   notes?: string;
-  taxRate?: number;
-  imageEmoji?: string;
 }
 
 export interface PaymentAllocation {
-  id: string;
-  method?: string;
-  paymentMethod?: string;
+  chartOfAccountId: string;
+  paymentMethod: 'cash' | 'edc_bca' | 'edc_mandiri' | 'qris' | 'transfer_bank' | 'customer_credit' | string;
   amount: number;
+  changeGiven: number;
   referenceNumber?: string;
-  chartOfAccountId?: string;
-  changeGiven?: number;
-}
-
-export interface SplitBillPerson {
-  id?: string;
-  personId?: string;
-  name?: string;
-  personName?: string;
-  items?: CartItem[];
-  assignedItems?: any[];
-  allocatedAmount?: number;
-  customAmount?: number;
-  paid?: boolean;
-  isPaid?: boolean;
-  paymentMethod?: string;
-}
-
-export interface ModuleLicense {
-  id: string;
-  code: string;
-  name: string;
-  description: string;
-  icon: string;
-  category?: string;
-  featuresIncluded?: string[];
-  isUnlocked: boolean;
-  requiredTier: 'starter' | 'business' | 'enterprise';
-  priceMonthly: number;
-}
-
-export interface CustomerReview {
-  id: string;
-  branchId?: string;
-  branchName?: string;
-  customerName: string;
-  rating: number;
-  feedback: string;
-  category: 'Pelayanan' | 'Rasa' | 'Kebersihan' | 'Kecepatan';
-  createdAt: string;
 }
 
 export interface ProfitLossReport {
@@ -175,4 +127,43 @@ export interface ProfitLossReport {
   operatingExpenses: Array<{ code: string; name: string; amount: number }>;
   totalOperatingExpense: number;
   netIncome: number;
+}
+
+export interface CustomerReview {
+  id: string;
+  branchId: string;
+  branchName: string;
+  customerName: string;
+  rating: number;
+  menuItemId?: string;
+  menuItemName?: string;
+  menuRating?: number;
+  comment: string;
+  createdAt: string;
+  sentiment: 'positive' | 'neutral' | 'negative';
+}
+
+export interface ModuleLicense {
+  id: string;
+  name: string;
+  code: 'pos' | 'crm' | 'finance' | 'inventory' | 'hr' | 'audit' | 'ai_insights' | 'ai_advisor' | string;
+  icon?: string;
+  category?: string;
+  description: string;
+  pricePerMonth?: number;
+  priceMonthly?: number;
+  isUnlocked: boolean;
+  featuresIncluded?: string[];
+  expiresAt?: string;
+}
+
+export interface SplitBillPerson {
+  personId: string;
+  personName: string;
+  assignedItems: Array<{ productId: string; quantity: number; amount: number }>;
+  customAmount: number;
+  isPaid: boolean;
+  paymentMethod?: string;
+  paidAmount?: number;
+  changeGiven?: number;
 }
