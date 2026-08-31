@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { usePosCartStore } from '../../stores/usePosCartStore';
 import { useTenantStore } from '../../stores/useTenantStore';
 import { usePrinterStore } from '../../stores/usePrinterStore';
-import { useDensityStore } from '../../stores/useDensityStore';
 import { useCustomerStore } from '../../stores/useCustomerStore';
 import { useShiftStore } from '../../stores/useShiftStore';
 import { toast } from '../../stores/useToastStore';
@@ -13,6 +12,7 @@ import { ReceiptModal } from './ReceiptModal';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { SplitBillModal } from './SplitBillModal';
 import { ShiftManagementModal } from '../shifts/ShiftManagementModal';
+import { TableManagementModal } from './TableManagementModal';
 import type { Product, PaymentAllocation } from '../../types';
 
 interface CategorizedProduct extends Product {
@@ -304,9 +304,8 @@ export const PosTerminal: React.FC = () => {
     getRoundingAmount,
     getGrandTotal,
     clearCart,
-    holdOrder,
+    holdCurrentOrder,
     heldOrders,
-    restoreHeldOrder,
     payments,
     addPayment,
     removePayment,
@@ -328,6 +327,8 @@ export const PosTerminal: React.FC = () => {
   const [isSplitBillOpen, setIsSplitBillOpen] = useState(false);
   const [isQuickAddCustomerOpen, setIsQuickAddCustomerOpen] = useState(false);
   const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
+  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris' | 'edc_bca' | 'customer_credit'>('cash');
   const [tenderAmount, setTenderAmount] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -354,7 +355,7 @@ export const PosTerminal: React.FC = () => {
 
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
-  // Keyboard Shortcuts: F2 for Barcode, F3 for Customer, F4 for Shift, F9 for Payment
+  // Keyboard Shortcuts: F2 for Barcode, F3 for Customer, F4 for Shift, F8 for Table Hold, F9 for Payment
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F2') {
@@ -366,6 +367,9 @@ export const PosTerminal: React.FC = () => {
       } else if (e.key === 'F4') {
         e.preventDefault();
         setIsShiftModalOpen(true);
+      } else if (e.key === 'F8') {
+        e.preventDefault();
+        setIsTableModalOpen(true);
       } else if (e.key === 'F9' && items.length > 0) {
         e.preventDefault();
         handleOpenPayment();
@@ -483,7 +487,7 @@ export const PosTerminal: React.FC = () => {
     });
 
     setSelectedMemberId(newCust.id);
-    setCustomerInfo(newCust.name, tableNumber);
+    setCustomerInfo(newCust.name, tableNumber, newCust.id, newCust.tier);
     toast.success('Member Terdaftar (Shortcut F3)', `${newCust.name} siap ditransaksikan.`);
     setIsQuickAddCustomerOpen(false);
     setQuickCustName('');
@@ -529,7 +533,7 @@ export const PosTerminal: React.FC = () => {
           mobileTab === 'cart' ? 'hidden md:flex' : 'flex'
         }`}
       >
-        {/* Top Search, Shortcut F3 Customer, Shift Button [F4], Scanner & Bluetooth Bar */}
+        {/* Top Search, Shortcut F3 Customer, Shift Button [F4], Table Hold [F8], Scanner & Bluetooth Bar */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <div className="relative flex-1 min-w-[180px]">
             <input
@@ -553,6 +557,16 @@ export const PosTerminal: React.FC = () => {
           >
             <span>👤</span>
             <span>+ Member [F3]</span>
+          </button>
+
+          {/* Table Management & Hold Order Button [F8] */}
+          <button
+            onClick={() => setIsTableModalOpen(true)}
+            className="bg-amber-500 hover:bg-amber-400 text-white px-3 py-2 rounded-2xl text-xs font-bold flex items-center space-x-1.5 shadow-md shadow-amber-500/20 transition-all active:scale-95"
+            title="Manajemen Meja & Hold Bill [F8]"
+          >
+            <span>🍽️</span>
+            <span>Meja ({heldOrders.length}) [F8]</span>
           </button>
 
           {/* Shift Open/Close Button [F4] */}
@@ -591,18 +605,6 @@ export const PosTerminal: React.FC = () => {
             <span className="text-red-500">📶</span>
             <span>{connectedPrinterName ? `BT: ${connectedPrinterName.substring(0, 8)}` : 'BT 58mm'}</span>
           </button>
-
-          {heldOrders.length > 0 && (
-            <button
-              onClick={() => {
-                restoreHeldOrder(heldOrders[0].id);
-                toast.info('Order Dipulihkan', `Open Table #${heldOrders[0].id}`);
-              }}
-              className="bg-amber-50 dark:bg-amber-600/20 text-amber-700 dark:text-amber-300 border border-amber-200 px-3 py-2 rounded-2xl text-xs font-bold shadow-sm"
-            >
-              Table ({heldOrders.length})
-            </button>
-          )}
         </div>
 
         {/* Category Tabs */}
@@ -684,7 +686,7 @@ export const PosTerminal: React.FC = () => {
                   setSelectedMemberId(id);
                   const member = customers.find((c) => c.id === id);
                   if (member) {
-                    setCustomerInfo(member.name, tableNumber);
+                    setCustomerInfo(member.name, tableNumber, member.id, member.tier);
                     toast.info('Member Terpilih', `${member.name} (${member.tier})`);
                   } else {
                     setCustomerInfo('', tableNumber);
@@ -705,7 +707,7 @@ export const PosTerminal: React.FC = () => {
               type="text"
               placeholder="Meja #"
               value={tableNumber}
-              onChange={(e) => setCustomerInfo(customerName, e.target.value)}
+              onChange={(e) => setCustomerInfo(customerName, e.target.value, selectedMemberId, selectedMember?.tier)}
               className="w-24 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-red-500 focus:outline-none font-mono font-bold text-center shadow-sm"
             />
           </div>
@@ -896,14 +898,10 @@ export const PosTerminal: React.FC = () => {
 
           <div className="grid grid-cols-3 gap-2 pt-1">
             <button
-              onClick={() => {
-                holdOrder();
-                toast.warning('Order Disimpan', `Hold Bill #${customerName || 'Walk-in'}`);
-              }}
-              disabled={items.length === 0}
-              className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 py-2 rounded-2xl font-bold text-xs"
+              onClick={() => setIsTableModalOpen(true)}
+              className="bg-amber-600 hover:bg-amber-500 text-white py-2 rounded-2xl font-bold text-xs shadow-sm active:scale-95"
             >
-              Hold Bill
+              Hold Table [F8]
             </button>
             <button
               onClick={() => {
@@ -925,6 +923,14 @@ export const PosTerminal: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* TABLE & HOLD ORDER MANAGEMENT MODAL [F8] */}
+      {isTableModalOpen && (
+        <TableManagementModal
+          onClose={() => setIsTableModalOpen(false)}
+          onOpenPaymentForHeld={handleOpenPayment}
+        />
+      )}
 
       {/* SHIFT MANAGEMENT MODAL [F4] */}
       {isShiftModalOpen && (
