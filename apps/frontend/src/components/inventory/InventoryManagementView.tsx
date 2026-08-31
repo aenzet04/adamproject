@@ -352,6 +352,20 @@ export const InventoryManagementView: React.FC = () => {
               : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
+          <span>🤝</span>
+          <span>Direktori Vendor & Seller ({vendors.length})</span>
+        </button>
+      </div>
+
+      {/* RBAC ROLE CHECK BANNER (KASIR & IT HANYA BISA BACA) */}
+      {(currentUser.role === 'cashier' || (currentUser.role as string) === 'staff_it') && (
+        <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-2xl flex items-center justify-between text-xs text-amber-800 dark:text-amber-300 font-semibold">
+          <div className="flex items-center space-x-2">
+            <span>🛡️</span>
+            <span>
+              <b>Mode Akses Terbatas (Role {currentUser.role.replace('_', ' ').toUpperCase()}):</b> Anda hanya memiliki izin membaca status persediaan. Penambahan barang, restock faktur, dan transfer antar gudang hanya dapat diubah oleh <b>Staf Gudang (SCM)</b> & <b>Manajer Cabang</b>.
+            </span>
+          </div>
           <span className="text-[10px] bg-amber-200 dark:bg-amber-900 px-2 py-0.5 rounded font-mono font-bold">
             READ-ONLY
           </span>
