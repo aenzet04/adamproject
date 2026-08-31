@@ -6,6 +6,7 @@ export interface Tenant {
   taxId?: string;
   status: 'active' | 'suspended';
   featureFlags: Record<string, boolean>;
+  onboarding_completed?: boolean;
 }
 
 export interface Brand {
@@ -13,7 +14,18 @@ export interface Brand {
   tenantId: string;
   name: string;
   code: string;
-  industryType: 'fnb' | 'retail' | 'services';
+  industryType: 'fnb' | 'retail' | 'services' | 'fashion' | 'barbershop' | 'clinic' | 'other';
+  businessSector?: string;
+  tagline?: string;
+  description?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  socialLinks?: {
+    instagram?: string;
+    tiktok?: string;
+    whatsapp?: string;
+    website?: string;
+  };
   status: 'active' | 'inactive';
 }
 
@@ -27,6 +39,10 @@ export interface Branch {
   geofenceRadiusMeters: number;
   latitude?: number;
   longitude?: number;
+  address?: string;
+  city?: string;
+  phone?: string;
+  operatingHours?: string;
   isActive: boolean;
 }
 
@@ -53,95 +69,22 @@ export interface UserProfile {
   brandId?: string;
   branchId?: string;
   phoneNumber?: string;
+  posPin?: string;
 }
 
 export interface Product {
   id: string;
   tenantId: string;
   brandId: string;
-  name: string;
+  categoryId: string;
   sku: string;
-  barcode?: string;
-  productType: 'inventory' | 'non_inventory' | 'composite' | 'service';
-  uomBase: string;
+  barcode: string;
+  name: string;
   sellingPrice: number;
   standardCost: number;
-  trackInventory: boolean;
+  taxRate: number;
+  uom: string;
   isActive: boolean;
-  stockOnHand?: number;
-  averageCost?: number;
-}
-
-export interface CartItem {
-  productId: string;
-  productName: string;
-  sku?: string;
-  quantity: number;
-  unitPrice: number;
-  discountAmount: number;
-  discountRate?: number;
-  taxAmount?: number;
-  unitCogs?: number;
-  subtotal: number;
-  notes?: string;
-}
-
-export interface PaymentAllocation {
-  chartOfAccountId: string;
-  paymentMethod: 'cash' | 'edc_bca' | 'edc_mandiri' | 'qris' | 'transfer_bank' | 'customer_credit';
-  amount: number;
-  changeGiven: number;
-  referenceNumber?: string;
-}
-
-export interface ProfitLossReport {
-  periodStart: string;
-  periodEnd: string;
-  revenues: Array<{ code: string; name: string; amount: number }>;
-  totalRevenue: number;
-  cogs: Array<{ code: string; name: string; amount: number }>;
-  totalCogs: number;
-  grossProfit: number;
-  operatingExpenses: Array<{ code: string; name: string; amount: number }>;
-  totalOperatingExpense: number;
-  netIncome: number;
-}
-
-export interface CustomerReview {
-  id: string;
-  branchId: string;
-  branchName: string;
-  customerName: string;
-  rating: number;
-  menuItemId?: string;
-  menuItemName?: string;
-  menuRating?: number;
-  comment: string;
-  createdAt: string;
-  sentiment: 'positive' | 'neutral' | 'negative';
-}
-
-export interface ModuleLicense {
-  id: string;
-  name: string;
-  code: 'pos' | 'crm' | 'finance' | 'inventory' | 'hr' | 'audit' | 'ai_insights' | 'ai_advisor';
-  icon?: string;
-  category?: string;
-  description: string;
-  pricePerMonth?: number;
-  priceMonthly?: number;
-  isUnlocked: boolean;
-  featuresIncluded?: string[];
-  expiresAt?: string;
-}
-
-export interface SplitBillPerson {
-  personId: string;
-  personName: string;
-  assignedItems: Array<{ productId: string; quantity: number; amount: number }>;
-  customAmount: number;
-  isPaid: boolean;
-  paymentMethod?: string;
-  paidAmount?: number;
-  changeGiven?: number;
+  requiresKitchenPrint: boolean;
+  stock?: number;
 }
