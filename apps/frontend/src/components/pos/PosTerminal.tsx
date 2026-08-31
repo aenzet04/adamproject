@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { usePosCartStore } from '../../stores/usePosCartStore';
 import { useTenantStore } from '../../stores/useTenantStore';
 import { usePrinterStore } from '../../stores/usePrinterStore';
@@ -317,6 +317,7 @@ export const PosTerminal: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris' | 'edc_bca' | 'customer_credit'>('cash');
   const [tenderAmount, setTenderAmount] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
 
   const [lastCompletedOrder, setLastCompletedOrder] = useState<{
     orderNumber: string;
@@ -375,10 +376,15 @@ export const PosTerminal: React.FC = () => {
   const handleFinalizeCheckout = async () => {
     setIsProcessing(true);
 
+    const itemsWithNotes = items.map((it) => ({
+      ...it,
+      notes: itemNotes[it.productId] || it.notes,
+    }));
+
     const payload = {
       customerName,
       tableNumber,
-      items,
+      items: itemsWithNotes,
       subtotalAmount: getSubtotal(),
       discountAmount: getTotalDiscount(),
       taxRate: 11.0,
@@ -396,7 +402,7 @@ export const PosTerminal: React.FC = () => {
       orderNumber: orderNo,
       customerName,
       tableNumber,
-      items: [...items],
+      items: itemsWithNotes,
       subtotal: getSubtotal(),
       discount: getTotalDiscount(),
       tax: getTaxAmount(),
@@ -409,6 +415,7 @@ export const PosTerminal: React.FC = () => {
     setIsProcessing(false);
     setIsPaymentModalOpen(false);
     clearCart();
+    setItemNotes({});
     setIsReceiptOpen(true);
   };
 
@@ -431,7 +438,7 @@ export const PosTerminal: React.FC = () => {
               placeholder="Cari Produk / Scan Barcode [F2]..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm transition-all"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm transition-all"
             />
             <span className="absolute right-3 top-2 text-[10px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono font-bold">
               ⌨️ F2
@@ -439,15 +446,15 @@ export const PosTerminal: React.FC = () => {
           </div>
 
           {/* Backend Status Live Badge */}
-          <span className="inline-flex items-center px-3 py-2 rounded-2xl text-[10px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full mr-1.5 animate-pulse" />
+          <span className="inline-flex items-center px-3 py-2 rounded-2xl text-[10px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-red-600 dark:text-red-400 shadow-sm">
+            <span className="w-2 h-2 bg-red-500 rounded-full mr-1.5 animate-pulse" />
             Backend: Ruby 3001
           </span>
 
           {/* Optical Barcode Scanner Button */}
           <button
             onClick={() => setIsScannerOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center space-x-1.5 shadow-md shadow-emerald-600/20 transition-all active:scale-95"
+            className="bg-red-600 hover:bg-red-500 text-white px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center space-x-1.5 shadow-md shadow-red-600/20 transition-all active:scale-95"
           >
             <span>📷</span>
             <span>Scan Barcode</span>
@@ -459,14 +466,14 @@ export const PosTerminal: React.FC = () => {
             disabled={isConnecting}
             className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center space-x-1.5 border transition-all shadow-sm ${
               connectedPrinterName
-                ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700/60'
+                ? 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700/60'
                 : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
             }`}
           >
-            <span className="text-blue-500">📶</span>
+            <span className="text-red-500">📶</span>
             <span>{connectedPrinterName ? `BT: ${connectedPrinterName.substring(0, 10)}` : 'Hubungkan BT'}</span>
             {autoPrintEnabled && connectedPrinterName && (
-              <span className="text-[9px] bg-blue-600 text-white px-1 rounded-full font-mono">Auto</span>
+              <span className="text-[9px] bg-red-600 text-white px-1 rounded-full font-mono">Auto</span>
             )}
           </button>
 
@@ -494,7 +501,7 @@ export const PosTerminal: React.FC = () => {
                 onClick={() => setSelectedCategory(cat.id)}
                 className={`px-3.5 py-1.5 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all flex items-center space-x-1.5 border shadow-sm ${
                   selectedCategory === cat.id
-                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/20'
+                    ? 'bg-red-600 text-white border-red-500 shadow-red-600/20'
                     : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
@@ -503,7 +510,7 @@ export const PosTerminal: React.FC = () => {
                 <span
                   className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
                     selectedCategory === cat.id
-                      ? 'bg-emerald-800 text-emerald-100'
+                      ? 'bg-red-800 text-red-100'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                   }`}
                 >
@@ -520,25 +527,24 @@ export const PosTerminal: React.FC = () => {
             <button
               key={product.id}
               onClick={() => addItem(product)}
-              className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 rounded-3xl p-3.5 flex flex-col justify-between text-left transition-all duration-150 active:scale-95 group relative shadow-sm hover:shadow-md"
+              className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 hover:border-red-500/50 rounded-3xl p-3.5 flex flex-col justify-between text-left transition-all duration-150 active:scale-95 group relative shadow-sm hover:shadow-md"
             >
               <div>
                 <div className="flex justify-between items-start">
                   <span className="text-2xl mb-1">{product.imageEmoji}</span>
-                  <span className="text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold bg-red-50 dark:bg-red-950/80 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/40 px-2 py-0.5 rounded-full">
                     Stok: {product.stockOnHand}
                   </span>
                 </div>
-                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 line-clamp-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                   {product.name}
                 </h4>
 
-                {/* Jira Sleek Detailed View Toggle fields */}
                 {viewMode === 'detailed' && (
                   <div className="mt-1 space-y-0.5 border-t border-slate-100 dark:border-slate-800 pt-1">
                     <div className="text-[9px] text-slate-400 font-mono">SKU: {product.sku}</div>
                     <div className="text-[9px] text-slate-400 font-mono">Barcode: {product.barcode}</div>
-                    <div className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono">
+                    <div className="text-[9px] text-red-600 dark:text-red-400 font-mono">
                       Std Cost: Rp {product.standardCost.toLocaleString('id-ID')}
                     </div>
                   </div>
@@ -546,7 +552,7 @@ export const PosTerminal: React.FC = () => {
               </div>
 
               <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex justify-between items-baseline">
-                <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                <span className="text-sm font-black text-red-600 dark:text-red-400 font-mono">
                   Rp {product.sellingPrice.toLocaleString('id-ID')}
                 </span>
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">
@@ -566,18 +572,18 @@ export const PosTerminal: React.FC = () => {
             placeholder="Pelanggan (Walk-in)"
             value={customerName}
             onChange={(e) => setCustomerInfo(e.target.value, tableNumber)}
-            className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-emerald-500 focus:outline-none shadow-sm"
+            className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-red-500 focus:outline-none shadow-sm"
           />
           <input
             type="text"
             placeholder="No. Meja (F&B)"
             value={tableNumber}
             onChange={(e) => setCustomerInfo(customerName, e.target.value)}
-            className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-emerald-500 focus:outline-none shadow-sm"
+            className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-red-500 focus:outline-none shadow-sm"
           />
         </div>
 
-        {/* Cart Item List */}
+        {/* Cart Item List with Kitchen Notes Input */}
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-xs">
@@ -589,38 +595,49 @@ export const PosTerminal: React.FC = () => {
             items.map((item) => (
               <div
                 key={item.productId}
-                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 flex items-center justify-between shadow-sm"
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 space-y-1.5 shadow-sm"
               >
-                <div className="flex-1 mr-2">
-                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{item.productName}</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                    Rp {item.unitPrice.toLocaleString('id-ID')}
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 mr-2">
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{item.productName}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                      Rp {item.unitPrice.toLocaleString('id-ID')}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-1.5">
+                    <button
+                      onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                      className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center text-xs font-bold transition-all"
+                    >
+                      -
+                    </button>
+                    <span className="w-6 text-center text-xs font-bold text-slate-800 dark:text-slate-100 font-mono">
+                      {item.quantity}
+                    </span>
+                    <button
+                      onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                      className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center text-xs font-bold transition-all"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <div className="w-24 text-right">
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200 font-mono">
+                      Rp {item.subtotal.toLocaleString('id-ID')}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-1.5">
-                  <button
-                    onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                    className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center text-xs font-bold transition-all"
-                  >
-                    -
-                  </button>
-                  <span className="w-6 text-center text-xs font-bold text-slate-800 dark:text-slate-100 font-mono">
-                    {item.quantity}
-                  </span>
-                  <button
-                    onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                    className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center text-xs font-bold transition-all"
-                  >
-                    +
-                  </button>
-                </div>
-
-                <div className="w-24 text-right">
-                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200 font-mono">
-                    Rp {item.subtotal.toLocaleString('id-ID')}
-                  </div>
-                </div>
+                {/* Optional Kitchen Note input per item */}
+                <input
+                  type="text"
+                  placeholder="🍳 Catatan dapur (e.g. Less sugar, extra ice, pedas sedang)..."
+                  value={itemNotes[item.productId] || ''}
+                  onChange={(e) => setItemNotes({ ...itemNotes, [item.productId]: e.target.value })}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 text-[10px] text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
               </div>
             ))
           )}
@@ -651,16 +668,15 @@ export const PosTerminal: React.FC = () => {
 
           <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-baseline">
             <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Total Tagihan</span>
-            <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+            <span className="text-xl font-black text-red-600 dark:text-red-400 font-mono">
               Rp {grandTotal.toLocaleString('id-ID')}
             </span>
           </div>
 
-          {/* SPLIT BILL SPECIAL ACTION BUTTON */}
           <button
             onClick={() => setIsSplitBillOpen(true)}
             disabled={items.length === 0}
-            className="w-full bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 disabled:opacity-50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 py-2 rounded-2xl font-bold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-sm active:scale-95 mt-1"
+            className="w-full bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 disabled:opacity-50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/60 py-2 rounded-2xl font-bold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-sm active:scale-95 mt-1"
           >
             <span>✂️</span>
             <span>Split Bill (Pisah Pembayaran 3 Mode)</span>
@@ -684,7 +700,7 @@ export const PosTerminal: React.FC = () => {
             <button
               onClick={handleOpenPayment}
               disabled={items.length === 0}
-              className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-2xl text-xs shadow-lg shadow-emerald-600/20 transition-all"
+              className="bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-2xl text-xs shadow-lg shadow-red-600/20 transition-all"
             >
               Bayar [F9]
             </button>
@@ -716,7 +732,7 @@ export const PosTerminal: React.FC = () => {
                 </div>
                 <div className="text-right">
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">Total Terbayar:</span>
-                  <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                  <div className="text-xl font-black text-red-600 dark:text-red-400 font-mono">
                     Rp {getTotalPaid().toLocaleString('id-ID')}
                   </div>
                 </div>
@@ -729,7 +745,7 @@ export const PosTerminal: React.FC = () => {
                     onClick={() => setPaymentMethod(m)}
                     className={`py-2 px-2 rounded-2xl text-xs font-bold uppercase border transition-all ${
                       paymentMethod === m
-                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/20'
+                        ? 'bg-red-600 text-white border-red-500 shadow-md shadow-red-600/20'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                   >
@@ -745,7 +761,7 @@ export const PosTerminal: React.FC = () => {
                     type="number"
                     value={tenderAmount}
                     onChange={(e) => setTenderAmount(e.target.value)}
-                    className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-2xl px-3 py-2 text-base font-bold text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-emerald-500 focus:outline-none font-mono"
+                    className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-2xl px-3 py-2 text-base font-bold text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-red-500 focus:outline-none font-mono"
                   />
                   <button
                     onClick={handleAddPaymentAllocation}
@@ -766,7 +782,7 @@ export const PosTerminal: React.FC = () => {
                     >
                       <span className="font-bold uppercase text-slate-700 dark:text-slate-300">{p.paymentMethod}</span>
                       <div className="flex items-center space-x-2">
-                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                        <span className="font-mono text-red-600 dark:text-red-400 font-bold">
                           Rp {p.amount.toLocaleString('id-ID')}
                           {p.changeGiven > 0 && ` (Kembali: Rp ${p.changeGiven.toLocaleString('id-ID')})`}
                         </span>
@@ -793,7 +809,7 @@ export const PosTerminal: React.FC = () => {
               <button
                 onClick={handleFinalizeCheckout}
                 disabled={remaining > 0 || isProcessing}
-                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-6 py-2.5 rounded-2xl text-xs font-bold shadow-lg shadow-emerald-600/20"
+                className="bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white px-6 py-2.5 rounded-2xl text-xs font-bold shadow-lg shadow-red-600/20"
               >
                 {isProcessing ? 'Menjurnal & Memproses...' : 'Selesaikan Transaksi (Live Rails)'}
               </button>
