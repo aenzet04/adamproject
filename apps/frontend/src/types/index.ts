@@ -78,7 +78,8 @@ export interface CartItem {
   unitPrice: number;
   discountAmount: number;
   discountRate?: number;
-  taxAmount: number;
+  taxAmount?: number;
+  unitCogs?: number;
   subtotal: number;
   notes?: string;
 }
@@ -109,7 +110,7 @@ export interface CustomerReview {
   branchId: string;
   branchName: string;
   customerName: string;
-  rating: number; // 1 - 5
+  rating: number;
   menuItemId?: string;
   menuItemName?: string;
   menuRating?: number;
