@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useStaffStore, BrandStaffRole, BrandEmployee } from '../../stores/useStaffStore';
 import { useTenantStore } from '../../stores/useTenantStore';
 import { useCustomerStore } from '../../stores/useCustomerStore';
+import { AuditLogViewerModal } from '../audit/AuditLogViewerModal';
 import { toast } from '../../stores/useToastStore';
 import type { Branch } from '../../types';
 
@@ -16,6 +17,7 @@ export const BrandAdminDashboard: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [branchFilter, setBranchFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
 
   // Transfer Modal State
   const [transferringStaff, setTransferringStaff] = useState<BrandEmployee | null>(null);
@@ -62,13 +64,13 @@ export const BrandAdminDashboard: React.FC = () => {
       transferringStaff.id,
       targetBranchId,
       targetBranchName,
-      transferReason || 'Penugasan rotasi operasional cabang',
-      'Parikesit (Brand Owner / GM)'
+      transferReason || 'Penugasan rotasi kerja berkala',
+      'Owner / GM Approved'
     );
 
     toast.success(
-      'Mutasi Cabang Berhasil',
-      `${transferringStaff.name} resmi dipindahkan ke ${targetBranchName}. Otomatis aktif di sistem POS & presensi cabang baru!`
+      'Mutasi Berhasil Dieksekusi',
+      `${transferringStaff.name} resmi dipindahkan ke ${targetBranchName}`
     );
 
     setTransferringStaff(null);
@@ -117,7 +119,7 @@ export const BrandAdminDashboard: React.FC = () => {
             <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100">
               Brand & Staff Management Command Center
             </h2>
-            <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
+            <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:bg-red-400 border border-red-300 dark:border-red-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
               {currentBrand?.name || 'Kopi Nusantara Roastery'}
             </span>
           </div>
@@ -128,6 +130,15 @@ export const BrandAdminDashboard: React.FC = () => {
 
         <div className="flex items-center space-x-2 w-full md:w-auto">
           <button
+            type="button"
+            onClick={() => setIsAuditModalOpen(true)}
+            className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3.5 py-2.5 rounded-2xl text-xs shadow-sm flex items-center space-x-1.5"
+          >
+            <span>🛡️</span>
+            <span>Log Audit Keamanan</span>
+          </button>
+
+          <button
             onClick={() => setIsAddModalOpen(true)}
             className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-2xl text-xs shadow-md shadow-red-600/20 active:scale-95 flex items-center space-x-1.5"
           >
@@ -136,6 +147,8 @@ export const BrandAdminDashboard: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {isAuditModalOpen && <AuditLogViewerModal onClose={() => setIsAuditModalOpen(false)} />}
 
       {/* 2. STATS SUMMARY ROW */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
