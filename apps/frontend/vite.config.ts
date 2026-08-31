@@ -15,10 +15,11 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'zustand'],
+          pdf: ['jspdf', 'html2canvas'],
           qrcode: ['qrcode'],
         },
       },
     },
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 800,
   },
 });
