@@ -4,44 +4,38 @@ import React, { useState } from 'react';
 import { useCustomerStore } from '../../stores/useCustomerStore';
 import { useModuleLicenseStore } from '../../stores/useModuleLicenseStore';
 import { useReviewStore } from '../../stores/useReviewStore';
-import { useShiftStore, OwnerRealtimeAlert } from '../../stores/useShiftStore';
+import { useShiftStore } from '../../stores/useShiftStore';
 import { toast } from '../../stores/useToastStore';
 
-interface StockCandle {
+interface DailyRevenuePoint {
   date: string;
-  dayName: string;
-  open: number; // in thousands (Rp)
-  high: number;
-  low: number;
-  close: number;
-  volume: number; // transactions
-  ma5: number;
-  isBullish: boolean;
+  label: string;
+  revenue: number; // in thousands (Rp)
+  transactions: number;
 }
 
-const STOCK_CANDLE_DATA: StockCandle[] = [
-  { date: '2026-08-18', dayName: 'Sen 18', open: 3800, high: 4500, low: 3600, close: 4200, volume: 110, ma5: 3950, isBullish: true },
-  { date: '2026-08-19', dayName: 'Sel 19', open: 4200, high: 5300, low: 4100, close: 5100, volume: 135, ma5: 4300, isBullish: true },
-  { date: '2026-08-20', dayName: 'Rab 20', open: 5100, high: 5200, low: 4600, close: 4800, volume: 124, ma5: 4550, isBullish: false },
-  { date: '2026-08-21', dayName: 'Kam 21', open: 4800, high: 6100, low: 4700, close: 5900, volume: 152, ma5: 4900, isBullish: true },
-  { date: '2026-08-22', dayName: 'Jum 22', open: 5900, high: 8100, low: 5800, close: 7800, volume: 198, ma5: 5560, isBullish: true },
-  { date: '2026-08-23', dayName: 'Sab 23', open: 7800, high: 9800, low: 7600, close: 9400, volume: 245, ma5: 6600, isBullish: true },
-  { date: '2026-08-24', dayName: 'Min 24', open: 9400, high: 9600, low: 8500, close: 8900, volume: 230, ma5: 7360, isBullish: false },
-  { date: '2026-08-25', dayName: 'Sen 25', open: 8900, high: 9100, low: 4400, close: 4600, volume: 118, ma5: 7320, isBullish: false },
-  { date: '2026-08-26', dayName: 'Sel 26', open: 4600, high: 5600, low: 4500, close: 5400, volume: 140, ma5: 7220, isBullish: true },
-  { date: '2026-08-27', dayName: 'Rab 27', open: 5400, high: 6300, low: 5200, close: 6100, volume: 160, ma5: 6880, isBullish: true },
-  { date: '2026-08-28', dayName: 'Kam 28', open: 6100, high: 6900, low: 5900, close: 6700, volume: 172, ma5: 6340, isBullish: true },
-  { date: '2026-08-29', dayName: 'Jum 29', open: 6700, high: 8800, low: 6600, close: 8500, volume: 215, ma5: 6260, isBullish: true },
-  { date: '2026-08-30', dayName: 'Sab 30', open: 8500, high: 10600, low: 8400, close: 10200, volume: 268, ma5: 7380, isBullish: true },
-  { date: '2026-08-31', dayName: 'Min 31', open: 10200, high: 10400, low: 9500, close: 9800, volume: 250, ma5: 8260, isBullish: false },
-  { date: '2026-09-01', dayName: 'Sen 01', open: 9800, high: 11200, low: 9700, close: 10800, volume: 280, ma5: 9200, isBullish: true },
+const FINANCIAL_LINE_DATA: DailyRevenuePoint[] = [
+  { date: '2026-08-18', label: '18 Agu', revenue: 4200, transactions: 110 },
+  { date: '2026-08-19', label: '19 Agu', revenue: 5100, transactions: 135 },
+  { date: '2026-08-20', label: '20 Agu', revenue: 4800, transactions: 124 },
+  { date: '2026-08-21', label: '21 Agu', revenue: 5900, transactions: 152 },
+  { date: '2026-08-22', label: '22 Agu', revenue: 7800, transactions: 198 },
+  { date: '2026-08-23', label: '23 Agu', revenue: 9400, transactions: 245 },
+  { date: '2026-08-24', label: '24 Agu', revenue: 8900, transactions: 230 },
+  { date: '2026-08-25', label: '25 Agu', revenue: 4600, transactions: 118 },
+  { date: '2026-08-26', label: '26 Agu', revenue: 5400, transactions: 140 },
+  { date: '2026-08-27', label: '27 Agu', revenue: 6100, transactions: 160 },
+  { date: '2026-08-28', label: '28 Agu', revenue: 6700, transactions: 172 },
+  { date: '2026-08-29', label: '29 Agu', revenue: 8500, transactions: 215 },
+  { date: '2026-08-30', label: '30 Agu', revenue: 10200, transactions: 268 },
+  { date: '2026-08-31', label: '31 Agu', revenue: 9800, transactions: 250 },
+  { date: '2026-09-01', label: '01 Sep', revenue: 10800, transactions: 280 },
 ];
 
 export const OwnerAnalyticsDashboard: React.FC = () => {
-  const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M' | '3M' | '1Y'>('1M');
-  const [chartType, setChartType] = useState<'candlestick' | 'volume_bar'>('candlestick');
+  const [periodFilter, setPeriodFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('all');
-  const [hoveredCandle, setHoveredCandle] = useState<StockCandle | null>(null);
+  const [hoveredPoint, setHoveredPoint] = useState<DailyRevenuePoint | null>(null);
 
   const { getTopSpenders } = useCustomerStore();
   const { subscriptionTier, remainingMonths, expiryDate } = useModuleLicenseStore();
@@ -50,12 +44,30 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
 
   const topSpenders = getTopSpenders(4, selectedBranchFilter);
 
-  const chartMax = Math.max(...STOCK_CANDLE_DATA.map((c) => c.high));
-  const chartMin = Math.min(...STOCK_CANDLE_DATA.map((c) => c.low)) * 0.85;
-  const priceRange = chartMax - chartMin;
-  const maxVolume = Math.max(...STOCK_CANDLE_DATA.map((c) => c.volume));
+  const maxRevenue = Math.max(...FINANCIAL_LINE_DATA.map((d) => d.revenue));
+  const minRevenue = 0;
+  const totalRevenueSum = FINANCIAL_LINE_DATA.reduce((sum, d) => sum + d.revenue * 1000, 0);
+  const avgDailyRevenue = Math.round(totalRevenueSum / FINANCIAL_LINE_DATA.length);
 
-  const activeCandle = hoveredCandle || STOCK_CANDLE_DATA[STOCK_CANDLE_DATA.length - 1];
+  // Generate SVG Points for Line and Gradient Area
+  const svgWidth = 800;
+  const svgHeight = 220;
+  const paddingX = 40;
+  const paddingY = 30;
+  const chartW = svgWidth - paddingX * 2;
+  const chartH = svgHeight - paddingY * 2;
+
+  const points = FINANCIAL_LINE_DATA.map((d, idx) => {
+    const x = paddingX + (idx / (FINANCIAL_LINE_DATA.length - 1)) * chartW;
+    const y = paddingY + chartH - ((d.revenue - minRevenue) / (maxRevenue - minRevenue)) * chartH;
+    return { x, y, data: d };
+  });
+
+  const pathD = points.reduce((acc, p, idx) => {
+    return idx === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`;
+  }, '');
+
+  const areaD = `${pathD} L ${points[points.length - 1].x} ${paddingY + chartH} L ${points[0].x} ${paddingY + chartH} Z`;
 
   return (
     <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen transition-colors space-y-6">
@@ -65,14 +77,14 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
           <div className="flex items-center space-x-2">
             <span className="text-2xl">👑</span>
             <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100">
-              Executive Owner Analytics & AI Strategic Advisor
+              Executive Owner Analytics & Laporan Finansial
             </h2>
             <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
-              Realtime Command Center
+              Group Financial Core
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Pantau realtime keterlambatan shift kasir, sisa stok gudang, grafik candlestick bursa saham, dan koordinasi tim.
+            Grafik garis standar laporan keuangan, real-time alert keterlambatan shift, dan AI matrix persediaan.
           </p>
         </div>
 
@@ -91,7 +103,7 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. REALTIME LIVE NOTIFICATIONS FEED (KETERLAMBATAN SHIFT & SISA STOK OWNER) */}
+      {/* 2. REALTIME LIVE NOTIFICATIONS FEED */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 md:p-5 shadow-sm space-y-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
@@ -161,22 +173,22 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
             Total Omzet Penjualan
           </span>
           <div className="text-xl md:text-2xl font-black font-mono text-red-600 dark:text-red-400">
-            Rp 148.520.000
+            Rp {totalRevenueSum.toLocaleString('id-ID')}
           </div>
           <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center space-x-1">
-            <span>▲ +18.5%</span>
-            <span className="text-slate-400 font-normal">BULLISH TREND</span>
+            <span>↑ +18.5%</span>
+            <span className="text-slate-400 font-normal">Pertumbuhan Positif</span>
           </div>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-3xl shadow-sm space-y-1.5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-            Total Volume Transaksi
+            Rata-Rata Omzet Harian
           </span>
           <div className="text-xl md:text-2xl font-black font-mono text-slate-800 dark:text-slate-100">
-            3.420 <span className="text-xs font-normal text-slate-400">order</span>
+            Rp {avgDailyRevenue.toLocaleString('id-ID')}
           </div>
-          <div className="text-[10px] text-slate-400 font-mono">Rata-rata: Rp 43.420 / struk</div>
+          <div className="text-[10px] text-slate-400 font-mono">Periode Berjalan</div>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-3xl shadow-sm space-y-1.5">
@@ -200,70 +212,45 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. TRADINGVIEW / STOCK MARKET STYLE INTERACTIVE CANDLESTICK CHART */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 md:p-6 shadow-sm space-y-4">
-        {/* TradingView Top Controls Header */}
+      {/* 4. CLEAN PROFESSIONAL FINANCIAL LINE CHART */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
+        {/* Top Controls */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-          <div className="flex items-center space-x-3 flex-wrap">
+          <div>
             <div className="flex items-center space-x-2">
-              <span className="font-black text-sm tracking-wider font-mono text-slate-900 dark:text-slate-100">
-                MODULA:REVENUE
-              </span>
-              <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 text-[10px] font-mono font-bold px-2 py-0.5 rounded">
-                LIVE 1D
-              </span>
+              <span className="text-lg">📈</span>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                Tren Pendapatan & Omzet Penjualan
+              </h3>
             </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Grafik garis standar laporan keuangan periodik. Arahkan kursor ke titik garis untuk melihat omzet harian.
+            </p>
+          </div>
 
-            {/* Timeframe selector */}
-            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 text-xs font-mono font-bold">
-              {(['1D', '1W', '1M', '3M', '1Y'] as const).map((tf) => (
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            {/* Period Filters */}
+            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 text-xs font-semibold">
+              {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((p) => (
                 <button
-                  key={tf}
-                  onClick={() => setTimeframe(tf)}
-                  className={`px-2.5 py-1 rounded-lg transition-all ${
-                    timeframe === tf
-                      ? 'bg-red-600 text-white shadow-sm'
-                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+                  key={p}
+                  onClick={() => setPeriodFilter(p)}
+                  className={`px-3 py-1.5 rounded-lg capitalize transition-all ${
+                    periodFilter === p
+                      ? 'bg-red-600 text-white shadow-sm font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                 >
-                  {tf}
+                  {p === 'daily' ? 'Harian' : p === 'weekly' ? 'Mingguan' : p === 'monthly' ? 'Bulanan' : 'Tahunan'}
                 </button>
               ))}
             </div>
 
-            {/* Chart Type Toggle */}
-            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 text-xs font-bold">
-              <button
-                onClick={() => setChartType('candlestick')}
-                className={`px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1 ${
-                  chartType === 'candlestick'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
-                    : 'text-slate-500'
-                }`}
-              >
-                <span>🕯️</span>
-                <span className="hidden sm:inline">Candle Saham</span>
-              </button>
-              <button
-                onClick={() => setChartType('volume_bar')}
-                className={`px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1 ${
-                  chartType === 'volume_bar'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
-                    : 'text-slate-500'
-                }`}
-              >
-                <span>📊</span>
-                <span className="hidden sm:inline">Bar Omzet</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2 w-full md:w-auto">
-            <span className="text-xs text-slate-500">Cabang:</span>
+            {/* Branch Filter */}
             <select
               value={selectedBranchFilter}
               onChange={(e) => setSelectedBranchFilter(e.target.value)}
-              className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-xl px-2.5 py-1 border border-slate-200 dark:border-slate-700 font-semibold focus:outline-none"
+              className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-xl px-2.5 py-1.5 border border-slate-200 dark:border-slate-700 font-semibold focus:outline-none"
             >
               <option value="all">🏢 Semua Cabang Konsolidasi</option>
               <option value="br-01">Outlet Grand Indonesia</option>
@@ -273,114 +260,114 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Live Candlestick Stats Bar (OHLCV) */}
-        <div className="bg-slate-950 text-slate-100 p-3 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
-          <div className="flex items-center space-x-3 flex-wrap gap-y-1">
-            <span className="font-bold text-red-400">{activeCandle.date} ({activeCandle.dayName})</span>
-            <span>O: <b className="text-white">Rp {(activeCandle.open * 1000).toLocaleString('id-ID')}</b></span>
-            <span>H: <b className="text-emerald-400">Rp {(activeCandle.high * 1000).toLocaleString('id-ID')}</b></span>
-            <span>L: <b className="text-rose-400">Rp {(activeCandle.low * 1000).toLocaleString('id-ID')}</b></span>
-            <span>C: <b className={activeCandle.isBullish ? 'text-emerald-400' : 'text-rose-400'}>Rp {(activeCandle.close * 1000).toLocaleString('id-ID')}</b></span>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <span className="text-amber-400">MA(5): <b>Rp {(activeCandle.ma5 * 1000).toLocaleString('id-ID')}</b></span>
-            <span className="text-slate-400">Vol: <b className="text-white">{activeCandle.volume} Orders</b></span>
-            <span className={`px-2 py-0.5 rounded font-bold ${activeCandle.isBullish ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-rose-950 text-rose-400 border border-rose-800'}`}>
-              {activeCandle.isBullish ? '▲ BULLISH' : '▼ BEARISH'}
-            </span>
-          </div>
+        {/* Hover Info Tooltip Banner */}
+        <div className="h-9 flex items-center justify-between px-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
+          {hoveredPoint ? (
+            <>
+              <div className="flex items-center space-x-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block" />
+                <span className="font-bold text-slate-800 dark:text-slate-100">
+                  Tanggal: {hoveredPoint.label} ({hoveredPoint.date})
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400">Omzet: </span>
+                <span className="font-black text-red-600 dark:text-red-400 text-sm">
+                  Rp {(hoveredPoint.revenue * 1000).toLocaleString('id-ID')}
+                </span>
+                <span className="text-slate-400 ml-2">({hoveredPoint.transactions} Transaksi)</span>
+              </div>
+            </>
+          ) : (
+            <div className="text-slate-400 text-[11px]">
+              Arahkan kursor ke titik grafik di bawah untuk melihat rincian omzet harian.
+            </div>
+          )}
         </div>
 
-        {/* The Candlestick & Volume Chart Canvas Area */}
-        <div className="relative h-72 pt-4 pb-2 flex flex-col justify-between overflow-x-auto select-none">
-          {/* Main Price / Candlestick Area */}
-          <div className="flex-1 flex items-end space-x-2 md:space-x-3 relative border-b border-slate-200 dark:border-slate-800/80 pb-2">
-            {STOCK_CANDLE_DATA.map((c, idx) => {
-              const highPct = Math.min(100, Math.max(5, ((c.high - chartMin) / priceRange) * 100));
-              const lowPct = Math.min(100, Math.max(0, ((c.low - chartMin) / priceRange) * 100));
-              const openPct = ((c.open - chartMin) / priceRange) * 100;
-              const closePct = ((c.close - chartMin) / priceRange) * 100;
+        {/* Clean SVG Line Chart */}
+        <div className="relative w-full overflow-hidden select-none">
+          <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-56 md:h-64">
+            <defs>
+              <linearGradient id="financialGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#e11d48" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#e11d48" stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
 
-              const bodyTop = Math.max(openPct, closePct);
-              const bodyBottom = Math.min(openPct, closePct);
-              const bodyHeight = Math.max(6, bodyTop - bodyBottom);
-
-              const isHovered = hoveredCandle?.date === c.date;
-
+            {/* Horizontal Grid Guidelines */}
+            {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
+              const y = paddingY + chartH * pct;
+              const val = Math.round(maxRevenue - (maxRevenue - minRevenue) * pct);
               return (
-                <div
-                  key={idx}
-                  onMouseEnter={() => setHoveredCandle(c)}
-                  onMouseLeave={() => setHoveredCandle(null)}
-                  className="flex-1 min-w-[28px] h-full flex flex-col items-center justify-end relative cursor-crosshair group"
-                >
-                  {chartType === 'candlestick' ? (
-                    <div className="relative w-full h-full flex justify-center items-end">
-                      <div
-                        style={{
-                          bottom: `${lowPct}%`,
-                          height: `${Math.max(4, highPct - lowPct)}%`,
-                        }}
-                        className={`absolute w-[2px] transition-all ${
-                          c.isBullish ? 'bg-emerald-500 group-hover:bg-emerald-400' : 'bg-rose-500 group-hover:bg-rose-400'
-                        }`}
-                      />
-
-                      <div
-                        style={{
-                          bottom: `${bodyBottom}%`,
-                          height: `${bodyHeight}%`,
-                        }}
-                        className={`absolute w-3.5 md:w-5 rounded-[3px] border transition-all z-10 ${
-                          c.isBullish
-                            ? 'bg-emerald-500 border-emerald-400 group-hover:bg-emerald-400 shadow-sm shadow-emerald-500/30'
-                            : 'bg-rose-600 border-rose-500 group-hover:bg-rose-500 shadow-sm shadow-rose-600/30'
-                        } ${isHovered ? 'scale-110 ring-2 ring-white dark:ring-slate-300' : ''}`}
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-full flex items-end justify-center h-full">
-                      <div
-                        style={{ height: `${closePct}%` }}
-                        className={`w-3.5 md:w-5 rounded-t-lg transition-all ${
-                          c.isBullish
-                            ? 'bg-gradient-to-t from-emerald-700 to-emerald-500 group-hover:to-emerald-400'
-                            : 'bg-gradient-to-t from-rose-700 to-rose-500 group-hover:to-rose-400'
-                        }`}
-                      />
-                    </div>
-                  )}
-
-                  <span className="text-[9px] font-mono text-slate-400 mt-2 truncate w-full text-center group-hover:text-red-500 font-bold">
-                    {c.dayName}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Volume Bars Area */}
-          <div className="h-14 flex items-end space-x-2 md:space-x-3 pt-1 border-t border-dashed border-slate-200 dark:border-slate-800">
-            {STOCK_CANDLE_DATA.map((c, idx) => {
-              const volPct = Math.round((c.volume / maxVolume) * 100);
-              return (
-                <div
-                  key={idx}
-                  className="flex-1 min-w-[28px] h-full flex flex-col items-center justify-end group"
-                  onMouseEnter={() => setHoveredCandle(c)}
-                  onMouseLeave={() => setHoveredCandle(null)}
-                >
-                  <div
-                    style={{ height: `${volPct}%` }}
-                    className={`w-2.5 md:w-3.5 rounded-t transition-all ${
-                      c.isBullish ? 'bg-emerald-500/40 group-hover:bg-emerald-500' : 'bg-rose-500/40 group-hover:bg-rose-500'
-                    }`}
+                <g key={i}>
+                  <line
+                    x1={paddingX}
+                    y1={y}
+                    x2={svgWidth - paddingX}
+                    y2={y}
+                    stroke="currentColor"
+                    className="text-slate-200 dark:text-slate-800/80"
+                    strokeDasharray="4 4"
+                    strokeWidth="1"
                   />
-                </div>
+                  <text
+                    x={paddingX - 6}
+                    y={y + 3}
+                    textAnchor="end"
+                    className="fill-slate-400 text-[9px] font-mono"
+                  >
+                    {val >= 1000 ? `${(val / 1000).toFixed(1)}M` : `${val}k`}
+                  </text>
+                </g>
               );
             })}
-          </div>
+
+            {/* Gradient Area under the line */}
+            <path d={areaD} fill="url(#financialGradient)" />
+
+            {/* The Main Red Financial Trend Line */}
+            <path
+              d={pathD}
+              fill="none"
+              stroke="#e11d48"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+
+            {/* Interactive Data Points (Circles) */}
+            {points.map((p, idx) => {
+              const isHovered = hoveredPoint?.date === p.data.date;
+              return (
+                <g key={idx}>
+                  <circle
+                    cx={p.x}
+                    cy={p.y}
+                    r={isHovered ? 6 : 4}
+                    className={`transition-all cursor-pointer ${
+                      isHovered
+                        ? 'fill-red-600 stroke-white stroke-2'
+                        : 'fill-white dark:fill-slate-900 stroke-red-600 stroke-2 hover:r-6'
+                    }`}
+                    onMouseEnter={() => setHoveredPoint(p.data)}
+                    onMouseLeave={() => setHoveredPoint(null)}
+                  />
+                  {/* Date labels at the bottom */}
+                  {(idx % 2 === 0 || idx === points.length - 1) && (
+                    <text
+                      x={p.x}
+                      y={paddingY + chartH + 16}
+                      textAnchor="middle"
+                      className="fill-slate-400 text-[9px] font-mono"
+                    >
+                      {p.data.label}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
         </div>
       </div>
 
