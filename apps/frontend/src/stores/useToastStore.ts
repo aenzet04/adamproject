@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { playWhatsAppChime } from '../lib/audioSound';
+import { persist } from 'zustand/middleware';
+import { playWhatsAppChime, playErrorBuzzerSound } from '../lib/audioSound';
 
 export type ToastType = 'success' | 'cart' | 'payment' | 'print' | 'warning' | 'info' | 'error';
 
@@ -12,48 +13,78 @@ export interface ToastMessage {
   icon?: string;
   duration?: number;
   playSound?: boolean;
+  createdAt: string;
+  read?: boolean;
 }
 
 interface ToastState {
   toasts: ToastMessage[];
-  addToast: (toast: Omit<ToastMessage, 'id'>) => void;
+  notificationHistory: ToastMessage[];
+  addToast: (toast: Omit<ToastMessage, 'id' | 'createdAt'>) => void;
   removeToast: (id: string) => void;
+  markAllAsRead: () => void;
+  clearHistory: () => void;
 }
 
-export const useToastStore = create<ToastState>((set, get) => ({
-  toasts: [],
+export const useToastStore = create<ToastState>()(
+  persist(
+    (set, get) => ({
+      toasts: [],
+      notificationHistory: [],
 
-  addToast: (newToast) => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
-    const toastItem: ToastMessage = {
-      ...newToast,
-      id,
-      description: newToast.description || newToast.message,
-      duration: newToast.duration || 3000,
-    };
+      addToast: (newToast) => {
+        const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+        const toastItem: ToastMessage = {
+          ...newToast,
+          id,
+          description: newToast.description || newToast.message,
+          duration: newToast.duration || (newToast.type === 'error' ? 5000 : 3500),
+          createdAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+          read: false,
+        };
 
-    // ONLY play sound chime for important events (payment, alerts, chat), SILENT on cart additions!
-    if (newToast.playSound && newToast.type !== 'cart') {
-      playWhatsAppChime(0.25);
+        // Sound trigger logic
+        if (newToast.playSound && newToast.type !== 'cart') {
+          if (newToast.type === 'error' || newToast.type === 'warning') {
+            playErrorBuzzerSound(0.4);
+          } else {
+            playWhatsAppChime(0.25);
+          }
+        }
+
+        set((state) => ({
+          toasts: [...state.toasts, toastItem],
+          notificationHistory: [toastItem, ...state.notificationHistory.slice(0, 49)],
+        }));
+
+        setTimeout(() => {
+          get().removeToast(id);
+        }, toastItem.duration);
+      },
+
+      removeToast: (id) => {
+        set((state) => ({
+          toasts: state.toasts.filter((t) => t.id !== id),
+        }));
+      },
+
+      markAllAsRead: () => {
+        set((state) => ({
+          notificationHistory: state.notificationHistory.map((n) => ({ ...n, read: true })),
+        }));
+      },
+
+      clearHistory: () => {
+        set({ notificationHistory: [] });
+      },
+    }),
+    {
+      name: 'modula_toast_notifications_store',
     }
+  )
+);
 
-    set((state) => ({
-      toasts: [...state.toasts, toastItem],
-    }));
-
-    setTimeout(() => {
-      get().removeToast(id);
-    }, toastItem.duration);
-  },
-
-  removeToast: (id) => {
-    set((state) => ({
-      toasts: state.toasts.filter((t) => t.id !== id),
-    }));
-  },
-}));
-
-// Quick helper triggers
+// Helper shortcuts
 export const toast = {
   success: (title: string, message?: string) =>
     useToastStore.getState().addToast({ type: 'success', icon: '✓', title, message, description: message, playSound: true }),
@@ -64,7 +95,7 @@ export const toast = {
       title: 'Item Ditambahkan',
       message: `${productName} masuk ke keranjang.`,
       description: `${productName} masuk ke keranjang.`,
-      playSound: false, // SILENT NO SOUND AS REQUESTED
+      playSound: false,
     }),
   payment: (orderNo: string, amount: number) =>
     useToastStore.getState().addToast({
@@ -82,5 +113,5 @@ export const toast = {
   info: (title: string, message?: string) =>
     useToastStore.getState().addToast({ type: 'info', icon: 'ℹ️', title, message, description: message, playSound: true }),
   error: (title: string, message?: string) =>
-    useToastStore.getState().addToast({ type: 'error', icon: '✕', title, message, description: message, playSound: true }),
+    useToastStore.getState().addToast({ type: 'error', icon: '🚨', title, message, description: message, playSound: true }),
 };
