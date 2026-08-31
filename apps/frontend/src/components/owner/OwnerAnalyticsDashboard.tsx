@@ -1,312 +1,221 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useCustomerStore } from '../../stores/useCustomerStore';
+import { useModuleLicenseStore } from '../../stores/useModuleLicenseStore';
 import { useReviewStore } from '../../stores/useReviewStore';
-import { useDensityStore } from '../../stores/useDensityStore';
-import { useTenantStore } from '../../stores/useTenantStore';
-
-interface SalesDataPoint {
-  period: string;
-  totalSales: number;
-  totalTransactions: number;
-  grossProfit: number;
-  marginPercent: number;
-}
-
-const SALES_PERIOD_DATA: Record<string, SalesDataPoint> = {
-  today: {
-    period: 'Hari Ini (1 September 2026)',
-    totalSales: 14850000,
-    totalTransactions: 248,
-    grossProfit: 9652500,
-    marginPercent: 65.0,
-  },
-  this_week: {
-    period: 'Minggu Ini (25 Agu - 1 Sep 2026)',
-    totalSales: 108420000,
-    totalTransactions: 1820,
-    grossProfit: 70473000,
-    marginPercent: 65.0,
-  },
-  this_month: {
-    period: 'Bulan Ini (Agustus 2026)',
-    totalSales: 446960000,
-    totalTransactions: 7450,
-    grossProfit: 266630000,
-    marginPercent: 59.6,
-  },
-  custom: {
-    period: 'Rentang Custom (Q3 2026)',
-    totalSales: 890400000,
-    totalTransactions: 14900,
-    grossProfit: 534240000,
-    marginPercent: 60.0,
-  },
-};
-
-const AI_PRODUCT_MATRIX = [
-  {
-    name: 'Kopi Aren Nusantara Latte',
-    category: 'Fast-Moving & High Margin (BINTANG)',
-    status: 'star',
-    salesQty: 1420,
-    margin: 68.5,
-    recommendation: 'Valuable untuk Konsumen! Naikkan safety stock 25%, pertahankan kualitas gula aren, dan jadikan hero campaign di media sosial.',
-    badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800',
-  },
-  {
-    name: 'Croissant Butter Paris',
-    category: 'Cash Cow (Fast-Moving)',
-    status: 'cash_cow',
-    salesQty: 980,
-    margin: 62.5,
-    recommendation: 'Tingkat repeat order tinggi. Terapkan bundling sarapan pagi dengan Espresso untuk meningkatkan Average Ticket Size.',
-    badgeColor: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-blue-300 dark:border-blue-800',
-  },
-  {
-    name: 'Manual Drip V60 Glass Server',
-    category: 'Deadstock / Slow Moving (KURANGI)',
-    status: 'deadstock',
-    salesQty: 8,
-    margin: 45.0,
-    recommendation: 'Modal kerja tertahan Rp 3.5 Juta (Inaktif >60 hari). Terapkan diskon clearance bundle 30% atau hentikan PO berikutnya.',
-    badgeColor: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-300 dark:border-rose-800',
-  },
-  {
-    name: 'Canvas Tote Bag Nusantara Edition',
-    category: 'Slow Moving Merchandise',
-    status: 'deadstock',
-    salesQty: 15,
-    margin: 64.0,
-    recommendation: 'Jadikan merchandise gratis untuk pembelian paket loyalty minimal Rp 250.000 guna melikuidasi persediaan.',
-    badgeColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800',
-  },
-];
 
 export const OwnerAnalyticsDashboard: React.FC = () => {
-  const [timeRange, setTimeRange] = useState<'today' | 'this_week' | 'this_month' | 'custom'>('today');
-  const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
-  const { reviews, getAverageRating } = useReviewStore();
-  const { viewMode } = useDensityStore();
-  const { availableBranches } = useTenantStore();
+  const [periodFilter, setPeriodFilter] = useState<'today' | 'this_week' | 'this_month' | 'custom'>('this_month');
+  const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('all');
 
-  const currentData = SALES_PERIOD_DATA[timeRange];
-  const avgRating = getAverageRating(selectedBranchId === 'all' ? undefined : selectedBranchId);
+  const { getTopSpenders } = useCustomerStore();
+  const { subscriptionTier, remainingMonths, expiryDate } = useModuleLicenseStore();
+  const { reviews } = useReviewStore();
 
-  const filteredReviews = selectedBranchId === 'all'
-    ? reviews
-    : reviews.filter((r) => r.branchId === selectedBranchId);
+  const topSpenders = getTopSpenders(4);
 
   return (
     <div className="p-6 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen transition-colors space-y-6">
-      {/* Top Header */}
-      <div className="flex justify-between items-center">
+      {/* 1. TOP HEADER & SUBSCRIPTION BANNER */}
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <div className="flex items-center space-x-2">
             <span className="text-2xl">👑</span>
             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-              Executive Owner & Investor Dashboard
+              Executive Owner Analytics & AI Strategic Advisor
             </h2>
-            <span className="bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
-              AI Strategic Advisor Active
+            <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
+              Group CEO View
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Analisis penjualan berkala, matriks kecerdasan buatan (AI) produk berharga vs stok mati, serta sentimen ulasan konsumen.
+            Ringkasan omzet konsolidasi, performa member, dan AI rekomendasi produk holding.
           </p>
         </div>
 
-        {/* Branch & Time Filters */}
-        <div className="flex items-center space-x-2">
-          {/* Branch Filter */}
-          <select
-            value={selectedBranchId}
-            onChange={(e) => setSelectedBranchId(e.target.value)}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 rounded-xl px-3 py-2 font-semibold shadow-sm focus:outline-none"
-          >
-            <option value="all">🏢 Semua Cabang Outlet</option>
-            {availableBranches.map((b) => (
-              <option key={b.id} value={b.id}>
-                📍 {b.name}
-              </option>
-            ))}
-          </select>
-
-          {/* Time Range Pills */}
-          <div className="bg-slate-200 dark:bg-slate-900 p-1 rounded-2xl border border-slate-300 dark:border-slate-800 flex space-x-1">
-            <button
-              onClick={() => setTimeRange('today')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                timeRange === 'today'
-                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              Hari Ini
-            </button>
-            <button
-              onClick={() => setTimeRange('this_week')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                timeRange === 'this_week'
-                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              Minggu Ini
-            </button>
-            <button
-              onClick={() => setTimeRange('this_month')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                timeRange === 'this_month'
-                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              Bulan Ini
-            </button>
-            <button
-              onClick={() => setTimeRange('custom')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                timeRange === 'custom'
-                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              Custom Range
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Omset Penjualan</span>
-          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono mt-1">
-            Rp {currentData.totalSales.toLocaleString('id-ID')}
-          </div>
-          <div className="text-[10px] text-slate-400 mt-1">{currentData.period}</div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Laba Kotor (Gross Profit)</span>
-          <div className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono mt-1">
-            Rp {currentData.grossProfit.toLocaleString('id-ID')}
-          </div>
-          <div className="text-[10px] text-slate-400 mt-1">Margin Kotor: {currentData.marginPercent}%</div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Transaksi Selesai</span>
-          <div className="text-2xl font-black text-purple-600 dark:text-purple-400 font-mono mt-1">
-            {currentData.totalTransactions.toLocaleString('id-ID')} Struk
-          </div>
-          <div className="text-[10px] text-slate-400 mt-1">
-            Avg Ticket: Rp {Math.round(currentData.totalSales / currentData.totalTransactions).toLocaleString('id-ID')}
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Kepuasan Pelanggan (NPS)</span>
-          <div className="text-2xl font-black text-amber-500 font-mono mt-1 flex items-center space-x-1">
-            <span>⭐ {avgRating}</span>
-            <span className="text-xs font-normal text-slate-400">/ 5.0</span>
-          </div>
-          <div className="text-[10px] text-slate-400 mt-1">{reviews.length} Ulasan Masuk</div>
-        </div>
-      </div>
-
-      {/* SECTION: AI STRATEGIC ADVISOR (VALUABLE VS DEADSTOCK) */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <span className="text-xl">🧠</span>
-            <div>
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
-                AI Strategic Advisor: Matriks Produk Bintang vs Deadstock
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Kecerdasan buatan membedah performa barang dagang untuk pertimbangan inventory & likuidasi owner:
-              </p>
+        {/* Subscription Status Pill */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-2xl flex items-center space-x-3 shadow-sm">
+          <span className="text-amber-500 text-lg">💎</span>
+          <div className="text-xs">
+            <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-1.5">
+              <span>Paket {subscriptionTier.toUpperCase()}</span>
+              <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded-full font-bold font-mono">
+                Sisa {remainingMonths} Bulan
+              </span>
             </div>
+            <div className="text-[10px] text-slate-400 font-mono">Masa Aktif s/d {expiryDate}</div>
           </div>
-          <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full font-bold">
-            Real-time Analyzed
-          </span>
+        </div>
+      </div>
+
+      {/* 2. FILTER PERIOD & OUTLET BAR */}
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 flex justify-between items-center shadow-sm">
+        <div className="flex space-x-2">
+          {(['today', 'this_week', 'this_month', 'custom'] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriodFilter(p)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                periodFilter === p
+                  ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+              }`}
+            >
+              {p === 'today' && '📅 Hari Ini'}
+              {p === 'this_week' && '🗓️ Minggu Ini'}
+              {p === 'this_month' && '📊 Bulan Ini'}
+              {p === 'custom' && '⚙️ Custom Range'}
+            </button>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {AI_PRODUCT_MATRIX.map((item, idx) => (
-            <div
-              key={idx}
-              className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col justify-between space-y-3"
-            >
-              <div>
-                <div className="flex justify-between items-start">
-                  <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs">{item.name}</h4>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.badgeColor}`}>
-                    {item.category}
+        <div className="flex items-center space-x-2">
+          <span className="text-xs text-slate-500">Filter Outlet:</span>
+          <select
+            value={selectedBranchFilter}
+            onChange={(e) => setSelectedBranchFilter(e.target.value)}
+            className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-xl px-3 py-1.5 border border-slate-200 dark:border-slate-700 font-semibold focus:outline-none"
+          >
+            <option value="all">Semua Outlet (Konsolidasi)</option>
+            <option value="br-01">Outlet Grand Indonesia</option>
+            <option value="br-02">Outlet Senopati</option>
+          </select>
+        </div>
+      </div>
+
+      {/* 3. KEY METRICS CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm space-y-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+            Total Omzet Penjualan
+          </span>
+          <div className="text-2xl font-black font-mono text-red-600 dark:text-red-400">
+            Rp 148.520.000
+          </div>
+          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center space-x-1">
+            <span>↑ 14.8%</span>
+            <span className="text-slate-400 font-normal">vs bulan lalu</span>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm space-y-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+            Total Transaksi POS
+          </span>
+          <div className="text-2xl font-black font-mono text-slate-800 dark:text-slate-100">
+            3.420 <span className="text-xs font-normal text-slate-400">struk</span>
+          </div>
+          <div className="text-[11px] text-slate-400 font-mono">Rata-rata: Rp 43.420 / nota</div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm space-y-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+            Gross Margin Profit
+          </span>
+          <div className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+            68.4%
+          </div>
+          <div className="text-[11px] text-slate-400">HPP Rata-rata Terkendali</div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm space-y-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+            Customer Satisfaction
+          </span>
+          <div className="text-2xl font-black font-mono text-amber-500">
+            4.9 / 5.0 ⭐
+          </div>
+          <div className="text-[11px] text-slate-400">{reviews.length} Ulasan Masuk (/review)</div>
+        </div>
+      </div>
+
+      {/* 4. TOP SPENDER LEADERBOARD & AI ADVISOR GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* TOP SPENDER LEADERBOARD */}
+        <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <span className="text-lg">🏆</span>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                Top Spender Member Leaderboard
+              </h3>
+            </div>
+            <span className="text-[10px] text-red-600 dark:text-red-400 font-bold font-mono">
+              CRM Active
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
+            {topSpenders.map((c, idx) => (
+              <div
+                key={c.id}
+                className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex justify-between items-center"
+              >
+                <div className="flex items-center space-x-2.5">
+                  <span className="font-bold font-mono text-xs text-slate-400">#{idx + 1}</span>
+                  <div>
+                    <div className="font-bold text-xs text-slate-800 dark:text-slate-100">{c.name}</div>
+                    <div className="text-[10px] text-slate-400 font-mono">{c.phone}</div>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-xs font-bold font-mono text-red-600 dark:text-red-400">
+                    Rp {c.lifetimeSpend.toLocaleString('id-ID')}
+                  </div>
+                  <span className="text-[9px] bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 px-1.5 py-0.2 rounded font-mono font-bold">
+                    {c.tier} ({c.points} Pts)
                   </span>
                 </div>
-
-                <div className="flex space-x-4 text-[11px] text-slate-500 font-mono mt-1">
-                  <span>Terjual: <b>{item.salesQty} unit</b></span>
-                  <span>Margin: <b className="text-emerald-600 dark:text-emerald-400">{item.margin}%</b></span>
-                </div>
               </div>
-
-              <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] text-slate-700 dark:text-slate-300">
-                <span className="font-bold text-amber-600 dark:text-amber-400 mr-1">💡 Saran AI:</span>
-                {item.recommendation}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* SECTION: LIVE CUSTOMER FEEDBACK & REVIEWS */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <span className="text-xl">💬</span>
-            <div>
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
-                Ulasan Konsumen Masuk (Landing Page Review Integration)
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Feedback langsung dari konsumen per cabang dan penilaian rasa menu produk:
-              </p>
-            </div>
+            ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {filteredReviews.map((rev) => (
-            <div
-              key={rev.id}
-              className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-2 text-xs"
-            >
-              <div className="flex justify-between items-center">
-                <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
-                  <span>{rev.customerName}</span>
-                  <span className="text-[10px] text-slate-400 font-normal">({rev.branchName})</span>
-                </div>
-                <div className="text-amber-500 font-bold">
-                  {'★'.repeat(rev.rating)}{'☆'.repeat(5 - rev.rating)}
-                </div>
-              </div>
-
-              {rev.menuItemName && (
-                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                  Menu yang dinilai: <b>{rev.menuItemName}</b> (★ {rev.menuRating}/5)
-                </div>
-              )}
-
-              <p className="text-slate-600 dark:text-slate-300 italic text-[11px]">
-                "{rev.comment}"
-              </p>
+        {/* AI STRATEGIC ADVISOR MATRIX */}
+        <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <span className="text-lg">🤖</span>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                AI Strategic Advisor (Stars vs Deadstock Matrix)
+              </h3>
             </div>
-          ))}
+            <span className="bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-[10px] font-mono px-2 py-0.5 rounded-full font-bold">
+              AI Recommendation
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="bg-emerald-50 dark:bg-emerald-950/30 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/40 space-y-2">
+              <div className="flex items-center space-x-1.5 font-bold text-emerald-800 dark:text-emerald-300">
+                <span>⭐</span>
+                <span>Produk Bintang (Fast-Moving & High Margin)</span>
+              </div>
+              <ul className="list-disc list-inside text-[11px] text-emerald-700 dark:text-emerald-400 space-y-1">
+                <li><b>Kopi Aren Nusantara Latte:</b> 840 cup/bulan (Margin 68%).</li>
+                <li><b>Croissant Butter Paris:</b> 420 pcs/bulan (Margin 62%).</li>
+              </ul>
+              <div className="text-[10px] bg-white dark:bg-slate-900 p-2 rounded-xl border border-emerald-300 dark:border-emerald-800 text-slate-700 dark:text-slate-300 mt-2">
+                💡 <b>Saran AI:</b> Pertahankan stok harian di atas 100 cup dan jadikan paket combo sarapan pagi.
+              </div>
+            </div>
+
+            <div className="bg-rose-50 dark:bg-rose-950/30 p-4 rounded-2xl border border-rose-200 dark:border-rose-800/40 space-y-2">
+              <div className="flex items-center space-x-1.5 font-bold text-rose-800 dark:text-rose-300">
+                <span>⚠️</span>
+                <span>Deadstock & Produk Lambat Bergerak</span>
+              </div>
+              <ul className="list-disc list-inside text-[11px] text-rose-700 dark:text-rose-400 space-y-1">
+                <li><b>Stainless Tumbler 500ml:</b> 2 pcs/bulan (Stok mengendap 75 hari).</li>
+                <li><b>Cold Brew Bottle:</b> Turnaround 14 hari.</li>
+              </ul>
+              <div className="text-[10px] bg-white dark:bg-slate-900 p-2 rounded-xl border border-rose-300 dark:border-rose-800 text-slate-700 dark:text-slate-300 mt-2">
+                💡 <b>Saran AI:</b> Buat program *bundling* tumbler berhadiah free refill kopi 3x untuk melikuidasi persediaan.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
