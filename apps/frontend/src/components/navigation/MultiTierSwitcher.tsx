@@ -6,6 +6,7 @@ import { useThemeStore } from '../../stores/useThemeStore';
 import { useDensityStore } from '../../stores/useDensityStore';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useOnboardingStore } from '../../stores/useOnboardingStore';
+import { NotificationCenterPopover } from '../atoms/NotificationCenterPopover';
 import { UserProfileModal } from '../profile/UserProfileModal';
 
 export const MultiTierSwitcher: React.FC = () => {
@@ -122,6 +123,9 @@ export const MultiTierSwitcher: React.FC = () => {
             <span className="hidden sm:inline">Setup Brand Baru</span>
           </button>
         )}
+
+        {/* Realtime Notification Center Bell Icon & Popover */}
+        <NotificationCenterPopover />
 
         {/* Density Toggle (Desktop Only) */}
         <button
