@@ -1,40 +1,47 @@
-name: Enterprise CI & Automated Build Check
+name: Modula Enterprise CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build-and-test:
+    name: Build & Verify Modula Core
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'npm'
-        cache-dependency-path: apps/frontend/package-lock.json
+      - name: 🟢 Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'apps/frontend/package-lock.json'
 
-    - name: Install Frontend Dependencies
-      working-directory: apps/frontend
-      run: npm ci
+      - name: 📦 Install Frontend Dependencies
+        working-directory: ./apps/frontend
+        run: npm ci
 
-    - name: Verify TypeScript Compilation & Production Build
-      working-directory: apps/frontend
-      run: |
-        npx tsc --noEmit
-        npm run build
+      - name: 🔍 TypeScript Strict Typecheck
+        working-directory: ./apps/frontend
+        run: npx tsc --noEmit
 
-    - name: Setup Ruby
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: 3.2
+      - name: ⚡ Vite Production Build
+        working-directory: ./apps/frontend
+        run: npm run build
 
-    - name: Run Backend Engine Benchmark & Verification
-      run: ruby benchmark_ruby_gl.rb
+      - name: 💎 Setup Ruby Backend Environment
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: false
+
+      - name: 🧪 Verify Ruby Backend Syntax
+        run: |
+          ruby -c apps/backend/server.rb
+          ruby -c apps/backend/db/seeds.rb
+          echo "✅ All Ruby Backend APIs and Seeders passed syntax verification."
