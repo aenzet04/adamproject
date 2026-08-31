@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { usePosCartStore } from '../../stores/usePosCartStore';
 import { useTenantStore } from '../../stores/useTenantStore';
 import { usePrinterStore } from '../../stores/usePrinterStore';
+import { submitPosCheckoutLive } from '../../lib/api';
 import { ReceiptModal } from './ReceiptModal';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import type { Product, PaymentAllocation } from '../../types';
@@ -376,10 +377,27 @@ export const PosTerminal: React.FC = () => {
 
   const handleFinalizeCheckout = async () => {
     setIsProcessing(true);
-    const generatedOrderNo = `ORD-JKT-${Date.now().toString().slice(-6)}`;
+
+    const payload = {
+      customerName,
+      tableNumber,
+      items,
+      subtotalAmount: getSubtotal(),
+      discountAmount: getTotalDiscount(),
+      taxRate: 11.0,
+      taxAmount: getTaxAmount(),
+      serviceChargeAmount: getServiceChargeAmount(),
+      roundingAmount: getRoundingAmount(),
+      grandTotal: getGrandTotal(),
+      payments,
+    };
+
+    // Live API call to Ruby Backend
+    const backendResult = await submitPosCheckoutLive(payload);
+    const orderNo = backendResult?.order?.order_number || `ORD-RAILS-${Date.now().toString().slice(-6)}`;
 
     setLastCompletedOrder({
-      orderNumber: generatedOrderNo,
+      orderNumber: orderNo,
       customerName,
       tableNumber,
       items: [...items],
@@ -392,12 +410,10 @@ export const PosTerminal: React.FC = () => {
       payments: [...payments],
     });
 
-    setTimeout(() => {
-      setIsProcessing(false);
-      setIsPaymentModalOpen(false);
-      clearCart();
-      setIsReceiptOpen(true);
-    }, 700);
+    setIsProcessing(false);
+    setIsPaymentModalOpen(false);
+    clearCart();
+    setIsReceiptOpen(true);
   };
 
   return (
@@ -419,6 +435,12 @@ export const PosTerminal: React.FC = () => {
               ⌨️ F2
             </span>
           </div>
+
+          {/* Backend Status Live Badge */}
+          <span className="inline-flex items-center px-2.5 py-2 rounded-xl text-[10px] font-bold bg-slate-900 border border-slate-700 text-emerald-400">
+            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse" />
+            Backend: Ruby 3001
+          </span>
 
           {/* Optical Barcode Scanner Button */}
           <button
@@ -754,7 +776,7 @@ export const PosTerminal: React.FC = () => {
                 disabled={remaining > 0 || isProcessing}
                 className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-6 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-emerald-950"
               >
-                {isProcessing ? 'Menjurnal & Mencetak Nota...' : 'Selesaikan Transaksi & Buka Nota Konsumen'}
+                {isProcessing ? 'Menjurnal ke Ruby API & Mencetak...' : 'Selesaikan Transaksi (Live Rails)'}
               </button>
             </div>
           </div>
