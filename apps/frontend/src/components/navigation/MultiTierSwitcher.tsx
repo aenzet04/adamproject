@@ -5,6 +5,7 @@ import { useTenantStore } from '../../stores/useTenantStore';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { useDensityStore } from '../../stores/useDensityStore';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useOnboardingStore } from '../../stores/useOnboardingStore';
 import { UserProfileModal } from '../profile/UserProfileModal';
 
 export const MultiTierSwitcher: React.FC = () => {
@@ -24,8 +25,8 @@ export const MultiTierSwitcher: React.FC = () => {
   const { theme, toggleTheme } = useThemeStore();
   const { viewMode, toggleViewMode } = useDensityStore();
   const { currentUser } = useAuthStore();
+  const { openOnboarding } = useOnboardingStore();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const filteredBranches = availableBranches.filter((b) => b.brandId === currentBrand?.id);
   const filteredWarehouses = availableWarehouses.filter((w) => w.branchId === currentBranch?.id);
@@ -110,6 +111,18 @@ export const MultiTierSwitcher: React.FC = () => {
 
       {/* RIGHT ACTION CONTROLS */}
       <div className="flex items-center space-x-2">
+        {/* Onboarding Wizard Trigger (For Owners / Admins) */}
+        {(currentUser.role === 'owner' || currentUser.role === 'super_user') && (
+          <button
+            onClick={openOnboarding}
+            className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-md shadow-red-600/20 active:scale-95 transition-all"
+            title="Buka Wizard Setup Brand Baru"
+          >
+            <span>✨</span>
+            <span className="hidden sm:inline">Setup Brand Baru</span>
+          </button>
+        )}
+
         {/* Density Toggle (Desktop Only) */}
         <button
           onClick={toggleViewMode}
