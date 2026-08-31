@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useStockOpnameStore, StockOpnameSession, OpnameReason } from '../../stores/useStockOpnameStore';
 import { useTenantStore } from '../../stores/useTenantStore';
 import { useStaffStore } from '../../stores/useStaffStore';
+import { exportToExcelCsv, triggerPrintPdf } from '../../lib/exportUtils';
 import { toast } from '../../stores/useToastStore';
 
 export const StockOpnameView: React.FC = () => {
@@ -50,9 +51,25 @@ export const StockOpnameView: React.FC = () => {
     }
   };
 
-  const warehouseStaffList = employees.filter(
-    (e) => e.role === 'warehouse_staff' || e.role === 'branch_manager' || e.role === 'admin_system'
-  );
+  const handleExportOpnameExcel = () => {
+    if (!activeSession) return;
+    const headers = ['Kode SKU', 'Nama Produk', 'Satuan', 'Stok Sistem', 'Stok Fisik (Aktual)', 'Selisih (Variance)', 'HPP Satuan (Rp)', 'Nilai Selisih (Rp)', 'Alasan Selisih', 'Catatan Audit'];
+    const rows = activeSession.items.map((i) => [
+      i.sku,
+      i.productName,
+      i.uom,
+      i.systemStock,
+      i.physicalStock,
+      i.variance,
+      i.unitCost,
+      i.varianceValue,
+      i.reason,
+      i.notes || '-',
+    ]);
+
+    exportToExcelCsv(`Lembar_Kerja_Opname_${activeSession.sessionNumber}`, rows, headers);
+    toast.success('Excel Opname Terunduh', `File lembar kerja ${activeSession.sessionNumber}.csv siap diedit.`);
+  };
 
   return (
     <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen transition-colors space-y-6">
@@ -73,13 +90,38 @@ export const StockOpnameView: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsNewSessionModalOpen(true)}
-          className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-2xl text-xs shadow-md shadow-red-600/20 active:scale-95 flex items-center space-x-1.5"
-        >
-          <span>+</span>
-          <span>Mulai Sesi Opname Baru</span>
-        </button>
+        {/* Action Controls: Export Excel, Cetak PDF, Tambah Sesi */}
+        <div className="flex flex-wrap items-center gap-2">
+          {activeSession && (
+            <>
+              <button
+                type="button"
+                onClick={handleExportOpnameExcel}
+                className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3.5 py-2.5 rounded-2xl text-xs font-bold border border-slate-200 dark:border-slate-700 shadow-sm flex items-center space-x-1.5"
+              >
+                <span>📊</span>
+                <span>Export Excel Opname</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => triggerPrintPdf(`Berita_Acara_Opname_${activeSession.sessionNumber}`)}
+                className="bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-2.5 rounded-2xl text-xs font-bold shadow-sm flex items-center space-x-1.5"
+              >
+                <span>🖨️</span>
+                <span>Cetak Berita Acara (PDF)</span>
+              </button>
+            </>
+          )}
+
+          <button
+            onClick={() => setIsNewSessionModalOpen(true)}
+            className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-2xl text-xs shadow-md shadow-red-600/20 active:scale-95 flex items-center space-x-1.5"
+          >
+            <span>+</span>
+            <span>Mulai Sesi Opname Baru</span>
+          </button>
+        </div>
       </div>
 
       {/* SESSIONS SELECTOR BAR */}
@@ -166,7 +208,7 @@ export const StockOpnameView: React.FC = () => {
               ) : (
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={() => triggerPrintPdf(`Berita_Acara_${activeSession.sessionNumber}`)}
                   className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-2xl text-xs shadow-sm flex items-center space-x-1.5"
                 >
                   <span>🖨️</span>
@@ -192,8 +234,6 @@ export const StockOpnameView: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {activeSession.items.map((item) => {
-                  const isDiff = item.variance !== 0;
-
                   return (
                     <tr key={item.productId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
                       <td className="py-3">
