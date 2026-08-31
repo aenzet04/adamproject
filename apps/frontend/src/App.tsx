@@ -14,6 +14,7 @@ import { CustomerReviewPage } from './components/reviews/CustomerReviewPage';
 import { BenchmarkViewer } from './components/benchmark/BenchmarkViewer';
 import { BugTicketingCenter } from './components/tickets/BugTicketingCenter';
 import { SoftDeleteManager } from './components/trash/SoftDeleteManager';
+import { BrandTeamChatWidget } from './components/chat/BrandTeamChatWidget';
 import { AuthPortal } from './components/auth/AuthPortal';
 import { ToastContainer } from './components/atoms/ToastContainer';
 import { PageTransitionPreloader } from './components/atoms/PageTransitionPreloader';
@@ -109,6 +110,7 @@ export default function App() {
       <PageTransitionPreloader activeModuleKey={activeModule} />
       <ToastContainer />
       <MultiTierSwitcher />
+      <BrandTeamChatWidget />
 
       {/* Floating Mobile Sidebar Toggle Button */}
       <button
@@ -128,7 +130,7 @@ export default function App() {
           />
         )}
 
-        {/* LEFT SIDEBAR NAVIGATION (DESKTOP & MOBILE DRAWER) */}
+        {/* LEFT SIDEBAR NAVIGATION */}
         <aside
           className={`fixed md:relative top-0 bottom-0 left-0 z-40 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-3 transition-transform duration-200 shadow-xl md:shadow-sm overflow-y-auto ${
             isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
