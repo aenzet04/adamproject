@@ -77,6 +77,7 @@ export interface CartItem {
   quantity: number;
   unitPrice: number;
   discountAmount: number;
+  discountRate?: number;
   taxAmount: number;
   subtotal: number;
   notes?: string;
