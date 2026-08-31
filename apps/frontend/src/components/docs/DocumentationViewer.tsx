@@ -128,12 +128,12 @@ Exception: UnbalancedJournalError`,
       {
         icon: '1️⃣',
         title: 'Jalankan Frontend React',
-        desc: 'Masuk ke apps/frontend, jalankan `npm install` lalu `npm run dev` (Port 3000).',
+        desc: 'Masuk ke apps/frontend, jalankan npm install lalu npm run dev (Port 3000).',
       },
       {
         icon: '2️⃣',
         title: 'Jalankan Backend Ruby API',
-        desc: 'Masuk ke apps/backend, jalankan `ruby server.rb` (Port 3001).',
+        desc: 'Masuk ke apps/backend, jalankan ruby server.rb (Port 3001).',
       },
       {
         icon: '3️⃣',
@@ -231,7 +231,6 @@ export const DocumentationViewer: React.FC = () => {
 
   const currentSlide = PRESENTATION_SLIDES[currentSlideIndex];
 
-  // Keyboard navigation for slides
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (viewMode !== 'slides') return;
@@ -280,7 +279,7 @@ export const DocumentationViewer: React.FC = () => {
         useCORS: true,
       });
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('l', 'mm', 'a4'); // Landscape for slides
+      const pdf = new jsPDF('l', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
@@ -467,13 +466,24 @@ export const DocumentationViewer: React.FC = () => {
             </div>
           </div>
 
-          {/* Section 4: Changelog History */}
+          {/* Section 4: Changelog History with Direct Slide Deck Download */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
-            <div className="flex items-center space-x-2 mb-4">
-              <span className="text-xl">📜</span>
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
-                4. Log Riwayat Pembaruan Sistem (Changelog)
-              </h3>
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-xl">📜</span>
+                <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
+                  4. Log Riwayat Pembaruan Sistem (Changelog)
+                </h3>
+              </div>
+
+              {/* Direct Slide Deck Download Button inside Changelog */}
+              <button
+                onClick={() => setViewMode('slides')}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl flex items-center space-x-1.5 shadow-sm transition-all"
+              >
+                <span>📽️</span>
+                <span>Buka & Unduh Slide Presentasi</span>
+              </button>
             </div>
 
             <div className="space-y-4">
