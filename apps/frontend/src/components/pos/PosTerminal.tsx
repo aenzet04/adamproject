@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { usePosCartStore, DiscountMode, TaxMode } from '../../stores/usePosCartStore';
+import { usePosCartStore } from '../../stores/usePosCartStore';
 import { useTenantStore } from '../../stores/useTenantStore';
 import { usePrinterStore } from '../../stores/usePrinterStore';
 import { useDensityStore } from '../../stores/useDensityStore';
-import { useCustomerStore, CustomerMember } from '../../stores/useCustomerStore';
+import { useCustomerStore } from '../../stores/useCustomerStore';
+import { useShiftStore } from '../../stores/useShiftStore';
 import { toast } from '../../stores/useToastStore';
 import { submitPosCheckoutLive } from '../../lib/api';
 import { ReceiptModal } from './ReceiptModal';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { SplitBillModal } from './SplitBillModal';
+import { ShiftManagementModal } from '../shifts/ShiftManagementModal';
 import type { Product, PaymentAllocation } from '../../types';
 
 interface CategorizedProduct extends Product {
@@ -312,10 +314,10 @@ export const PosTerminal: React.FC = () => {
     getRemainingBalance,
   } = usePosCartStore();
 
-  const { currentBranch, availableBranches } = useTenantStore();
-  const { connectedPrinterName, isConnecting, connectPrinter, autoPrintEnabled } = usePrinterStore();
-  const { viewMode } = useDensityStore();
+  const { currentBranch } = useTenantStore();
+  const { connectedPrinterName, isConnecting, connectPrinter } = usePrinterStore();
   const { customers, addCustomer, recordPurchase } = useCustomerStore();
+  const { isShiftOpen } = useShiftStore();
 
   const [mobileTab, setMobileTab] = useState<'catalog' | 'cart'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
@@ -325,6 +327,7 @@ export const PosTerminal: React.FC = () => {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isSplitBillOpen, setIsSplitBillOpen] = useState(false);
   const [isQuickAddCustomerOpen, setIsQuickAddCustomerOpen] = useState(false);
+  const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris' | 'edc_bca' | 'customer_credit'>('cash');
   const [tenderAmount, setTenderAmount] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -351,7 +354,7 @@ export const PosTerminal: React.FC = () => {
 
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
-  // Keyboard Shortcuts: F2 for Barcode, F3 for Customer, F9 for Payment
+  // Keyboard Shortcuts: F2 for Barcode, F3 for Customer, F4 for Shift, F9 for Payment
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F2') {
@@ -360,6 +363,9 @@ export const PosTerminal: React.FC = () => {
       } else if (e.key === 'F3') {
         e.preventDefault();
         setIsQuickAddCustomerOpen(true);
+      } else if (e.key === 'F4') {
+        e.preventDefault();
+        setIsShiftModalOpen(true);
       } else if (e.key === 'F9' && items.length > 0) {
         e.preventDefault();
         handleOpenPayment();
@@ -455,12 +461,13 @@ export const PosTerminal: React.FC = () => {
     setIsProcessing(false);
     setIsPaymentModalOpen(false);
     clearCart();
+    setItemNotes({});
+    setIsReceiptOpen(true);
   };
+
   const handleSplitBillCompleted = () => {
     setIsSplitBillOpen(false);
     handleFinalizeCheckout();
-    setItemNotes({});
-    setIsReceiptOpen(true);
   };
 
   const handleQuickCreateCustomer = (e: React.FormEvent) => {
@@ -522,9 +529,9 @@ export const PosTerminal: React.FC = () => {
           mobileTab === 'cart' ? 'hidden md:flex' : 'flex'
         }`}
       >
-        {/* Top Search, Shortcut F3 Customer, Scanner & Bluetooth Bar */}
+        {/* Top Search, Shortcut F3 Customer, Shift Button [F4], Scanner & Bluetooth Bar */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative flex-1 min-w-[180px]">
             <input
               ref={barcodeInputRef}
               type="text"
@@ -546,6 +553,20 @@ export const PosTerminal: React.FC = () => {
           >
             <span>👤</span>
             <span>+ Member [F3]</span>
+          </button>
+
+          {/* Shift Open/Close Button [F4] */}
+          <button
+            onClick={() => setIsShiftModalOpen(true)}
+            className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center space-x-1.5 border shadow-sm transition-all active:scale-95 ${
+              isShiftOpen
+                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800'
+            }`}
+            title="Manajemen Shift Kasir [F4]"
+          >
+            <span>⏱️</span>
+            <span>{isShiftOpen ? 'Shift Buka [F4]' : 'Shift Tutup [F4]'}</span>
           </button>
 
           {/* Optical Scanner Button */}
@@ -870,7 +891,7 @@ export const PosTerminal: React.FC = () => {
             className="w-full bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-700 dark:text-red-300 border border-red-200 py-2 rounded-2xl font-bold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-sm active:scale-95"
           >
             <span>✂️</span>
-            <span>Split Bill 3 Mode</span>
+            <span>Split Bill 3 Mode (Manual Input)</span>
           </button>
 
           <div className="grid grid-cols-3 gap-2 pt-1">
@@ -904,6 +925,11 @@ export const PosTerminal: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* SHIFT MANAGEMENT MODAL [F4] */}
+      {isShiftModalOpen && (
+        <ShiftManagementModal onClose={() => setIsShiftModalOpen(false)} />
+      )}
 
       {/* QUICK ADD CUSTOMER SHORTCUT MODAL (F3) */}
       {isQuickAddCustomerOpen && (
