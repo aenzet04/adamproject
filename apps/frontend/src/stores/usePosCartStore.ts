@@ -5,33 +5,43 @@ import type { CartItem, PaymentAllocation, Product } from '../types';
 export type DiscountMode = 'percent' | 'nominal';
 export type TaxMode = 'percent' | 'nominal';
 
+export interface HeldOrder {
+  id: string;
+  timestamp: string;
+  items: CartItem[];
+  customerId?: string;
+  customerName: string;
+  customerTier?: string;
+  tableNumber: string;
+  subtotal: number;
+  discount: number;
+  tax: number;
+  grandTotal: number;
+  notes?: string;
+}
+
 interface PosCartState {
   items: CartItem[];
   customerName: string;
+  customerId?: string;
+  customerTier?: string;
   tableNumber: string;
   notes: string;
   discountMode: DiscountMode;
-  discountValue: number; // percentage (e.g. 10) or nominal amount (e.g. 15000)
+  discountValue: number;
   taxMode: TaxMode;
-  taxValue: number; // percentage (e.g. 11) or nominal amount (e.g. 5000)
-  serviceChargeRate: number; // percentage, e.g., 5.0
+  taxValue: number;
+  serviceChargeRate: number;
   roundingMethod: 'none' | 'round_50' | 'round_100' | 'round_up_100';
   payments: PaymentAllocation[];
-  heldOrders: Array<{
-    id: string;
-    timestamp: string;
-    items: CartItem[];
-    customerName: string;
-    tableNumber: string;
-    grandTotal: number;
-  }>;
+  heldOrders: HeldOrder[];
 
   // Actions
   addItem: (product: Product, quantity?: number) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   setItemNotes: (productId: string, notes: string) => void;
-  setCustomerInfo: (name: string, table?: string) => void;
+  setCustomerInfo: (name: string, table?: string, customerId?: string, customerTier?: string) => void;
   setDiscount: (mode: DiscountMode, value: number) => void;
   setTax: (mode: TaxMode, value: number) => void;
   setServiceChargeRate: (rate: number) => void;
@@ -39,8 +49,9 @@ interface PosCartState {
   addPayment: (payment: PaymentAllocation) => void;
   removePayment: (index: number) => void;
   clearCart: () => void;
-  holdOrder: () => void;
+  holdCurrentOrder: (customParams?: { name?: string; table?: string; customerId?: string; customerTier?: string; notes?: string }) => HeldOrder;
   restoreHeldOrder: (heldId: string) => void;
+  deleteHeldOrder: (heldId: string) => void;
 
   // Computed Selectors
   getSubtotal: () => number;
@@ -54,21 +65,96 @@ interface PosCartState {
   getRemainingBalance: () => number;
 }
 
+const INITIAL_HELD_ORDERS: HeldOrder[] = [
+  {
+    id: 'TAB-MEJA-03',
+    timestamp: '2026-09-01T02:40:00Z',
+    customerName: 'Bpk. Irwan Hidayat',
+    customerId: 'cst-01',
+    customerTier: 'VIP',
+    tableNumber: 'Meja 03 (Indoor)',
+    subtotal: 138000,
+    discount: 13800,
+    tax: 13662,
+    grandTotal: 137900,
+    notes: 'Tamu VIP, minta bill dipending sampai selesai meeting',
+    items: [
+      {
+        productId: 'prod-001',
+        productName: 'Espresso Single Origin Gayo',
+        quantity: 2,
+        unitPrice: 28000,
+        discountAmount: 0,
+        subtotal: 56000,
+      },
+      {
+        productId: 'prod-004',
+        productName: 'Nasi Goreng Wagyu Spesial',
+        quantity: 1,
+        unitPrice: 68000,
+        discountAmount: 0,
+        subtotal: 68000,
+      },
+      {
+        productId: 'prod-003',
+        productName: 'Croissant Butter Paris',
+        quantity: 1,
+        unitPrice: 32000,
+        discountAmount: 0,
+        subtotal: 32000,
+      },
+    ],
+  },
+  {
+    id: 'TAB-MEJA-07',
+    timestamp: '2026-09-01T03:10:00Z',
+    customerName: 'Ibu Dian Permata',
+    customerId: 'cst-02',
+    customerTier: 'Platinum',
+    tableNumber: 'Meja 07 (Outdoor)',
+    subtotal: 77000,
+    discount: 0,
+    tax: 8470,
+    grandTotal: 85500,
+    notes: 'Kopi Aren Latte less sugar',
+    items: [
+      {
+        productId: 'prod-005',
+        productName: 'Kopi Aren Nusantara Latte',
+        quantity: 1,
+        unitPrice: 35000,
+        discountAmount: 0,
+        subtotal: 35000,
+      },
+      {
+        productId: 'prod-002',
+        productName: 'Iced Caramel Macchiato',
+        quantity: 1,
+        unitPrice: 42000,
+        discountAmount: 0,
+        subtotal: 42000,
+      },
+    ],
+  },
+];
+
 export const usePosCartStore = create<PosCartState>()(
   persist(
     (set, get) => ({
       items: [],
       customerName: '',
+      customerId: undefined,
+      customerTier: undefined,
       tableNumber: '',
       notes: '',
       discountMode: 'nominal',
       discountValue: 0,
       taxMode: 'percent',
-      taxValue: 11, // default PPN 11%
+      taxValue: 11,
       serviceChargeRate: 0,
       roundingMethod: 'round_100',
       payments: [],
-      heldOrders: [],
+      heldOrders: INITIAL_HELD_ORDERS,
 
       addItem: (product, quantity = 1) => {
         const currentItems = get().items;
@@ -128,8 +214,8 @@ export const usePosCartStore = create<PosCartState>()(
         });
       },
 
-      setCustomerInfo: (name, table = '') => {
-        set({ customerName: name, tableNumber: table });
+      setCustomerInfo: (name, table = '', customerId, customerTier) => {
+        set({ customerName: name, tableNumber: table, customerId, customerTier });
       },
 
       setDiscount: (mode, value) => {
@@ -155,6 +241,8 @@ export const usePosCartStore = create<PosCartState>()(
         set({
           items: [],
           customerName: '',
+          customerId: undefined,
+          customerTier: undefined,
           tableNumber: '',
           notes: '',
           discountValue: 0,
@@ -162,27 +250,43 @@ export const usePosCartStore = create<PosCartState>()(
         });
       },
 
-      holdOrder: () => {
-        const { items, customerName, tableNumber } = get();
-        if (items.length === 0) return;
+      holdCurrentOrder: (customParams) => {
+        const { items, customerName, tableNumber, customerId, customerTier } = get();
+        if (items.length === 0) throw new Error('Keranjang kosong.');
 
-        const heldOrder = {
-          id: `HOLD-${Date.now().toString().slice(-4)}`,
+        const finalName = customParams?.name || customerName || 'Pelanggan Walk-in';
+        const finalTable = customParams?.table || tableNumber || `Meja ${Date.now().toString().slice(-2)}`;
+        const finalCustId = customParams?.customerId || customerId;
+        const finalTier = customParams?.customerTier || customerTier;
+
+        const heldOrder: HeldOrder = {
+          id: `HOLD-${finalTable.replace(/\s+/g, '-').toUpperCase()}-${Date.now().toString().slice(-4)}`,
           timestamp: new Date().toISOString(),
           items: [...items],
-          customerName: customerName || 'Walk-in',
-          tableNumber: tableNumber || 'Take Away',
+          customerId: finalCustId,
+          customerName: finalName,
+          customerTier: finalTier,
+          tableNumber: finalTable,
+          subtotal: get().getSubtotal(),
+          discount: get().getTotalDiscount(),
+          tax: get().getTaxAmount(),
           grandTotal: get().getGrandTotal(),
+          notes: customParams?.notes || get().notes,
         };
 
         set({
           heldOrders: [heldOrder, ...get().heldOrders],
           items: [],
           customerName: '',
+          customerId: undefined,
+          customerTier: undefined,
           tableNumber: '',
+          notes: '',
           discountValue: 0,
           payments: [],
         });
+
+        return heldOrder;
       },
 
       restoreHeldOrder: (heldId) => {
@@ -192,9 +296,16 @@ export const usePosCartStore = create<PosCartState>()(
         set({
           items: held.items,
           customerName: held.customerName,
+          customerId: held.customerId,
+          customerTier: held.customerTier,
           tableNumber: held.tableNumber,
+          notes: held.notes || '',
           heldOrders: get().heldOrders.filter((h) => h.id !== heldId),
         });
+      },
+
+      deleteHeldOrder: (heldId) => {
+        set({ heldOrders: get().heldOrders.filter((h) => h.id !== heldId) });
       },
 
       getSubtotal: () => {
