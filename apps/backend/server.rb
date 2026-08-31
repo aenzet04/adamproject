@@ -358,6 +358,26 @@ server.mount_proc '/api/v1/finance/reports/profit_loss' do |req, res|
   }.to_json
 end
 
+# 10. DEVELOPER DUMMY SEEDER ENDPOINT
+server.mount_proc '/api/v1/dev/seed' do |req, res|
+  enable_cors(res)
+  if req.request_method == 'OPTIONS'
+    res.status = 200
+    next
+  end
+
+  load File.expand_path('db/seeds.rb', __dir__) if File.exist?(File.expand_path('db/seeds.rb', __dir__))
+
+  res.status = 200
+  res['Content-Type'] = 'application/json'
+  res.body = {
+    status: 'success',
+    message: 'Data dummy transaksi POS, CRM member, multi-cabang, dan jurnal PSAK berhasil di-seed.',
+    timestamp: Time.now.iso8601,
+    data: DUMMY_DATABASE_SEED
+  }.to_json
+end
+
 trap('INT') { server.shutdown }
 puts "🚀 Ruby Enterprise API Server listening live on http://localhost:#{PORT}"
 server.start
