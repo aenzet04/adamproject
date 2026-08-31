@@ -544,6 +544,37 @@ export const PosTerminal: React.FC = () => {
           mobileTab === 'cart' ? 'hidden md:flex' : 'flex'
         }`}
       >
+        {/* SALES CHANNEL SELECTOR BAR (DINE IN, TAKE AWAY, GRABFOOD, GOFOOD, SHOPEEFOOD, MAXIM) */}
+        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 mb-2 scrollbar-none">
+          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-mono mr-1">
+            Channel:
+          </span>
+          {[
+            { id: 'DINE_IN', label: '🍽️ Dine In', color: 'border-slate-300 dark:border-slate-700' },
+            { id: 'TAKE_AWAY', label: '🥡 Take Away', color: 'border-slate-300 dark:border-slate-700' },
+            { id: 'GRABFOOD', label: '🟢 GrabFood', color: 'border-emerald-500/50' },
+            { id: 'GOFOOD', label: '🔴 GoFood', color: 'border-rose-500/50' },
+            { id: 'SHOPEEFOOD', label: '🟠 ShopeeFood', color: 'border-amber-500/50' },
+            { id: 'MAXIM', label: '🟡 Maxim', color: 'border-yellow-500/50' },
+          ].map((ch) => (
+            <button
+              key={ch.id}
+              type="button"
+              onClick={() => {
+                setOrderChannel(ch.id as any);
+                toast.info('Channel Penjualan', `Mode pesanan diubah ke ${ch.label}`);
+              }}
+              className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                orderChannel === ch.id
+                  ? 'bg-red-600 text-white border-red-500 shadow-md shadow-red-600/20'
+                  : `bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 ${ch.color}`
+              }`}
+            >
+              {ch.label}
+            </button>
+          ))}
+        </div>
+
         {/* Top Search, Shortcut F3 Customer, Shift Button [F4], Table Hold [F8], Scanner & Bluetooth Bar */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <div className="relative flex-1 min-w-[180px]">
