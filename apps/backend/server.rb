@@ -25,6 +25,9 @@ def enable_cors(res)
   res['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Tenant-Id'
 end
 
+# In-memory storage for seeded onboarding state
+$onboarding_tenants = {}
+
 # 1. HEALTH CHECK & STATUS
 server.mount_proc '/api/v1/health' do |req, res|
   enable_cors(res)
@@ -40,12 +43,224 @@ server.mount_proc '/api/v1/health' do |req, res|
     engine: 'Ruby Enterprise Backend API',
     ruby_version: RUBY_VERSION,
     active_tenancy: 'PT Multi Industri Nusantara',
-    modules: ['pos_engine', 'finance_engine', 'inventory_engine', 'hr_engine', 'audit_engine'],
+    modules: ['pos_engine', 'finance_engine', 'inventory_engine', 'hr_engine', 'audit_engine', 'onboarding_engine'],
     timestamp: Time.now.iso8601
   }.to_json
 end
 
-# 2. LIVE POS CHECKOUT & REAL-TIME AUTO POSTING API
+# 2. ONBOARDING AI MAGIC SUGGESTION ENDPOINT
+server.mount_proc '/api/v1/onboarding/ai_suggest' do |req, res|
+  enable_cors(res)
+  if req.request_method == 'OPTIONS'
+    res.status = 200
+    next
+  end
+
+  if req.request_method == 'POST'
+    begin
+      payload = JSON.parse(req.body || '{}')
+      sector = (payload['sector'] || 'fnb').downcase
+      brand_name = payload['brandName'] || 'Brand Baru Anda'
+
+      suggestions = case sector
+      when 'fnb', 'culinary', 'cafe'
+        {
+          taglines: [
+            "Cita Rasa Autentik, Disajikan dengan Sepenuh Hati",
+            "Ngopi Berkualitas & Santapan Terbaik Setiap Hari",
+            "Eksplorasi Rasa Premium untuk Momen Spesial Anda"
+          ],
+          description: "#{brand_name} adalah destinasi kuliner dan kafe modern yang menyajikan racikan minuman artisanal serta hidangan pilihan dengan bahan baku berkualitas tinggi dalam suasana yang nyaman dan estetik.",
+          recommendedCategories: [
+            { name: 'Signature Coffee & Espresso', icon: '☕', code: 'CAT-COF' },
+            { name: 'Artisanal Pastry & Bakery', icon: '🥐', code: 'CAT-PAS' },
+            { name: 'Main Course & Asian Delights', icon: '🍲', code: 'CAT-FNB' },
+            { name: 'Mocktail & Refreshing Drinks', icon: '🍹', code: 'CAT-MCK' }
+          ],
+          defaultBranchName: "Outlet Flagship #{brand_name}",
+          suggestedOperatingHours: "08:00 - 22:00 WIB"
+        }
+      when 'retail', 'minimarket'
+        {
+          taglines: [
+            "Belanja Lengkap, Hemat, dan Nyaman Dekat Anda",
+            "Kebutuhan Harian Terlengkap dengan Harga Terbaik",
+            "Solusi Belanja Cerdas & Praktis Keluarga Indonesia"
+          ],
+          description: "#{brand_name} merupakan jaringan minimarket dan retail modern yang menyediakan aneka kebutuhan pokok, sembako, makanan ringan, produk segar, dan perlengkapan rumah tangga dengan harga bersaing.",
+          recommendedCategories: [
+            { name: 'Sembako & Kebutuhan Dapur', icon: '🍚', code: 'CAT-SMB' },
+            { name: 'Snack, Biskuit & Cokelat', icon: '🍪', code: 'CAT-SNK' },
+            { name: 'Minuman Dingin & Susu', icon: '🧃', code: 'CAT-DRK' },
+            { name: 'Perawatan Tubuh & Kebersihan', icon: '🧴', code: 'CAT-HYG' }
+          ],
+          defaultBranchName: "Store Utama #{brand_name}",
+          suggestedOperatingHours: "07:00 - 23:00 WIB"
+        }
+      when 'fashion', 'apparel'
+        {
+          taglines: [
+            "Gaya Autentik untuk Tampil Percaya Diri",
+            "Koleksi Busana Tren Modern Berkualitas Premium",
+            "Definisikan Karaktermu dengan Busana Terbaik"
+          ],
+          description: "#{brand_name} menghadirkan koleksi busana, apparel, dan aksesoris kontemporer yang menggabungkan kenyamanan material premium dengan desain modis untuk segala suasana.",
+          recommendedCategories: [
+            { name: 'T-Shirts & Casual Wear', icon: '👕', code: 'CAT-TSH' },
+            { name: 'Outerwear & Jackets', icon: '🧥', code: 'CAT-OUT' },
+            { name: 'Pants & Trousers', icon: '👖', code: 'CAT-PNT' },
+            { name: 'Accessories & Bags', icon: '👜', code: 'CAT-ACC' }
+          ],
+          defaultBranchName: "Boutique #{brand_name} Grand Flagship",
+          suggestedOperatingHours: "10:00 - 22:00 WIB"
+        }
+      when 'barbershop', 'services', 'salon'
+        {
+          taglines: [
+            "Sentuhan Profesional untuk Penampilan Maksimal",
+            "Layanan Grooming Premium & Perawatan Terbaik",
+            "Tampil Rapi, Berkelas, dan Percaya Diri"
+          ],
+          description: "#{brand_name} adalah studio grooming dan perawatan profesional dengan kapster berpengalaman, produk perawatan premium, serta kenyamanan servis bintang lima.",
+          recommendedCategories: [
+            { name: 'Haircut & Styling', icon: '✂️', code: 'CAT-HRC' },
+            { name: 'Shaving & Beard Grooming', icon: '🪒', code: 'CAT-SHV' },
+            { name: 'Hair Spa & Scalp Treatment', icon: '💆', code: 'CAT-SPA' },
+            { name: 'Pomade & Hair Care Products', icon: '🧴', code: 'CAT-PRD' }
+          ],
+          defaultBranchName: "Studio Studio #{brand_name}",
+          suggestedOperatingHours: "09:00 - 21:00 WIB"
+        }
+      else
+        {
+          taglines: [
+            "Solusi Terpercaya & Pelayanan Berkualitas Unggul",
+            "Dedikasi Terbaik untuk Kepuasan Anda Setiap Saat",
+            "Kualitas Prima, Transparansi, dan Kepercayaan"
+          ],
+          description: "#{brand_name} berkomitmen memberikan produk dan pelayanan unggul bagi seluruh pelanggan dengan standar operasional profesional dan teknologi terintegrasi.",
+          recommendedCategories: [
+            { name: 'Layanan Utama', icon: '⭐', code: 'CAT-PRI' },
+            { name: 'Produk Pendukung', icon: '📦', code: 'CAT-SEC' }
+          ],
+          defaultBranchName: "Kantor / Cabang Utama #{brand_name}",
+          suggestedOperatingHours: "08:00 - 17:00 WIB"
+        }
+      end
+
+      res.status = 200
+      res['Content-Type'] = 'application/json'
+      res.body = {
+        success: true,
+        sector: sector,
+        aiGenerated: true,
+        data: suggestions
+      }.to_json
+    rescue => e
+      res.status = 422
+      res['Content-Type'] = 'application/json'
+      res.body = { success: false, error: e.message }.to_json
+    end
+  end
+end
+
+# 3. ONBOARDING COMPLETE (ATOMIC SEEDING TRANSACTION)
+server.mount_proc '/api/v1/onboarding/complete' do |req, res|
+  enable_cors(res)
+  if req.request_method == 'OPTIONS'
+    res.status = 200
+    next
+  end
+
+  if req.request_method == 'POST'
+    begin
+      payload = JSON.parse(req.body || '{}')
+      tenant_id = payload['tenantId'] || 't-01'
+      brand_data = payload['brand'] || {}
+      branches_data = payload['branches'] || []
+      employees_data = payload['employees'] || []
+
+      # Validate critical fields
+      raise "Nama brand wajib diisi!" if brand_data['name'].to_s.strip.empty?
+      raise "Minimal harus ada 1 cabang!" if branches_data.empty?
+
+      brand_id = "b-#{SecureRandom.hex(3)}"
+      
+      # Process and seed branches
+      processed_branches = branches_data.map.with_index do |br, idx|
+        {
+          id: "br-#{SecureRandom.hex(3)}",
+          tenantId: tenant_id,
+          brandId: brand_id,
+          name: br['name'],
+          code: br['code'] || "CAB-#{idx+1}",
+          address: br['address'] || '',
+          city: br['city'] || 'Jakarta',
+          phone: br['phone'] || '',
+          operatingHours: br['operatingHours'] || '08:00 - 22:00 WIB',
+          branchType: 'store',
+          geofenceRadiusMeters: 100,
+          isActive: true
+        }
+      end
+
+      # Process and seed employees
+      processed_employees = employees_data.map do |emp|
+        {
+          id: "emp-#{SecureRandom.hex(3)}",
+          brandId: brand_id,
+          brandName: brand_data['name'],
+          name: emp['name'],
+          email: emp['email'],
+          phone: emp['phone'] || '',
+          role: emp['role'] || 'cashier',
+          roleTitle: emp['roleTitle'] || 'Kasir Frontliner',
+          branchId: emp['branchIds']&.first || processed_branches.first[:id],
+          branchName: processed_branches.first[:name],
+          posPin: emp['posPin'] || '1234',
+          status: 'active'
+        }
+      end
+
+      # Mark tenant onboarding as complete
+      $onboarding_tenants[tenant_id] = {
+        onboarding_completed: true,
+        completed_at: Time.now.iso8601,
+        brand_id: brand_id,
+        brand_name: brand_data['name']
+      }
+
+      res.status = 201
+      res['Content-Type'] = 'application/json'
+      res.body = {
+        success: true,
+        message: 'Onboarding completed & initial business ecosystem seeded successfully',
+        tenant: {
+          id: tenant_id,
+          onboarding_completed: true
+        },
+        brand: {
+          id: brand_id,
+          name: brand_data['name'],
+          businessSector: brand_data['businessSector'],
+          tagline: brand_data['tagline'],
+          description: brand_data['description'],
+          logoUrl: brand_data['logoUrl'],
+          bannerUrl: brand_data['bannerUrl'],
+          socialLinks: brand_data['socialLinks'] || {}
+        },
+        branchesCreated: processed_branches,
+        employeesCreated: processed_employees
+      }.to_json
+    rescue => e
+      res.status = 422
+      res['Content-Type'] = 'application/json'
+      res.body = { success: false, error: e.message }.to_json
+    end
+  end
+end
+
+# 4. LIVE POS CHECKOUT & REAL-TIME AUTO POSTING API
 server.mount_proc '/api/v1/pos/checkout' do |req, res|
   enable_cors(res)
   if req.request_method == 'OPTIONS'
@@ -68,14 +283,13 @@ server.mount_proc '/api/v1/pos/checkout' do |req, res|
       order_number = "ORD-RAILS-#{Date.today.strftime('%Y%m%d')}-#{SecureRandom.hex(3).upcase}"
       journal_number = "JRN-POS-#{Date.today.strftime('%Y%m%d')}-#{SecureRandom.hex(3).upcase}"
       
-      # Simulate Real-Time Double-Entry Auto-Posting Verification
       journal_lines = [
         { account: '1101-01 (Kas/Bank/EDC)', debit: grand_total, credit: 0.0 },
         { account: '4101-01 (Pendapatan Penjualan)', debit: 0.0, credit: subtotal },
         { account: '2103-01 (Hutang PPN Keluaran 11%)', debit: 0.0, credit: tax }
       ]
       
-      cogs_total = (subtotal * 0.35).round(2) # 35% standard HPP
+      cogs_total = (subtotal * 0.35).round(2)
       journal_lines << { account: '5101-01 (Beban HPP / COGS)', debit: cogs_total, credit: 0.0 }
       journal_lines << { account: '1104-01 (Persediaan Barang Dagang)', debit: 0.0, credit: cogs_total }
       
@@ -108,7 +322,7 @@ server.mount_proc '/api/v1/pos/checkout' do |req, res|
   end
 end
 
-# 3. FINANCIAL REPORTS API (LABA RUGI & NERACA)
+# 5. FINANCIAL REPORTS API
 server.mount_proc '/api/v1/finance/reports/profit_loss' do |req, res|
   enable_cors(res)
   if req.request_method == 'OPTIONS'
