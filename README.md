@@ -1,4 +1,4 @@
-# 👑 MODULA v2.7.0 — Enterprise Multi-Tenant Modular SaaS ERP-POS & Financial Core
+# 👑 MODULA v2.8.0 — Enterprise Multi-Tenant Modular SaaS ERP-POS & Financial Core
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue.svg)]()
@@ -21,32 +21,27 @@
 
 ---
 
-## 🚀 Changelog Versi Terbaru: Modula v2.7.0
+## 🚀 Changelog Versi Terbaru: Modula v2.8.0
 
-### 🧙‍♂️ 1. First-Time Login Onboarding Wizard (Multi-Step Setup Stepper)
-- **Alur Interaktif Saat Login Pertama / Brand Baru:**
-  1. **🔹 Step 1: Identitas Brand & AI Magic Suggestion:**
-     - Input Nama Brand, Sektor Bisnis (*F&B / Kafe, Retail / Minimarket, Fashion & Apparel, Barbershop / Salon, Apotek / Klinik, Ekspedisi / Jasa*).
-     - Tombol **`[ ✨ Generate via AI ]`** yang otomatis meng-generate tagline menjual, deskripsi bisnis yang menarik, dan template kategori produk sesuai sektor usaha.
-     - Pratinjau & Upload Logo Brand (Square) serta Banner Header Lebar (16:9 aspect ratio) untuk branding struk, katalog web, dan dashboard.
-     - Input media sosial: Instagram, TikTok, WhatsApp Business, dan Website.
-  2. **🔹 Step 2: Multi-Branch Initializer & Auto Warehouse:**
-     - Setup Cabang Utama & tombol **`[ + Tambah Cabang Lainnya ]`** dinamis (Nama cabang, kode cabang, alamat, kota, telepon, dan jam operasional).
-     - Setiap cabang otomatis dibuatkan gudang persediaan utama (*default inventory storage*).
-  3. **🔹 Step 3: Setup Karyawan Awal & POS PIN:**
-     - Input Nama Karyawan, WhatsApp/Email, Peran (*Branch Manager, Head Cashier, Kasir POS, Staf Gudang SCM*), Penugasan Cabang, dan 4-6 digit numeric POS PIN untuk login cepat tablet/HP.
-     - List karyawan instan lengkap dengan status badge & masked PIN (`••••`).
-  4. **🔹 Step 4: Peluncuran Bisnis:**
-     - Review profil brand lengkap $\rightarrow$ tombol **`[ 🚀 Simpan & Luncurkan Bisnis Saya ]`**.
+### 🖥️ 1. Slide Presentasi PowerPoint Interaktif untuk Investor (Pitch Deck & Financial Review)
+- **Mode Presentasi Eksekutif / Investor Deck:**
+  - Fitur slide presentasi layar penuh (*Fullscreen Interactive Slide Show*) yang disajikan khusus saat pitching ke investor atau meeting manajemen direksi.
+  - **Daftar Slide:**
+    1. 👑 **Slide 01: Executive Summary & Growth:** Valuasi brand Rp 18,5 M, Omset bulanan +28.4% MoM, Gross Margin 59.6%, dan Net EBITDA.
+    2. 📈 **Slide 02: Laba Rugi (Profit & Loss Statement):** Breakdown penjualan, HPP bahan baku, OpEx, dan margin laba bersih 29.6%.
+    3. ⚖️ **Slide 03: Neraca (Balance Sheet) & Asset Health:** Aset lancar kas bank Rp 890 Jt, persediaan, aset mesin espresso, dan rasio lancar 3.4x.
+    4. 🏬 **Slide 04: Multi-Branch Unit Economics:** Performa produktivitas per outlet (*Grand Indonesia, Senopati, Kelapa Gading*).
+    5. 🎯 **Slide 05: Expansion Roadmap & Investment:** Target ekspansi 15 cabang di Q4 2026 dan proyeksi omset 2027 Rp 12,8 Miliar.
+  - **Kontrol Presentasi:** Keyboard navigation (`Arrow Left/Right`, `Space`, `Esc`), auto-play timer (6 detik), fullscreen toggle, direct **Export PDF Pitch Deck**, dan **Export Excel Proyeksi Finansial**.
 
-### ⚡ 2. Backend Rails / Ruby Endpoints untuk Onboarding
-- `POST /api/v1/onboarding/ai_suggest` $\rightarrow$ Menghasilkan rekomendasi bio, tagline, kategori produk, dan cabang default berdasarkan sektor bisnis dalam 1ms.
-- `POST /api/v1/onboarding/complete` $\rightarrow$ Transaksi atomik (*Atomic Seeding Transaction*) yang menyimpan Brand, Media Branding, Multi-Cabang, Gudang, dan Karyawan sekaligus.
+### 📊 2. Fitur Export PDF & Excel di Seluruh Modul Sistem
+- **Laporan Keuangan PSAK:** Export PDF resmi & Download Worksheet Excel Laba Rugi / Neraca.
+- **CRM Konsumen & Top Spender:** Export PDF ringkasan loyalty member & Ekspor Excel data member lengkap per cabang / semua cabang.
+- **Gudang SCM & Stok Opname:** Cetak Berita Acara Opname (PDF), Ekspor Lembar Kerja Audit Fisik Excel (.csv), dan Ekspor Katalog Persediaan.
+- **Dokumentasi Sistem:** Export PDF Dokumentasi & Slide SOP Operasional.
 
-### 🛒 3. Login Kasir Cepat Kode Cabang, Email Mailpit & Lupa Sandi
-- Mode login kasir kilat menggunakan **Kode Cabang (Branch Code)** + ID/Username Kasir + PIN.
-- Konfirmasi OTP pendaftaran akun via **Mailpit Local SMTP Server** (Port `1025` / Web UI `http://localhost:8025/`).
-- Alur Lupa Kata Sandi terintegrasi.
+### 📋 3. Menu Sidebar Stok Opname & Investor Slide Deck
+- Menu **`📋 Stok Opname`** (*Audit Persediaan & Jurnal Penyesuaian Fisik*) dan pintasan **`🖥️ Investor Slide Deck`** (*Pitch Deck Eksekutif*) aktif di sidebar navigasi utama.
 
 ---
 
