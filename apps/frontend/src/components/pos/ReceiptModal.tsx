@@ -13,6 +13,7 @@ interface ReceiptModalProps {
   orderNumber: string;
   customerName?: string;
   tableNumber?: string;
+  orderChannel?: string;
   items: CartItem[];
   subtotal: number;
   discount: number;
@@ -30,6 +31,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   orderNumber,
   customerName,
   tableNumber,
+  orderChannel = 'DINE_IN',
   items,
   subtotal,
   discount,
@@ -466,6 +468,16 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               <div className="flex justify-between">
                 <span>No. Nota:</span>
                 <span className="font-bold">{orderNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>No. Nota:</span>
+                <span className="font-bold">{orderNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Channel:</span>
+                <span className="font-black bg-slate-900 text-white px-1.5 py-0.2 rounded text-[9px]">
+                  [{orderChannel.replace('_', ' ')}]
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Tanggal:</span>
