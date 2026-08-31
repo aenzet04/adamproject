@@ -1,11 +1,14 @@
 import { create } from 'zustand';
+import { playWhatsAppChime } from '../lib/audioSound';
+
+export type ToastType = 'success' | 'cart' | 'payment' | 'print' | 'warning' | 'info' | 'error';
 
 export interface ToastMessage {
   id: string;
-  type: 'success' | 'info' | 'warning' | 'error';
+  type: ToastType;
   title: string;
-  description?: string;
-  icon?: string;
+  message?: string;
+  duration?: number;
 }
 
 interface ToastState {
@@ -14,51 +17,54 @@ interface ToastState {
   removeToast: (id: string) => void;
 }
 
-export const useToastStore = create<ToastState>((set) => ({
+export const useToastStore = create<ToastState>((set, get) => ({
   toasts: [],
-  addToast: (toast) => {
+
+  addToast: (newToast) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
-    const newToast = { ...toast, id };
-    set((state) => ({ toasts: [...state.toasts, newToast] }));
+    const toastItem: ToastMessage = { ...newToast, id, duration: newToast.duration || 3500 };
+
+    // Play crisp WhatsApp-style "ceting" chime
+    playWhatsAppChime(0.25);
+
+    set((state) => ({
+      toasts: [...state.toasts, toastItem],
+    }));
 
     setTimeout(() => {
-      set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
-    }, 3800);
+      get().removeToast(id);
+    }, toastItem.duration);
   },
+
   removeToast: (id) => {
-    set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
+    set((state) => ({
+      toasts: state.toasts.filter((t) => t.id !== id),
+    }));
   },
 }));
 
-// Quick helpers for actions
+// Quick helper triggers
 export const toast = {
-  success: (title: string, description?: string, icon = '✓') =>
-    useToastStore.getState().addToast({ type: 'success', title, description, icon }),
-  info: (title: string, description?: string, icon = 'ℹ️') =>
-    useToastStore.getState().addToast({ type: 'info', title, description, icon }),
-  warning: (title: string, description?: string, icon = '⚠️') =>
-    useToastStore.getState().addToast({ type: 'warning', title, description, icon }),
-  error: (title: string, description?: string, icon = '✕') =>
-    useToastStore.getState().addToast({ type: 'error', title, description, icon }),
+  success: (title: string, message?: string) =>
+    useToastStore.getState().addToast({ type: 'success', title, message }),
   cart: (productName: string) =>
     useToastStore.getState().addToast({
-      type: 'success',
-      title: 'Ditambahkan ke Keranjang',
-      description: `${productName} siap diproses.`,
-      icon: '🛒',
+      type: 'cart',
+      title: 'Item Ditambahkan',
+      message: `${productName} masuk ke keranjang.`,
     }),
   payment: (orderNo: string, amount: number) =>
     useToastStore.getState().addToast({
-      type: 'success',
-      title: 'Pembayaran Sukses (Lunas)',
-      description: `Nota: ${orderNo} • Rp ${amount.toLocaleString('id-ID')}`,
-      icon: '💳',
+      type: 'payment',
+      title: 'Pembayaran Diterima',
+      message: `${orderNo} • Rp ${amount.toLocaleString('id-ID')}`,
     }),
-  print: (type: string) =>
-    useToastStore.getState().addToast({
-      type: 'info',
-      title: `Mencetak ${type}...`,
-      description: 'Perintah dikirim ke printer thermal 58mm.',
-      icon: '🖨️',
-    }),
+  print: (title: string, message?: string) =>
+    useToastStore.getState().addToast({ type: 'print', title, message }),
+  warning: (title: string, message?: string) =>
+    useToastStore.getState().addToast({ type: 'warning', title, message }),
+  info: (title: string, message?: string) =>
+    useToastStore.getState().addToast({ type: 'info', title, message }),
+  error: (title: string, message?: string) =>
+    useToastStore.getState().addToast({ type: 'error', title, message }),
 };
