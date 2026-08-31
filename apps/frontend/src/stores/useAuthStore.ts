@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserProfile, UserRole } from '../types';
 
-const INITIAL_PROFILES: Record<UserRole, UserProfile> = {
+export const INITIAL_PROFILES: Record<UserRole, UserProfile> = {
   super_user: {
     id: 'usr-su-01',
     name: 'Adam Pratama (Platform Admin)',
@@ -51,7 +51,13 @@ const INITIAL_PROFILES: Record<UserRole, UserProfile> = {
 };
 
 interface AuthState {
+  isAuthenticated: boolean;
+  token: string | null;
   currentUser: UserProfile;
+  login: (email: string, role?: UserRole) => boolean;
+  quickLoginAs: (role: UserRole) => void;
+  signup: (name: string, email: string, role: UserRole) => void;
+  logout: () => void;
   switchRole: (role: UserRole) => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
   updateAvatar: (base64OrUrl: string) => void;
@@ -60,7 +66,49 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      currentUser: INITIAL_PROFILES['owner'], // default as owner
+      isAuthenticated: true, // initial demo logged in
+      token: 'jwt_secure_session_token_2026',
+      currentUser: INITIAL_PROFILES['owner'],
+      login: (email: string, role?: UserRole) => {
+        const targetRole = role || 'owner';
+        const profile = { ...INITIAL_PROFILES[targetRole], email };
+        set({
+          isAuthenticated: true,
+          token: `jwt_session_${Date.now()}_${targetRole}`,
+          currentUser: profile,
+        });
+        return true;
+      },
+      quickLoginAs: (role: UserRole) => {
+        set({
+          isAuthenticated: true,
+          token: `jwt_session_${Date.now()}_${role}`,
+          currentUser: INITIAL_PROFILES[role],
+        });
+      },
+      signup: (name: string, email: string, role: UserRole) => {
+        const newProfile: UserProfile = {
+          id: `usr-${Date.now().toString().slice(-6)}`,
+          name,
+          email,
+          role,
+          roleTitle: role === 'owner' ? 'Business Owner' : role === 'admin_brand' ? 'Branch Admin' : 'Outlet Cashier',
+          avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+          tenantId: 't-01',
+          phoneNumber: '081234567890',
+        };
+        set({
+          isAuthenticated: true,
+          token: `jwt_session_${Date.now()}_${role}`,
+          currentUser: newProfile,
+        });
+      },
+      logout: () => {
+        set({
+          isAuthenticated: false,
+          token: null,
+        });
+      },
       switchRole: (role: UserRole) => {
         set({ currentUser: INITIAL_PROFILES[role] });
       },
