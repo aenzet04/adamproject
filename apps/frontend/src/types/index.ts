@@ -87,4 +87,76 @@ export interface Product {
   isActive: boolean;
   requiresKitchenPrint: boolean;
   stock?: number;
+  stockOnHand?: number;
+  productType?: 'goods' | 'raw_material' | 'service';
+}
+
+export interface CategorizedProduct extends Product {
+  imageEmoji: string;
+  categoryName: string;
+  stockOnHand: number;
+  productType?: 'goods' | 'raw_material' | 'service';
+}
+
+export interface CartItem {
+  id: string;
+  productId: string;
+  name: string;
+  sku: string;
+  unitPrice: number;
+  quantity: number;
+  discountPercent?: number;
+  discountAmount?: number;
+  note?: string;
+  taxRate?: number;
+  imageEmoji?: string;
+}
+
+export interface PaymentAllocation {
+  id: string;
+  method: 'cash' | 'qris' | 'edc_bca' | 'edc_mandiri' | 'transfer' | 'member_points';
+  amount: number;
+  referenceNumber?: string;
+}
+
+export interface SplitBillPerson {
+  id: string;
+  name: string;
+  items: CartItem[];
+  allocatedAmount: number;
+  paid: boolean;
+  paymentMethod?: string;
+}
+
+export interface ModuleLicense {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  icon: string;
+  isUnlocked: boolean;
+  requiredTier: 'starter' | 'business' | 'enterprise';
+  priceMonthly: number;
+}
+
+export interface CustomerReview {
+  id: string;
+  customerName: string;
+  rating: number;
+  feedback: string;
+  category: 'Pelayanan' | 'Rasa' | 'Kebersihan' | 'Kecepatan';
+  createdAt: string;
+}
+
+export interface ProfitLossReport {
+  periodStart: string;
+  periodEnd: string;
+  revenues: Array<{ code: string; name: string; amount: number }>;
+  totalRevenue: number;
+  cogs: Array<{ code: string; name: string; amount: number }>;
+  totalCogs: number;
+  grossProfit: number;
+  operatingExpenses: Array<{ code: string; name: string; amount: number }>;
+  totalOperatingExpense: number;
+  netIncome: number;
 }
