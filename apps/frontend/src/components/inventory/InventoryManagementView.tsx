@@ -352,14 +352,16 @@ export const InventoryManagementView: React.FC = () => {
               : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <span>🤝</span>
-          <span>Direktori Vendor & Seller ({vendors.length})</span>
-        </button>
-      </div>
+          <span className="text-[10px] bg-amber-200 dark:bg-amber-900 px-2 py-0.5 rounded font-mono font-bold">
+            READ-ONLY
+          </span>
+        </div>
+      )}
 
-      {/* 3. TAB 1: PRODUCT CATALOG & REALTIME STOCK MATRIX */}
+      {/* 3. TAB 1: CATALOG CONTENT */}
       {activeTab === 'catalog' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
+          {/* Search, Category & Velocity Filter Bar */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
             <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
               <input
@@ -382,6 +384,29 @@ export const InventoryManagementView: React.FC = () => {
                   </option>
                 ))}
               </select>
+
+              {/* STOCK VELOCITY SELECTOR (FAST / SLOW / DEAD STOCK) */}
+              <div className="flex space-x-1 bg-slate-100 dark:bg-slate-850 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] font-bold">
+                {[
+                  { id: 'all', label: 'Semua Stok' },
+                  { id: 'fast_moving', label: '🔥 Fast Moving' },
+                  { id: 'slow_moving', label: '⏳ Slow Moving' },
+                  { id: 'dead_stock', label: '💀 Dead Stock / Kritis' },
+                ].map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setVelocityFilter(v.id as any)}
+                    className={`px-2.5 py-1 rounded-lg transition-all ${
+                      velocityFilter === v.id
+                        ? 'bg-red-600 text-white shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="text-xs text-slate-500 font-mono">
