@@ -2,20 +2,29 @@
 
 import React, { useState } from 'react';
 import { useCustomerStore, CustomerMember } from '../../stores/useCustomerStore';
+import { useTenantStore } from '../../stores/useTenantStore';
 import { toast } from '../../stores/useToastStore';
 
 export const CustomerManagementView: React.FC = () => {
-  const { customers, addCustomer, getTopSpenders, searchCustomers } = useCustomerStore();
+  const { customers, addCustomer, getTopSpenders, searchCustomers, getBranchReport } = useCustomerStore();
+  const { availableBranches } = useTenantStore();
+
+  const [selectedBranch, setSelectedBranch] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [viewTab, setViewTab] = useState<'members' | 'reports'>('members');
+
+  // New Member Form
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [memberBranchId, setMemberBranchId] = useState('br-01');
   const [tier, setTier] = useState<CustomerMember['tier']>('Bronze');
   const [notes, setNotes] = useState('');
 
-  const topSpenders = getTopSpenders(3);
-  const filteredCustomers = searchCustomers(searchQuery);
+  const topSpenders = getTopSpenders(3, selectedBranch);
+  const filteredCustomers = searchCustomers(searchQuery, selectedBranch);
+  const branchReports = getBranchReport();
 
   const handleCreateCustomer = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,8 +33,19 @@ export const CustomerManagementView: React.FC = () => {
       return;
     }
 
-    const created = addCustomer({ name, phone, email, tier, notes });
-    toast.success('Member Berhasil Didaftarkan', `${created.name} (${created.tier}) • Poin Awal: 100 Poin`);
+    const branch = availableBranches.find((b) => b.id === memberBranchId) || { name: 'Outlet Grand Indonesia' };
+
+    const created = addCustomer({
+      name,
+      phone,
+      email,
+      branchId: memberBranchId,
+      branchName: branch.name,
+      tier,
+      notes,
+    });
+
+    toast.success('Member Berhasil Didaftarkan', `${created.name} (${created.tier}) di ${branch.name}`);
     setIsAddModalOpen(false);
     setName('');
     setPhone('');
@@ -38,37 +58,77 @@ export const CustomerManagementView: React.FC = () => {
     if (clean.startsWith('08')) clean = '628' + clean.substring(2);
     else if (clean.startsWith('8')) clean = '628' + clean.substring(1);
 
-    const msg = `Halo Kak ${c.name},\n\nTerima kasih telah menjadi Member Setia kami (*Tier: ${c.tier}*)!\nSaat ini Anda memiliki *${c.points} Poin Loyalitas* dengan akumulasi belanja Rp ${c.lifetimeSpend.toLocaleString('id-ID')}.\n\nTukarkan poin Anda di kasir untuk potongan harga spesial!\n\n_Modula Smart CRM_`;
+    const msg = `Halo Kak ${c.name},\n\nTerima kasih telah menjadi Member Setia kami di *${c.branchName}* (*Tier: ${c.tier}*)!\nSaat ini Anda memiliki *${c.points} Poin Loyalitas* dengan akumulasi belanja Rp ${c.lifetimeSpend.toLocaleString('id-ID')}.\n\nTukarkan poin Anda di kasir untuk potongan harga spesial!\n\n_Modula Smart CRM_`;
     window.open(`https://wa.me/${clean}?text=${encodeURIComponent(msg)}`, '_blank');
     toast.info('Membuka WhatsApp', `Mengirim info poin ke ${c.name}`);
   };
 
+  const handleExportCsv = () => {
+    let csv = 'ID,Nama Pelanggan,Cabang,Tier,No WhatsApp,Poin,Total Belanja,Kunjungan,Tanggal Bergabung\n';
+    filteredCustomers.forEach((c) => {
+      csv += `"${c.id}","${c.name}","${c.branchName}","${c.tier}","${c.phone}",${c.points},${c.lifetimeSpend},${c.visitCount},"${c.joinedDate}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Laporan-CRM-Member-${selectedBranch}-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success('Laporan CSV Diekspor', `File ${link.download} berhasil diunduh.`);
+  };
+
   return (
-    <div className="p-6 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen transition-colors space-y-6">
-      {/* Top Header */}
-      <div className="flex justify-between items-center">
+    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen transition-colors space-y-6">
+      {/* Header & Controls */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div className="flex items-center space-x-2">
             <span className="text-2xl">👥</span>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-              CRM, Member Loyalitas & Top Spender
+            <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100">
+              CRM, Member Loyalitas & Laporan Cabang
             </h2>
             <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
-              Omnichannel Loyalty Engine
+              Multi-Branch CRM
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Kelola data pelanggan, pantau poin loyalitas, identifikasi pelanggan paling loyal, dan integrasi kasir POS.
+            Pisahkan data konsumen per cabang, pantau top spender, dan ekspor laporan loyalitas member.
           </p>
         </div>
 
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center space-x-1.5 shadow-md shadow-red-600/20 transition-all active:scale-95"
-        >
-          <span>+</span>
-          <span>Daftar Member Baru</span>
-        </button>
+        {/* Branch Filter & Actions */}
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <select
+            value={selectedBranch}
+            onChange={(e) => setSelectedBranch(e.target.value)}
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+          >
+            <option value="all">🏢 Semua Cabang (Konsolidasi)</option>
+            {availableBranches.map((b) => (
+              <option key={b.id} value={b.id}>
+                📍 {b.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={handleExportCsv}
+            className="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold px-3.5 py-2 rounded-2xl text-xs flex items-center space-x-1.5 shadow-sm transition-all"
+          >
+            <span>📊</span>
+            <span>Ekspor CSV</span>
+          </button>
+
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2 rounded-2xl text-xs flex items-center space-x-1.5 shadow-md shadow-red-600/20 transition-all active:scale-95"
+          >
+            <span>+</span>
+            <span>Daftar Member</span>
+          </button>
+        </div>
       </div>
 
       {/* TOP SPENDER PODIUM CARDS */}
@@ -92,6 +152,7 @@ export const CustomerManagementView: React.FC = () => {
                     TOP SPENDER #{idx + 1}
                   </span>
                   <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">{c.name}</h4>
+                  <div className="text-[10px] text-slate-400">{c.branchName}</div>
                 </div>
               </div>
               <span className="bg-red-600 text-white text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
@@ -115,14 +176,48 @@ export const CustomerManagementView: React.FC = () => {
         ))}
       </div>
 
+      {/* REKAPITULASI LAPORAN PER CABANG */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
+          📊 Rekapitulasi Member & Kontribusi Omzet per Cabang
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {branchReports.map((br) => (
+            <div
+              key={br.branchId}
+              className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1"
+            >
+              <div className="font-bold text-xs text-slate-800 dark:text-slate-100">{br.branchName}</div>
+              <div className="flex justify-between text-[11px] pt-1">
+                <span className="text-slate-400">Total Member:</span>
+                <span className="font-bold font-mono">{br.memberCount} Orang</span>
+              </div>
+              <div className="flex justify-between text-[11px]">
+                <span className="text-slate-400">Total Belanja Member:</span>
+                <span className="font-bold font-mono text-red-600 dark:text-red-400">
+                  Rp {br.totalSpend.toLocaleString('id-ID')}
+                </span>
+              </div>
+              <div className="flex justify-between text-[11px]">
+                <span className="text-slate-400">Rata-rata / Member:</span>
+                <span className="font-bold font-mono text-slate-600 dark:text-slate-300">
+                  Rp {br.avgSpend.toLocaleString('id-ID')}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* CUSTOMER DIRECTORY & SEARCH */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-        <div className="flex justify-between items-center gap-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 md:p-6 shadow-sm space-y-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
           <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">
-            Direktori Data Member ({filteredCustomers.length})
+            Daftar Member Terdaftar ({filteredCustomers.length})
           </h3>
 
-          <div className="relative max-w-xs w-full">
+          <div className="relative w-full md:max-w-xs">
             <input
               type="text"
               placeholder="Cari nama, no. HP, atau email..."
@@ -138,6 +233,7 @@ export const CustomerManagementView: React.FC = () => {
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-mono text-[10px]">
                 <th className="pb-2">Nama Pelanggan</th>
+                <th className="pb-2">Cabang Outlet</th>
                 <th className="pb-2">Tier Level</th>
                 <th className="pb-2">No. WhatsApp</th>
                 <th className="pb-2">Poin Loyalitas</th>
@@ -153,6 +249,7 @@ export const CustomerManagementView: React.FC = () => {
                     <div>{c.name}</div>
                     {c.notes && <div className="text-[10px] text-slate-400 font-normal italic">{c.notes}</div>}
                   </td>
+                  <td className="py-3 text-slate-500 font-sans">{c.branchName}</td>
                   <td className="py-3">
                     <span
                       className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
@@ -227,14 +324,18 @@ export const CustomerManagementView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Email (Opsional)</label>
-                  <input
-                    type="email"
-                    placeholder="nama@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2"
-                  />
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Pilih Cabang Terdaftar</label>
+                  <select
+                    value={memberBranchId}
+                    onChange={(e) => setMemberBranchId(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 font-semibold"
+                  >
+                    {availableBranches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
