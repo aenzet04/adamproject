@@ -16,12 +16,14 @@ import { BenchmarkViewer } from './components/benchmark/BenchmarkViewer';
 import { BugTicketingCenter } from './components/tickets/BugTicketingCenter';
 import { SoftDeleteManager } from './components/trash/SoftDeleteManager';
 import { BrandTeamChatWidget } from './components/chat/BrandTeamChatWidget';
+import { OnboardingWizardModal } from './components/onboarding/OnboardingWizardModal';
 import { AuthPortal } from './components/auth/AuthPortal';
 import { ToastContainer } from './components/atoms/ToastContainer';
 import { PageTransitionPreloader } from './components/atoms/PageTransitionPreloader';
 import { useTenantStore } from './stores/useTenantStore';
 import { useThemeStore } from './stores/useThemeStore';
 import { useAuthStore } from './stores/useAuthStore';
+import { useOnboardingStore } from './stores/useOnboardingStore';
 import { useModuleLicenseStore } from './stores/useModuleLicenseStore';
 import { toast } from './stores/useToastStore';
 
@@ -34,9 +36,10 @@ export default function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  const { setHierarchicalData } = useTenantStore();
+  const { currentTenant, availableBrands, setHierarchicalData } = useTenantStore();
   const { theme, setTheme } = useThemeStore();
   const { modules, subscriptionTier, remainingMonths, setSubscriptionTier } = useModuleLicenseStore();
+  const { isOnboardingOpen, openOnboarding } = useOnboardingStore();
 
   const [isGuestReviewMode, setIsGuestReviewMode] = useState<boolean>(false);
 
@@ -49,31 +52,58 @@ export default function App() {
   useEffect(() => {
     setTheme(theme);
 
-    setHierarchicalData({
-      tenant: {
-        id: 't-01',
-        name: 'PT Multi Industri Nusantara',
-        subdomain: 'nusantara',
-        legalEntityType: 'PT',
-        status: 'active',
-        featureFlags: { pos: true, inventory: true, finance: true, hr: true, audit: true },
-      },
-      brands: [
-        { id: 'b-01', tenantId: 't-01', name: 'Kopi Nusantara Roastery', code: 'KNR', industryType: 'fnb', status: 'active' },
-        { id: 'b-02', tenantId: 't-01', name: 'Nusantara Retail Mart', code: 'NRM', industryType: 'retail', status: 'active' },
-        { id: 'b-03', tenantId: 't-01', name: 'Logistik Cepat Mandiri', code: 'LCM', industryType: 'services', status: 'active' },
-      ],
-      branches: [
-        { id: 'br-01', tenantId: 't-01', brandId: 'b-01', name: 'Outlet Grand Indonesia', code: 'GI-01', branchType: 'store', geofenceRadiusMeters: 100, isActive: true },
-        { id: 'br-02', tenantId: 't-01', brandId: 'b-01', name: 'Outlet Senopati', code: 'SNP-02', branchType: 'store', geofenceRadiusMeters: 100, isActive: true },
-        { id: 'br-03', tenantId: 't-01', brandId: 'b-02', name: 'Store Kelapa Gading', code: 'KG-01', branchType: 'store', geofenceRadiusMeters: 100, isActive: true },
-      ],
-      warehouses: [
-        { id: 'wh-01', tenantId: 't-01', branchId: 'br-01', name: 'Gudang Utama Barista GI', code: 'WH-GI-MAIN', isPrimary: true, costingMethod: 'moving_average' },
-        { id: 'wh-02', tenantId: 't-01', branchId: 'br-02', name: 'Gudang Outlet Senopati', code: 'WH-SNP-MAIN', isPrimary: true, costingMethod: 'moving_average' },
-      ],
-    });
-  }, [setHierarchicalData, theme, setTheme]);
+    if (!currentTenant) {
+      setHierarchicalData({
+        tenant: {
+          id: 't-01',
+          name: 'PT Multi Industri Nusantara',
+          subdomain: 'nusantara',
+          legalEntityType: 'PT',
+          status: 'active',
+          featureFlags: { pos: true, inventory: true, finance: true, hr: true, audit: true },
+          onboarding_completed: true,
+        },
+        brands: [
+          {
+            id: 'b-01',
+            tenantId: 't-01',
+            name: 'Kopi Nusantara Roastery',
+            code: 'KNR',
+            industryType: 'fnb',
+            businessSector: 'fnb',
+            tagline: 'Cita Rasa Autentik Nusantara, Disajikan dengan Sepenuh Hati',
+            description: 'Kopi Nusantara Roastery adalah kafe dan roastery artisanal yang menyajikan racikan kopi single origin terbaik nusantara dengan atmosfer modern dan elegan.',
+            logoUrl: 'https://images.unsplash.com/photo-1509785307050-d4066910ec1e?w=180&auto=format&fit=crop&q=80',
+            bannerUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1200&auto=format&fit=crop&q=80',
+            socialLinks: { instagram: '@kopinusantara.id', tiktok: '@kopinusantara', whatsapp: '081299001122', website: 'https://kopinusantara.id' },
+            status: 'active',
+          },
+          {
+            id: 'b-02',
+            tenantId: 't-01',
+            name: 'Nusantara Retail Mart',
+            code: 'NRM',
+            industryType: 'retail',
+            businessSector: 'retail',
+            tagline: 'Belanja Lengkap, Cepat & Hemat Dekat Anda',
+            description: 'Minimarket ritel modern yang menyediakan kebutuhan pokok keluarga.',
+            logoUrl: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=180&auto=format&fit=crop&q=80',
+            bannerUrl: 'https://images.unsplash.com/photo-1534723452868-45d140f7d591?w=1200&auto=format&fit=crop&q=80',
+            status: 'active',
+          },
+        ],
+        branches: [
+          { id: 'br-01', tenantId: 't-01', brandId: 'b-01', name: 'Outlet Grand Indonesia', code: 'GI-01', branchType: 'store', geofenceRadiusMeters: 100, address: 'West Mall Lt 3A', city: 'Jakarta Pusat', phone: '021-23580001', operatingHours: '08:00 - 22:00 WIB', isActive: true },
+          { id: 'br-02', tenantId: 't-01', brandId: 'b-01', name: 'Outlet Senopati', code: 'SNP-02', branchType: 'store', geofenceRadiusMeters: 100, address: 'Jl. Senopati No. 45', city: 'Jakarta Selatan', phone: '021-7201234', operatingHours: '07:00 - 23:00 WIB', isActive: true },
+          { id: 'br-03', tenantId: 't-01', brandId: 'b-02', name: 'Store Kelapa Gading', code: 'KG-01', branchType: 'store', geofenceRadiusMeters: 100, address: 'Mall Kelapa Gading 3', city: 'Jakarta Utara', phone: '021-4585123', operatingHours: '09:00 - 22:00 WIB', isActive: true },
+        ],
+        warehouses: [
+          { id: 'wh-01', tenantId: 't-01', branchId: 'br-01', name: 'Gudang Utama Barista GI', code: 'WH-GI-MAIN', isPrimary: true, costingMethod: 'moving_average' },
+          { id: 'wh-02', tenantId: 't-01', branchId: 'br-02', name: 'Gudang Outlet Senopati', code: 'WH-SNP-MAIN', isPrimary: true, costingMethod: 'moving_average' },
+        ],
+      });
+    }
+  }, [setHierarchicalData, theme, setTheme, currentTenant]);
 
   if (isGuestReviewMode) {
     return (
@@ -113,6 +143,7 @@ export default function App() {
       <ToastContainer />
       <MultiTierSwitcher />
       <BrandTeamChatWidget />
+      <OnboardingWizardModal />
 
       {/* Floating Mobile Sidebar Toggle Button */}
       <button
