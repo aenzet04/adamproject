@@ -5,35 +5,41 @@ import { useCustomerStore } from '../../stores/useCustomerStore';
 import { useModuleLicenseStore } from '../../stores/useModuleLicenseStore';
 import { useReviewStore } from '../../stores/useReviewStore';
 
-interface DailySalesData {
-  day: string;
-  currentSales: number; // in thousands
-  compareSales: number; // in thousands
-  transactions: number;
+interface StockCandle {
+  date: string;
+  dayName: string;
+  open: number; // in thousands (Rp)
+  high: number;
+  low: number;
+  close: number;
+  volume: number; // transactions
+  ma5: number;
+  isBullish: boolean;
 }
 
-const SALES_CHART_DATA: DailySalesData[] = [
-  { day: 'Sen (01)', currentSales: 4200, compareSales: 3500, transactions: 110 },
-  { day: 'Sel (02)', currentSales: 5100, compareSales: 4200, transactions: 135 },
-  { day: 'Rab (03)', currentSales: 4800, compareSales: 4100, transactions: 124 },
-  { day: 'Kam (04)', currentSales: 5900, compareSales: 4900, transactions: 152 },
-  { day: 'Jum (05)', currentSales: 7800, compareSales: 6200, transactions: 198 },
-  { day: 'Sab (06)', currentSales: 9400, compareSales: 7800, transactions: 245 },
-  { day: 'Min (07)', currentSales: 8900, compareSales: 7400, transactions: 230 },
-  { day: 'Sen (08)', currentSales: 4600, compareSales: 3800, transactions: 118 },
-  { day: 'Sel (09)', currentSales: 5400, compareSales: 4500, transactions: 140 },
-  { day: 'Rab (10)', currentSales: 6100, compareSales: 4900, transactions: 160 },
-  { day: 'Kam (11)', currentSales: 6700, compareSales: 5300, transactions: 172 },
-  { day: 'Jum (12)', currentSales: 8500, compareSales: 6900, transactions: 215 },
-  { day: 'Sab (13)', currentSales: 10200, compareSales: 8400, transactions: 268 },
-  { day: 'Min (14)', currentSales: 9800, compareSales: 8100, transactions: 250 },
+const STOCK_CANDLE_DATA: StockCandle[] = [
+  { date: '2026-08-18', dayName: 'Sen 18', open: 3800, high: 4500, low: 3600, close: 4200, volume: 110, ma5: 3950, isBullish: true },
+  { date: '2026-08-19', dayName: 'Sel 19', open: 4200, high: 5300, low: 4100, close: 5100, volume: 135, ma5: 4300, isBullish: true },
+  { date: '2026-08-20', dayName: 'Rab 20', open: 5100, high: 5200, low: 4600, close: 4800, volume: 124, ma5: 4550, isBullish: false },
+  { date: '2026-08-21', dayName: 'Kam 21', open: 4800, high: 6100, low: 4700, close: 5900, volume: 152, ma5: 4900, isBullish: true },
+  { date: '2026-08-22', dayName: 'Jum 22', open: 5900, high: 8100, low: 5800, close: 7800, volume: 198, ma5: 5560, isBullish: true },
+  { date: '2026-08-23', dayName: 'Sab 23', open: 7800, high: 9800, low: 7600, close: 9400, volume: 245, ma5: 6600, isBullish: true },
+  { date: '2026-08-24', dayName: 'Min 24', open: 9400, high: 9600, low: 8500, close: 8900, volume: 230, ma5: 7360, isBullish: false },
+  { date: '2026-08-25', dayName: 'Sen 25', open: 8900, high: 9100, low: 4400, close: 4600, volume: 118, ma5: 7320, isBullish: false },
+  { date: '2026-08-26', dayName: 'Sel 26', open: 4600, high: 5600, low: 4500, close: 5400, volume: 140, ma5: 7220, isBullish: true },
+  { date: '2026-08-27', dayName: 'Rab 27', open: 5400, high: 6300, low: 5200, close: 6100, volume: 160, ma5: 6880, isBullish: true },
+  { date: '2026-08-28', dayName: 'Kam 28', open: 6100, high: 6900, low: 5900, close: 6700, volume: 172, ma5: 6340, isBullish: true },
+  { date: '2026-08-29', dayName: 'Jum 29', open: 6700, high: 8800, low: 6600, close: 8500, volume: 215, ma5: 6260, isBullish: true },
+  { date: '2026-08-30', dayName: 'Sab 30', open: 8500, high: 10600, low: 8400, close: 10200, volume: 268, ma5: 7380, isBullish: true },
+  { date: '2026-08-31', dayName: 'Min 31', open: 10200, high: 10400, low: 9500, close: 9800, volume: 250, ma5: 8260, isBullish: false },
+  { date: '2026-09-01', dayName: 'Sen 01', open: 9800, high: 11200, low: 9700, close: 10800, volume: 280, ma5: 9200, isBullish: true },
 ];
 
 export const OwnerAnalyticsDashboard: React.FC = () => {
-  const [periodFilter, setPeriodFilter] = useState<'today' | 'this_week' | 'this_month' | 'custom'>('this_month');
+  const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M' | '3M' | '1Y'>('1M');
+  const [chartType, setChartType] = useState<'candlestick' | 'volume_bar'>('candlestick');
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('all');
-  const [showComparison, setShowComparison] = useState<boolean>(true);
-  const [hoveredData, setHoveredData] = useState<DailySalesData | null>(null);
+  const [hoveredCandle, setHoveredCandle] = useState<StockCandle | null>(null);
 
   const { getTopSpenders } = useCustomerStore();
   const { subscriptionTier, remainingMonths, expiryDate } = useModuleLicenseStore();
@@ -41,7 +47,12 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
 
   const topSpenders = getTopSpenders(4, selectedBranchFilter);
 
-  const maxSale = Math.max(...SALES_CHART_DATA.map((d) => Math.max(d.currentSales, d.compareSales)));
+  const chartMax = Math.max(...STOCK_CANDLE_DATA.map((c) => c.high));
+  const chartMin = Math.min(...STOCK_CANDLE_DATA.map((c) => c.low)) * 0.85;
+  const priceRange = chartMax - chartMin;
+  const maxVolume = Math.max(...STOCK_CANDLE_DATA.map((c) => c.volume));
+
+  const activeCandle = hoveredCandle || STOCK_CANDLE_DATA[STOCK_CANDLE_DATA.length - 1];
 
   return (
     <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen transition-colors space-y-6">
@@ -54,11 +65,11 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
               Executive Owner Analytics & AI Strategic Advisor
             </h2>
             <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
-              Group CEO View
+              TradingView Analytics Core
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Grafik interaktif pertumbuhan omzet, perbandingan periode lalu, dan AI matrix produk.
+            Grafik candlestick interaktif bergaya bursa saham, moving averages (MA5), volume transaksi, dan AI advisor.
           </p>
         </div>
 
@@ -77,43 +88,7 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. FILTER PERIOD & OUTLET BAR */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shadow-sm">
-        <div className="flex flex-wrap gap-2 w-full md:w-auto">
-          {(['today', 'this_week', 'this_month', 'custom'] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriodFilter(p)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                periodFilter === p
-                  ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-              }`}
-            >
-              {p === 'today' && '📅 Hari Ini'}
-              {p === 'this_week' && '🗓️ Minggu Ini'}
-              {p === 'this_month' && '📊 Bulan Ini'}
-              {p === 'custom' && '⚙️ Custom Range'}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center space-x-2 w-full md:w-auto">
-          <span className="text-xs text-slate-500 whitespace-nowrap">Filter Outlet:</span>
-          <select
-            value={selectedBranchFilter}
-            onChange={(e) => setSelectedBranchFilter(e.target.value)}
-            className="w-full md:w-auto bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-xl px-3 py-1.5 border border-slate-200 dark:border-slate-700 font-semibold focus:outline-none"
-          >
-            <option value="all">🏢 Semua Outlet (Konsolidasi)</option>
-            <option value="br-01">Outlet Grand Indonesia</option>
-            <option value="br-02">Outlet Senopati</option>
-            <option value="br-03">Store Kelapa Gading</option>
-          </select>
-        </div>
-      </div>
-
-      {/* 3. KEY METRICS CARDS */}
+      {/* 2. KEY METRICS CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-3xl shadow-sm space-y-1.5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
@@ -123,19 +98,19 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
             Rp 148.520.000
           </div>
           <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center space-x-1">
-            <span>↑ 18.5%</span>
-            <span className="text-slate-400 font-normal">vs bulan lalu</span>
+            <span>▲ +18.5%</span>
+            <span className="text-slate-400 font-normal">BULLISH TREND</span>
           </div>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-3xl shadow-sm space-y-1.5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-            Total Transaksi POS
+            Total Volume Transaksi
           </span>
           <div className="text-xl md:text-2xl font-black font-mono text-slate-800 dark:text-slate-100">
-            3.420 <span className="text-xs font-normal text-slate-400">struk</span>
+            3.420 <span className="text-xs font-normal text-slate-400">order</span>
           </div>
-          <div className="text-[10px] text-slate-400 font-mono">Rata-rata: Rp 43.420 / nota</div>
+          <div className="text-[10px] text-slate-400 font-mono">Rata-rata: Rp 43.420 / struk</div>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-3xl shadow-sm space-y-1.5">
@@ -145,121 +120,211 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
           <div className="text-xl md:text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
             68.4%
           </div>
-          <div className="text-[10px] text-slate-400">HPP Rata-rata Terkendali</div>
+          <div className="text-[10px] text-slate-400">HPP Terkendali Rendah</div>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5 rounded-3xl shadow-sm space-y-1.5">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-            Customer Satisfaction
+            Customer Sentiment
           </span>
           <div className="text-xl md:text-2xl font-black font-mono text-amber-500">
             4.9 / 5.0 ⭐
           </div>
-          <div className="text-[10px] text-slate-400">{reviews.length} Ulasan (/review)</div>
+          <div className="text-[10px] text-slate-400">{reviews.length} Ulasan Terverifikasi</div>
         </div>
       </div>
 
-      {/* 4. INTERACTIVE GROWTH CHART (KOMPARASI VS BULAN LALU / TARGET) */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-          <div>
+      {/* 3. TRADINGVIEW / STOCK MARKET STYLE INTERACTIVE CANDLESTICK CHART */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 md:p-6 shadow-sm space-y-4">
+        {/* TradingView Top Controls Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex items-center space-x-3 flex-wrap">
             <div className="flex items-center space-x-2">
-              <span className="text-lg">📈</span>
-              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                Grafik Interaktif Pertumbuhan Penjualan Harian
-              </h3>
+              <span className="font-black text-sm tracking-wider font-mono text-slate-900 dark:text-slate-100">
+                MODULA:REVENUE
+              </span>
+              <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 text-[10px] font-mono font-bold px-2 py-0.5 rounded">
+                LIVE 1D
+              </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Arahkan kursor ke batang grafik untuk melihat rincian omzet dan transaksi harian.
-            </p>
+
+            {/* Timeframe selector */}
+            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 text-xs font-mono font-bold">
+              {(['1D', '1W', '1M', '3M', '1Y'] as const).map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => setTimeframe(tf)}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${
+                    timeframe === tf
+                      ? 'bg-red-600 text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
+
+            {/* Chart Type Toggle */}
+            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 text-xs font-bold">
+              <button
+                onClick={() => setChartType('candlestick')}
+                className={`px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1 ${
+                  chartType === 'candlestick'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-500'
+                }`}
+              >
+                <span>🕯️</span>
+                <span className="hidden sm:inline">Candle Saham</span>
+              </button>
+              <button
+                onClick={() => setChartType('volume_bar')}
+                className={`px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1 ${
+                  chartType === 'volume_bar'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-500'
+                }`}
+              >
+                <span>📊</span>
+                <span className="hidden sm:inline">Bar Omzet</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-3 text-xs">
-            <button
-              onClick={() => setShowComparison(!showComparison)}
-              className={`px-3 py-1.5 rounded-xl font-bold transition-all border flex items-center space-x-1.5 ${
-                showComparison
-                  ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200'
-              }`}
+          <div className="flex items-center space-x-2 w-full md:w-auto">
+            <span className="text-xs text-slate-500">Cabang:</span>
+            <select
+              value={selectedBranchFilter}
+              onChange={(e) => setSelectedBranchFilter(e.target.value)}
+              className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-xl px-2.5 py-1 border border-slate-200 dark:border-slate-700 font-semibold focus:outline-none"
             >
-              <span>{showComparison ? '✓' : '○'}</span>
-              <span>Bandingkan vs Bulan Lalu</span>
-            </button>
-
-            <div className="flex items-center space-x-3 text-[11px] font-mono">
-              <div className="flex items-center space-x-1.5">
-                <span className="w-3 h-3 rounded bg-red-600 inline-block" />
-                <span className="text-slate-700 dark:text-slate-300">Bulan Ini</span>
-              </div>
-              {showComparison && (
-                <div className="flex items-center space-x-1.5">
-                  <span className="w-3 h-3 rounded bg-slate-300 dark:bg-slate-700 inline-block" />
-                  <span className="text-slate-400">Bulan Lalu</span>
-                </div>
-              )}
-            </div>
+              <option value="all">🏢 Semua Cabang Konsolidasi</option>
+              <option value="br-01">Outlet Grand Indonesia</option>
+              <option value="br-02">Outlet Senopati</option>
+              <option value="br-03">Store Kelapa Gading</option>
+            </select>
           </div>
         </div>
 
-        {/* Hover Tooltip Box */}
-        {hoveredData && (
-          <div className="bg-slate-950 text-slate-100 p-3 rounded-2xl border border-red-500/50 shadow-xl flex justify-between items-center text-xs animate-fadeInScale">
-            <div className="flex items-center space-x-3">
-              <span className="font-bold text-red-400 font-mono">{hoveredData.day}</span>
-              <div>
-                <span className="text-slate-400 text-[10px]">Omzet: </span>
-                <span className="font-bold font-mono text-white">
-                  Rp {(hoveredData.currentSales * 1000).toLocaleString('id-ID')}
-                </span>
-                {showComparison && (
-                  <span className="text-slate-400 text-[10px] ml-2 font-mono">
-                    (vs Rp {(hoveredData.compareSales * 1000).toLocaleString('id-ID')})
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="text-[11px] text-emerald-400 font-bold font-mono">
-              {hoveredData.transactions} Transaksi
-            </div>
+        {/* Live Candlestick Stats Bar (OHLCV) */}
+        <div className="bg-slate-950 text-slate-100 p-3 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+          <div className="flex items-center space-x-3 flex-wrap gap-y-1">
+            <span className="font-bold text-red-400">{activeCandle.date} ({activeCandle.dayName})</span>
+            <span>O: <b className="text-white">Rp {(activeCandle.open * 1000).toLocaleString('id-ID')}</b></span>
+            <span>H: <b className="text-emerald-400">Rp {(activeCandle.high * 1000).toLocaleString('id-ID')}</b></span>
+            <span>L: <b className="text-rose-400">Rp {(activeCandle.low * 1000).toLocaleString('id-ID')}</b></span>
+            <span>C: <b className={activeCandle.isBullish ? 'text-emerald-400' : 'text-rose-400'}>Rp {(activeCandle.close * 1000).toLocaleString('id-ID')}</b></span>
           </div>
-        )}
 
-        {/* SVG/CSS Interactive Bar Chart */}
-        <div className="h-64 flex items-end space-x-2 md:space-x-3 pt-6 pb-2 px-2 overflow-x-auto">
-          {SALES_CHART_DATA.map((d, idx) => {
-            const currentHeight = Math.round((d.currentSales / maxSale) * 100);
-            const compareHeight = Math.round((d.compareSales / maxSale) * 100);
+          <div className="flex items-center space-x-3">
+            <span className="text-amber-400">MA(5): <b>Rp {(activeCandle.ma5 * 1000).toLocaleString('id-ID')}</b></span>
+            <span className="text-slate-400">Vol: <b className="text-white">{activeCandle.volume} Orders</b></span>
+            <span className={`px-2 py-0.5 rounded font-bold ${activeCandle.isBullish ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-rose-950 text-rose-400 border border-rose-800'}`}>
+              {activeCandle.isBullish ? '▲ BULLISH' : '▼ BEARISH'}
+            </span>
+          </div>
+        </div>
 
-            return (
-              <div
-                key={idx}
-                onMouseEnter={() => setHoveredData(d)}
-                onMouseLeave={() => setHoveredData(null)}
-                className="flex-1 min-w-[36px] flex flex-col items-center justify-end h-full group cursor-pointer"
-              >
-                <div className="w-full flex items-end justify-center space-x-1 h-48">
-                  {showComparison && (
-                    <div
-                      style={{ height: `${compareHeight}%` }}
-                      className="w-2.5 md:w-3.5 bg-slate-300 dark:bg-slate-700/80 rounded-t-lg transition-all duration-300 group-hover:bg-slate-400"
-                    />
+        {/* The Candlestick & Volume Chart Canvas Area */}
+        <div className="relative h-72 pt-4 pb-2 flex flex-col justify-between overflow-x-auto select-none">
+          {/* Main Price / Candlestick Area */}
+          <div className="flex-1 flex items-end space-x-2 md:space-x-3 relative border-b border-slate-200 dark:border-slate-800/80 pb-2">
+            {STOCK_CANDLE_DATA.map((c, idx) => {
+              // Calculate % heights based on price range
+              const highPct = Math.min(100, Math.max(5, ((c.high - chartMin) / priceRange) * 100));
+              const lowPct = Math.min(100, Math.max(0, ((c.low - chartMin) / priceRange) * 100));
+              const openPct = ((c.open - chartMin) / priceRange) * 100;
+              const closePct = ((c.close - chartMin) / priceRange) * 100;
+
+              const bodyTop = Math.max(openPct, closePct);
+              const bodyBottom = Math.min(openPct, closePct);
+              const bodyHeight = Math.max(6, bodyTop - bodyBottom);
+
+              const isHovered = hoveredCandle?.date === c.date;
+
+              return (
+                <div
+                  key={idx}
+                  onMouseEnter={() => setHoveredCandle(c)}
+                  onMouseLeave={() => setHoveredCandle(null)}
+                  className="flex-1 min-w-[28px] h-full flex flex-col items-center justify-end relative cursor-crosshair group"
+                >
+                  {/* Candlestick Mode */}
+                  {chartType === 'candlestick' ? (
+                    <div className="relative w-full h-full flex justify-center items-end">
+                      {/* Upper & Lower Wick Line */}
+                      <div
+                        style={{
+                          bottom: `${lowPct}%`,
+                          height: `${Math.max(4, highPct - lowPct)}%`,
+                        }}
+                        className={`absolute w-[2px] transition-all ${
+                          c.isBullish ? 'bg-emerald-500 group-hover:bg-emerald-400' : 'bg-rose-500 group-hover:bg-rose-400'
+                        }`}
+                      />
+
+                      {/* Real Candlestick Body (Open to Close) */}
+                      <div
+                        style={{
+                          bottom: `${bodyBottom}%`,
+                          height: `${bodyHeight}%`,
+                        }}
+                        className={`absolute w-3.5 md:w-5 rounded-[3px] border transition-all z-10 ${
+                          c.isBullish
+                            ? 'bg-emerald-500 border-emerald-400 group-hover:bg-emerald-400 shadow-sm shadow-emerald-500/30'
+                            : 'bg-rose-600 border-rose-500 group-hover:bg-rose-500 shadow-sm shadow-rose-600/30'
+                        } ${isHovered ? 'scale-110 ring-2 ring-white dark:ring-slate-300' : ''}`}
+                      />
+                    </div>
+                  ) : (
+                    /* Bar Chart Mode */
+                    <div className="w-full flex items-end justify-center h-full">
+                      <div
+                        style={{ height: `${closePct}%` }}
+                        className={`w-3.5 md:w-5 rounded-t-lg transition-all ${
+                          c.isBullish
+                            ? 'bg-gradient-to-t from-emerald-700 to-emerald-500 group-hover:to-emerald-400'
+                            : 'bg-gradient-to-t from-rose-700 to-rose-500 group-hover:to-rose-400'
+                        }`}
+                      />
+                    </div>
                   )}
+
+                  {/* Day Label */}
+                  <span className="text-[9px] font-mono text-slate-400 mt-2 truncate w-full text-center group-hover:text-red-500 font-bold">
+                    {c.dayName}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Volume Bars Area (Bottom of Stock Chart) */}
+          <div className="h-14 flex items-end space-x-2 md:space-x-3 pt-1 border-t border-dashed border-slate-200 dark:border-slate-800">
+            {STOCK_CANDLE_DATA.map((c, idx) => {
+              const volPct = Math.round((c.volume / maxVolume) * 100);
+              return (
+                <div
+                  key={idx}
+                  className="flex-1 min-w-[28px] h-full flex flex-col items-center justify-end group"
+                  onMouseEnter={() => setHoveredCandle(c)}
+                  onMouseLeave={() => setHoveredCandle(null)}
+                >
                   <div
-                    style={{ height: `${currentHeight}%` }}
-                    className="w-3 md:w-4.5 bg-gradient-to-t from-red-700 via-red-600 to-rose-500 rounded-t-lg transition-all duration-300 group-hover:scale-105 shadow-sm"
+                    style={{ height: `${volPct}%` }}
+                    className={`w-2.5 md:w-3.5 rounded-t transition-all ${
+                      c.isBullish ? 'bg-emerald-500/40 group-hover:bg-emerald-500' : 'bg-rose-500/40 group-hover:bg-rose-500'
+                    }`}
                   />
                 </div>
-                <span className="text-[9px] md:text-[10px] font-mono text-slate-500 dark:text-slate-400 mt-2 truncate w-full text-center group-hover:text-red-500 font-bold">
-                  {d.day.split(' ')[0]}
-                </span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* 5. TOP SPENDER LEADERBOARD & AI ADVISOR GRID */}
+      {/* 4. TOP SPENDER LEADERBOARD & AI ADVISOR GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* TOP SPENDER LEADERBOARD */}
         <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
