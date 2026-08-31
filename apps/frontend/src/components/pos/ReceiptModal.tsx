@@ -44,7 +44,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   const [isBluetoothPrinting, setIsBluetoothPrinting] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [whatsappPhone, setWhatsappPhone] = useState<string>('');
-  const [showWhatsappInput, setShowWhatsappInput] = useState<boolean>(false);
+  const [showWhatsappInput, setShowWhatsappInput] = useState<boolean>(true);
 
   const receiptRef = useRef<HTMLDivElement>(null);
 
@@ -114,7 +114,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   };
 
   /**
-   * 1. FITUR UNDUH FILE TEKS (.TXT)
+   * Unduh File Teks (.txt)
    */
   const handleDownloadTxt = () => {
     const W = 32;
@@ -169,10 +169,10 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   };
 
   /**
-   * 2. FITUR UNDUH DOKUMEN RESMI PDF (.PDF)
+   * Unduh Dokumen PDF (.pdf)
    */
-  const handleDownloadPdf = async () => {
-    if (!receiptRef.current) return;
+  const handleDownloadPdf = async (): Promise<string | null> => {
+    if (!receiptRef.current) return null;
     setIsGeneratingPdf(true);
 
     try {
@@ -183,7 +183,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       });
 
       const imgData = canvas.toDataURL('image/png');
-      // 58mm thermal aspect ratio in mm (width: 58mm, auto height)
       const pdfWidth = 58;
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
@@ -194,17 +193,20 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       });
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`struk-${orderNumber}.pdf`);
+      const filename = `struk-${orderNumber}.pdf`;
+      pdf.save(filename);
+      return filename;
     } catch (err) {
       console.error('PDF Generation Error:', err);
-      alert('Gagal membuat file PDF. Silakan coba lagi.');
+      alert('Gagal membuat file PDF.');
+      return null;
     } finally {
       setIsGeneratingPdf(false);
     }
   };
 
   /**
-   * Normalisasi WhatsApp
+   * Normalisasi WhatsApp (081xxx -> 6281xxx)
    */
   const formatWhatsappNumber = (input: string): string => {
     let clean = input.replace(/\D/g, '');
@@ -213,21 +215,25 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     return clean;
   };
 
-  const handleSendWhatsapp = () => {
+  /**
+   * 1. KIRIM WA (FORMAT TEKS LENGKAP & INFORMATIF)
+   */
+  const handleSendWhatsappText = () => {
     const normalized = formatWhatsappNumber(whatsappPhone);
     if (!normalized || normalized.length < 10) {
-      alert('Mohon masukkan nomor WhatsApp yang valid (contoh: 081234567890)');
+      alert('Mohon masukkan nomor WhatsApp pelanggan yang valid (contoh: 081234567890)');
       return;
     }
 
     let msg = `🧾 *STRUK PEMBELIAN RESMI*\n`;
     msg += `🏪 *KOPI NUSANTARA ROASTERY*\n`;
     msg += `📍 ${branchName}\n`;
+    msg += `NPWP: 01.892.435.1-014.000\n`;
     msg += `--------------------------------------------\n`;
-    msg += `📄 *No. Nota* : ${orderNumber}\n`;
-    msg += `📅 *Waktu*    : ${new Date().toLocaleString('id-ID')} WIB\n`;
-    msg += `👤 *Kasir*    : ${cashierName}\n`;
-    msg += `👥 *Tamu*     : ${customerName || 'Walk-in'}${tableNumber ? ` (Meja ${tableNumber})` : ''}\n`;
+    msg += `📄 *No. Nota*    : ${orderNumber}\n`;
+    msg += `📅 *Waktu*       : ${new Date().toLocaleString('id-ID')} WIB\n`;
+    msg += `👤 *Kasir*       : ${cashierName} (POS-01)\n`;
+    msg += `👥 *Pelanggan*   : ${customerName || 'Walk-in Guest'}${tableNumber ? ` (Meja ${tableNumber})` : ''}\n`;
     msg += `--------------------------------------------\n`;
     msg += `*RINCIAN PESANAN:*\n`;
 
@@ -237,10 +243,39 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     });
 
     msg += `--------------------------------------------\n`;
-    msg += `💰 *TOTAL AKHIR : Rp ${grandTotal.toLocaleString('id-ID')} (LUNAS)*\n`;
-    msg += `--------------------------------------------\n`;
-    msg += `🔗 *Lihat E-Struk / E-Faktur:* ${invoiceUrl}\n\n`;
+    msg += `Subtotal          : Rp ${subtotal.toLocaleString('id-ID')}\n`;
+    if (discount > 0) msg += `Diskon            : -Rp ${discount.toLocaleString('id-ID')}\n`;
+    msg += `PPN (11%)         : Rp ${tax.toLocaleString('id-ID')}\n`;
+    if (rounding !== 0) msg += `Pembulatan        : Rp ${rounding.toLocaleString('id-ID')}\n`;
+    msg += `============================================\n`;
+    msg += `💰 *TOTAL AKHIR   : Rp ${grandTotal.toLocaleString('id-ID')} (LUNAS)*\n`;
+    msg += `============================================\n`;
+    msg += `🔗 *Lihat E-Struk / E-Faktur Online:* \n${invoiceUrl}\n\n`;
     msg += `_Terima kasih atas kunjungan Anda!_`;
+
+    window.open(`https://wa.me/${normalized}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
+  /**
+   * 2. KIRIM PDF KE WA (DOWNLOAD PDF INSTAN + BUKA CHAT WA)
+   */
+  const handleSendPdfToWhatsapp = async () => {
+    const normalized = formatWhatsappNumber(whatsappPhone);
+    if (!normalized || normalized.length < 10) {
+      alert('Mohon masukkan nomor WhatsApp pelanggan terlebih dahulu (contoh: 081234567890)');
+      return;
+    }
+
+    // 1. Generate & download the PDF to cashier machine
+    const filename = await handleDownloadPdf();
+
+    // 2. Open WhatsApp chat with PDF notice & download link
+    let msg = `Halo Kak ${customerName || ''},\n\n`;
+    msg += `Berikut kami lampirkan Dokumen Resmi E-Struk Pembelian Anda (*No. Nota: ${orderNumber}*).\n`;
+    msg += `Total Tagihan: *Rp ${grandTotal.toLocaleString('id-ID')}* *(LUNAS)*\n\n`;
+    msg += `📄 File PDF Struk telah kami siapkan (*${filename || 'struk.pdf'}*).\n`;
+    msg += `🔗 Unduh E-Faktur Digital: ${invoiceUrl}\n\n`;
+    msg += `_Terima kasih telah berbelanja di Kopi Nusantara Roastery!_`;
 
     window.open(`https://wa.me/${normalized}?text=${encodeURIComponent(msg)}`, '_blank');
   };
@@ -254,7 +289,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <span className="text-emerald-500 text-lg">🧾</span>
             <div>
               <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Struk Konsumen Resmi</h3>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Format Thermal 58mm & E-Invoice</div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Format Thermal 58mm & E-Invoice WhatsApp</div>
             </div>
           </div>
           <button
@@ -269,7 +304,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
         <div className="bg-slate-100/70 dark:bg-slate-950 px-4 py-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
           <div className="flex items-center space-x-2">
             <span className="text-blue-500 text-sm">📶</span>
-            <span className="text-[11px] text-slate-600 dark:text-slate-300">
+            <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
               {connectedPrinterName ? (
                 <span className="text-emerald-600 dark:text-emerald-400 font-bold">Terhubung: {connectedPrinterName}</span>
               ) : (
@@ -300,50 +335,54 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           </div>
         </div>
 
-        {/* WHATSAPP SENDER DRAWER */}
-        <div className="bg-emerald-50 dark:bg-emerald-950/40 p-3 border-b border-emerald-100 dark:border-emerald-800/40">
+        {/* SMART WHATSAPP DISPATCHER (TEXT & PDF) */}
+        <div className="bg-emerald-50 dark:bg-emerald-950/40 p-3.5 border-b border-emerald-100 dark:border-emerald-800/40 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="text-emerald-600 dark:text-emerald-400 text-sm">💬</span>
-              <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">Kirim Struk ke WhatsApp Konsumen</span>
+              <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                Kirim E-Struk ke WhatsApp Pelanggan
+              </span>
             </div>
-            <button
-              onClick={() => setShowWhatsappInput(!showWhatsappInput)}
-              className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline"
-            >
-              {showWhatsappInput ? 'Tutup' : 'Input No. WA'}
-            </button>
+            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full">
+              Format 081...
+            </span>
           </div>
 
-          {showWhatsappInput && (
-            <div className="mt-2.5 space-y-2">
-              <div className="flex space-x-2">
-                <input
-                  type="tel"
-                  placeholder="Contoh: 081234567890 (otomatis +62)"
-                  value={whatsappPhone}
-                  onChange={(e) => setWhatsappPhone(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSendWhatsapp();
-                  }}
-                  className="flex-1 bg-white dark:bg-slate-950 border border-emerald-300 dark:border-emerald-600/50 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-emerald-300 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm"
-                />
-                <button
-                  onClick={handleSendWhatsapp}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center space-x-1.5 shadow-md transition-all active:scale-95 whitespace-nowrap"
-                >
-                  <span>📲</span>
-                  <span>Kirim WA</span>
-                </button>
-              </div>
+          <div className="space-y-2">
+            <input
+              type="tel"
+              placeholder="Ketik No. WhatsApp (contoh: 081234567890)"
+              value={whatsappPhone}
+              onChange={(e) => setWhatsappPhone(e.target.value)}
+              className="w-full bg-white dark:bg-slate-950 border border-emerald-300 dark:border-emerald-600/50 rounded-2xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-emerald-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
+            />
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={handleSendWhatsappText}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-emerald-600/20 transition-all active:scale-95"
+              >
+                <span>💬</span>
+                <span>Kirim WA (Teks)</span>
+              </button>
+
+              <button
+                onClick={handleSendPdfToWhatsapp}
+                disabled={isGeneratingPdf}
+                className="bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-teal-600/20 transition-all active:scale-95"
+              >
+                <span>📕</span>
+                <span>{isGeneratingPdf ? 'Membuat PDF...' : 'Kirim PDF ke WA'}</span>
+              </button>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Thermal Receipt Paper Style (Ref captured for PDF generation) */}
         <div
           ref={receiptRef}
-          className="p-5 bg-amber-50/90 text-slate-900 font-mono text-[11px] leading-relaxed shadow-inner max-h-[46vh] overflow-y-auto print:max-h-none print:p-0"
+          className="p-5 bg-amber-50/90 text-slate-900 font-mono text-[11px] leading-relaxed shadow-inner max-h-[42vh] overflow-y-auto print:max-h-none print:p-0"
         >
           <div className="text-center pb-3 border-b border-dashed border-slate-400">
             <h2 className="text-sm font-black tracking-wider uppercase text-slate-900">
@@ -473,7 +512,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </button>
 
             <button
-              onClick={handleDownloadPdf}
+              onClick={() => handleDownloadPdf()}
               disabled={isGeneratingPdf}
               className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-amber-500/20 transition-all active:scale-95"
             >
