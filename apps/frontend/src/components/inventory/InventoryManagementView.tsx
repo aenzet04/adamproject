@@ -1,39 +1,87 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { useInventoryStore, VendorAgent } from '../../stores/useInventoryStore';
+import {
+  useInventoryStore,
+  VendorAgent,
+  ProductCategory,
+  InventoryItem,
+  PurchaseInboundItem,
+} from '../../stores/useInventoryStore';
 import { useTenantStore } from '../../stores/useTenantStore';
 import { toast } from '../../stores/useToastStore';
 
 export const InventoryManagementView: React.FC = () => {
-  const { vendors, inbounds, transfers, addVendor, addPurchaseInbound, createStockTransfer } = useInventoryStore();
+  const {
+    categories,
+    products,
+    vendors,
+    inbounds,
+    transfers,
+    addCategory,
+    addProductWithStock,
+    addVendor,
+    addPurchaseInbound,
+    addBatchPurchaseInbound,
+    createStockTransfer,
+  } = useInventoryStore();
+
   const { availableWarehouses } = useTenantStore();
 
-  const [activeTab, setActiveTab] = useState<'stock' | 'restock' | 'transfer' | 'vendors'>('restock');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'restock' | 'transfer' | 'vendors'>('catalog');
+  const [restockFlowMode, setRestockFlowMode] = useState<'existing_quick' | 'category_first' | 'batch_inbound'>('existing_quick');
 
-  // Restock Form State
-  const [vendorId, setVendorId] = useState(vendors[0]?.id || '');
-  const [warehouseId, setWarehouseId] = useState(availableWarehouses[0]?.id || 'wh-01');
-  const [productName, setProductName] = useState('Roasted Beans Aceh Gayo 250g');
-  const [invoiceNumber, setInvoiceNumber] = useState(`INV-SUP-${Date.now().toString().slice(-4)}`);
-  const [quantity, setQuantity] = useState<number>(20);
-  const [unitCost, setUnitCost] = useState<number>(45000);
-  const [productPhoto, setProductPhoto] = useState<string>('');
-  const [invoicePdfName, setInvoicePdfName] = useState<string>('');
-  const [invoicePdfDataUrl, setInvoicePdfDataUrl] = useState<string>('');
-  const [restockNotes, setRestockNotes] = useState('');
+  // MODE 1: EXISTING PRODUCT RESTOCK
+  const [selectedExistingProdId, setSelectedExistingProdId] = useState(products[0]?.id || '');
+  const [existingQty, setExistingQty] = useState<number>(20);
+  const [existingUnitCost, setExistingUnitCost] = useState<number>(45000);
+  const [existingVendorId, setExistingVendorId] = useState(vendors[0]?.id || '');
+  const [existingWarehouseId, setExistingWarehouseId] = useState(availableWarehouses[0]?.id || 'wh-01');
+  const [existingInvoiceNo, setExistingInvoiceNo] = useState(`INV-SUP-${Date.now().toString().slice(-4)}`);
+  const [existingPhoto, setExistingPhoto] = useState<string>('');
+  const [existingPdfName, setExistingPdfName] = useState<string>('');
+  const [existingPdfData, setExistingPdfData] = useState<string>('');
+  const [existingNotes, setExistingNotes] = useState('');
 
-  // Transfer Form State
+  // MODE 2: CATEGORY FIRST NEW PRODUCT
+  const [newCatId, setNewCatId] = useState(categories[0]?.id || 'cat-01');
+  const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatIcon, setNewCatIcon] = useState('📦');
+  const [newCatCode, setNewCatCode] = useState('');
+
+  const [newProdName, setNewProdName] = useState('');
+  const [newProdSku, setNewProdSku] = useState('');
+  const [newProdBarcode, setNewProdBarcode] = useState('');
+  const [newProdUom, setNewProdUom] = useState('PCS');
+  const [newProdSellingPrice, setNewProdSellingPrice] = useState<number>(35000);
+  const [newProdStandardCost, setNewProdStandardCost] = useState<number>(15000);
+  const [newProdInitialStock, setNewProdInitialStock] = useState<number>(50);
+  const [newProdMinStock, setNewProdMinStock] = useState<number>(10);
+  const [newProdEmoji, setNewProdEmoji] = useState('📦');
+  const [newProdWarehouseId, setNewProdWarehouseId] = useState('wh-01');
+  const [newProdVendorId, setNewProdVendorId] = useState(vendors[0]?.id || '');
+  const [newProdInvoiceNo, setNewProdInvoiceNo] = useState(`INV-INIT-${Date.now().toString().slice(-4)}`);
+
+  // MODE 3: BATCH INBOUND ITEMS
+  const [batchVendorId, setBatchVendorId] = useState(vendors[0]?.id || '');
+  const [batchWarehouseId, setBatchWarehouseId] = useState('wh-01');
+  const [batchInvoiceNo, setBatchInvoiceNo] = useState(`INV-BATCH-${Date.now().toString().slice(-4)}`);
+  const [batchItems, setBatchItems] = useState<PurchaseInboundItem[]>([
+    { productId: products[0]?.id || 'p-1', productName: products[0]?.name || 'Roasted Beans 250g', quantity: 10, unitCost: 45000, subtotalCost: 450000 },
+  ]);
+
+  // Transfer State
   const [transferType, setTransferType] = useState<'TRANSFER_BIASA' | 'TUKAR_GULING_BARTER'>('TRANSFER_BIASA');
   const [srcWarehouseId, setSrcWarehouseId] = useState('wh-01');
   const [tgtWarehouseId, setTgtWarehouseId] = useState('wh-02');
-  const [transferProduct, setTransferProduct] = useState('Roasted Beans Aceh Gayo 250g');
+  const [transferProduct, setTransferProduct] = useState(products[0]?.name || 'Roasted Beans Aceh Gayo 250g');
   const [transferQty, setTransferQty] = useState<number>(10);
-  const [exchangedProduct, setExchangedProduct] = useState('Cold Brew Bottle 250ml');
+  const [exchangedProduct, setExchangedProduct] = useState(products[1]?.name || 'Cold Brew Bottle 250ml');
   const [exchangedQty, setExchangedQty] = useState<number>(10);
   const [transferNotes, setTransferNotes] = useState('');
 
-  // Add Vendor Form State
+  // Add Vendor State
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
   const [vName, setVName] = useState('');
   const [vContact, setVContact] = useState('');
@@ -42,710 +90,1233 @@ export const InventoryManagementView: React.FC = () => {
   const [vTerms, setVTerms] = useState<VendorAgent['paymentTerms']>('TOP_14');
   const [vAddress, setVAddress] = useState('');
 
+  // Search & Filters in Catalog
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [selectedCatFilter, setSelectedCatFilter] = useState('all');
+
   const photoInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle Photo Upload
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // File Upload Handlers
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
-        setProductPhoto(reader.result);
+        setExistingPhoto(reader.result);
         toast.info('Foto Produk Diunggah', file.name);
       }
     };
     reader.readAsDataURL(file);
   };
 
-  // Handle PDF Upload
-  const handlePdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setInvoicePdfName(file.name);
+    setExistingPdfName(file.name);
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
-        setInvoicePdfDataUrl(reader.result);
+        setExistingPdfData(reader.result);
         toast.success('Faktur PDF Diunggah', file.name);
       }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleRestockSubmit = (e: React.FormEvent) => {
+  // Submit Mode 1: Quick Existing Restock
+  const handleQuickRestockSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const vendor = vendors.find((v) => v.id === vendorId);
-    const wh = availableWarehouses.find((w) => w.id === warehouseId) || { name: 'Gudang Utama Barista GI' };
+    const prod = products.find((p) => p.id === selectedExistingProdId);
+    if (!prod) return;
 
-    const totalCost = quantity * unitCost;
+    const vendor = vendors.find((v) => v.id === existingVendorId);
+    const wh = availableWarehouses.find((w) => w.id === existingWarehouseId) || { name: 'Gudang Utama Barista GI' };
 
     addPurchaseInbound({
-      invoiceNumber,
-      vendorId,
+      invoiceNumber: existingInvoiceNo,
+      vendorId: existingVendorId,
       vendorName: vendor?.name || 'Supplier Utama',
-      warehouseId,
+      warehouseId: existingWarehouseId,
       warehouseName: wh.name,
-      productId: 'prod-012',
-      productName,
-      quantity,
-      unitCost,
-      totalCost,
-      photoUrl: productPhoto,
-      invoicePdfName,
-      invoicePdfDataUrl,
-      notes: restockNotes,
+      productId: prod.id,
+      productName: prod.name,
+      quantity: existingQty,
+      unitCost: existingUnitCost,
+      totalCost: existingQty * existingUnitCost,
+      photoUrl: existingPhoto,
+      invoicePdfName: existingPdfName,
+      invoicePdfDataUrl: existingPdfData,
+      notes: existingNotes,
     });
 
-    toast.success('Stok Berhasil Ditambahkan', `${quantity}x ${productName} masuk ke ${wh.name} (Total: Rp ${totalCost.toLocaleString('id-ID')})`);
-
-    setInvoiceNumber(`INV-SUP-${Date.now().toString().slice(-4)}`);
-    setProductPhoto('');
-    setInvoicePdfName('');
-    setInvoicePdfDataUrl('');
-    setRestockNotes('');
+    toast.success('Stok Berhasil Masuk', `+${existingQty} ${prod.uom} ${prod.name}`);
+    setActiveTab('catalog');
   };
 
-  const handleTransferSubmit = (e: React.FormEvent) => {
+  // Submit Mode 2: Category First New Product Creation
+  const handleCategoryFirstSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (srcWarehouseId === tgtWarehouseId) {
-      toast.warning('Gudang Sama', 'Pilih gudang asal dan gudang tujuan yang berbeda.');
-      return;
+
+    let finalCatId = newCatId;
+    let finalCatName = categories.find((c) => c.id === newCatId)?.name || 'Kopi & Espresso';
+
+    if (isCreatingNewCategory && newCatName) {
+      const createdCat = addCategory({
+        name: newCatName,
+        code: newCatCode || `CAT-${Date.now().toString().slice(-3)}`,
+        icon: newCatIcon || '📦',
+      });
+      finalCatId = createdCat.id;
+      finalCatName = createdCat.name;
     }
 
-    const srcWh = availableWarehouses.find((w) => w.id === srcWarehouseId) || { name: 'Gudang Utama GI' };
-    const tgtWh = availableWarehouses.find((w) => w.id === tgtWarehouseId) || { name: 'Gudang Outlet Senopati' };
+    const autoSku = newProdSku || `SKU-${finalCatName.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+    const autoBarcode = newProdBarcode || `899${Date.now().toString().slice(-7)}`;
 
-    createStockTransfer({
-      transferNumber: `TRF-${Date.now().toString().slice(-6)}`,
-      transferType,
-      sourceWarehouseId: srcWarehouseId,
-      sourceWarehouseName: srcWh.name,
-      targetWarehouseId: tgtWarehouseId,
-      targetWarehouseName: tgtWh.name,
-      productId: 'prod-012',
-      productName: transferProduct,
-      quantity: transferQty,
-      exchangedProductId: transferType === 'TUKAR_GULING_BARTER' ? 'prod-006' : undefined,
-      exchangedProductName: transferType === 'TUKAR_GULING_BARTER' ? exchangedProduct : undefined,
-      exchangedQuantity: transferType === 'TUKAR_GULING_BARTER' ? exchangedQty : undefined,
-      status: 'COMPLETED',
-      notes: transferNotes,
-    });
+    const vendor = vendors.find((v) => v.id === newProdVendorId);
+    const wh = availableWarehouses.find((w) => w.id === newProdWarehouseId) || { name: 'Gudang Utama Barista GI' };
 
-    toast.success(
-      transferType === 'TUKAR_GULING_BARTER' ? 'Tukar Guling Berhasil' : 'Mutasi Stok Berhasil',
-      `${srcWh.name} ➔ ${tgtWh.name}`
+    addProductWithStock(
+      {
+        categoryId: finalCatId,
+        categoryName: finalCatName,
+        name: newProdName,
+        sku: autoSku,
+        barcode: autoBarcode,
+        uom: newProdUom,
+        sellingPrice: newProdSellingPrice,
+        standardCost: newProdStandardCost,
+        stockOnHand: newProdInitialStock,
+        minStockLevel: newProdMinStock,
+        imageEmoji: newProdEmoji,
+      },
+      newProdInitialStock > 0
+        ? {
+            vendorId: newProdVendorId,
+            vendorName: vendor?.name || 'Supplier Utama',
+            warehouseId: newProdWarehouseId,
+            warehouseName: wh.name,
+            invoiceNumber: newProdInvoiceNo,
+            notes: 'Pemasukan stok awal produk baru',
+          }
+        : undefined
     );
 
-    setTransferNotes('');
+    toast.success('Produk & Stok Terdaftar', `${newProdName} (${finalCatName})`);
+    setActiveTab('catalog');
+    setNewProdName('');
+    setIsCreatingNewCategory(false);
   };
 
-  const handleCreateVendor = (e: React.FormEvent) => {
+  // Submit Mode 3: Batch Multi-Item Restock
+  const handleBatchRestockSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vName || !vContact || !vPhone) {
-      toast.error('Data Belum Lengkap', 'Nama vendor, kontak, dan nomor telepon wajib diisi.');
-      return;
-    }
+    const vendor = vendors.find((v) => v.id === batchVendorId);
+    const wh = availableWarehouses.find((w) => w.id === batchWarehouseId) || { name: 'Gudang Utama Barista GI' };
 
-    addVendor({
-      name: vName,
-      contactPerson: vContact,
-      phone: vPhone,
-      category: vCategory,
-      paymentTerms: vTerms,
-      address: vAddress,
-    });
+    addBatchPurchaseInbound(
+      batchInvoiceNo,
+      batchVendorId,
+      vendor?.name || 'Supplier Utama',
+      batchWarehouseId,
+      wh.name,
+      batchItems,
+      existingPdfName,
+      existingPdfData,
+      'Batch restock faktur multi-item'
+    );
 
-    toast.success('Vendor Baru Terdaftar', `${vName} (${vCategory})`);
-    setIsAddVendorOpen(false);
-    setVName('');
-    setVContact('');
-    setVPhone('');
-    setVAddress('');
+    toast.success('Batch Restock Berhasil', `${batchItems.length} barang masuk gudang.`);
+    setActiveTab('catalog');
   };
+
+  // Filtered Products for Catalog
+  const filteredCatalog = products.filter((p) => {
+    const matchesCat = selectedCatFilter === 'all' || p.categoryId === selectedCatFilter;
+    const matchesSearch =
+      p.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+      p.sku.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+      p.barcode.includes(catalogSearch);
+    return matchesCat && matchesSearch;
+  });
 
   return (
-    <div className="p-6 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen transition-colors space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center flex-wrap gap-4">
+    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen transition-colors space-y-6">
+      {/* 1. HEADER */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div className="flex items-center space-x-2">
             <span className="text-2xl">📦</span>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-              Gudang, Tambah Stok, Tukar Guling & Vendor SCM
+            <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100">
+              Manajemen Persediaan Gudang & Supply Chain (SCM)
             </h2>
             <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
-              Multi-Warehouse SCM
+              Multi-Warehouse Core
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Restock barang dengan upload foto & invoice PDF, mutasi tukar guling antar outlet, dan database vendor/agen.
+            Tambah stok barang dengan 3 alur fleksibel (Cepat dari Katalog, Mulai dari Kategori ala Olsera, atau Batch Masal), mutasi gudang, dan CRM vendor.
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="bg-slate-200 dark:bg-slate-900 p-1 rounded-2xl border border-slate-300 dark:border-slate-800 flex space-x-1">
+        <div className="flex items-center space-x-2 w-full md:w-auto">
           <button
-            onClick={() => setActiveTab('restock')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
-              activeTab === 'restock'
-                ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
+            onClick={() => {
+              setActiveTab('restock');
+              setRestockFlowMode('category_first');
+            }}
+            className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-2xl text-xs shadow-md shadow-red-600/20 active:scale-95 flex items-center space-x-1.5"
           >
-            <span>➕</span>
-            <span>Tambah Stok & Invoice PDF</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('transfer')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
-              activeTab === 'transfer'
-                ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <span>🔄</span>
-            <span>Pindah Stok & Tukar Guling</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('vendors')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
-              activeTab === 'vendors'
-                ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <span>🏢</span>
-            <span>Manajemen Vendor / Agen</span>
+            <span>+</span>
+            <span>Tambah Barang / Stok Baru</span>
           </button>
         </div>
       </div>
 
-      {/* 1. RESTOCK INBOUND TAB (UPLOAD FOTO + PDF INVOICE) */}
-      {activeTab === 'restock' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Restock Form */}
-          <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-            <div className="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-              <span className="text-lg">🛒</span>
-              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                Form Belanja Stok Baru & Restock Inbound
-              </h3>
+      {/* 2. TABS SWITCHER */}
+      <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto scrollbar-none">
+        <button
+          onClick={() => setActiveTab('catalog')}
+          className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+            activeTab === 'catalog'
+              ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <span>📦</span>
+          <span>Katalog Barang & Stok ({products.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('restock')}
+          className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+            activeTab === 'restock'
+              ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <span>📥</span>
+          <span>Tambah Stok & Buat Barang Baru</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('transfer')}
+          className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+            activeTab === 'transfer'
+              ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <span>🔄</span>
+          <span>Mutasi Gudang & Tukar Guling ({transfers.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('vendors')}
+          className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+            activeTab === 'vendors'
+              ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <span>🤝</span>
+          <span>Direktori Vendor & Supplier ({vendors.length})</span>
+        </button>
+      </div>
+
+      {/* 3. TAB 1: PRODUCT CATALOG & REALTIME STOCK MATRIX */}
+      {activeTab === 'catalog' && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+              <input
+                type="text"
+                placeholder="Cari nama produk, SKU, barcode..."
+                value={catalogSearch}
+                onChange={(e) => setCatalogSearch(e.target.value)}
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-60"
+              />
+
+              <select
+                value={selectedCatFilter}
+                onChange={(e) => setSelectedCatFilter(e.target.value)}
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:outline-none"
+              >
+                <option value="all">Semua Kategori ({categories.length})</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.icon} {c.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <form onSubmit={handleRestockSubmit} className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Vendor / Agen Suplier</label>
-                  <select
-                    value={vendorId}
-                    onChange={(e) => setVendorId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 font-semibold"
-                  >
-                    {vendors.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name} ({v.category})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Gudang Tujuan Masuk</label>
-                  <select
-                    value={warehouseId}
-                    onChange={(e) => setWarehouseId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 font-semibold"
-                  >
-                    {availableWarehouses.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">No. Invoice / Faktur</label>
-                  <input
-                    type="text"
-                    required
-                    value={invoiceNumber}
-                    onChange={(e) => setInvoiceNumber(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold text-red-600 dark:text-red-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Produk / Bahan</label>
-                  <input
-                    type="text"
-                    required
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Kuantitas Masuk (Qty)</label>
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Harga Beli Satuan (Rp HPP)</label>
-                  <input
-                    type="number"
-                    required
-                    min={0}
-                    value={unitCost}
-                    onChange={(e) => setUnitCost(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold text-red-600 dark:text-red-400"
-                  />
-                </div>
-              </div>
-
-              {/* PHOTO UPLOAD & PDF INVOICE ATTACHMENTS */}
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                {/* Photo Upload Box */}
-                <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
-                  <span className="font-bold text-slate-700 dark:text-slate-300 block">📷 Foto Produk Fisik:</span>
-                  {productPhoto ? (
-                    <div className="relative group">
-                      <img
-                        src={productPhoto}
-                        alt="Preview"
-                        className="w-full h-24 object-cover rounded-xl border border-slate-300 dark:border-slate-700"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => photoInputRef.current?.click()}
-                        className="absolute inset-0 bg-black/60 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-bold"
-                      >
-                        Ganti Foto
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => photoInputRef.current?.click()}
-                      className="w-full h-24 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:border-red-500 hover:text-red-500 transition-all text-[11px]"
-                    >
-                      <span>📁 Klik Upload Foto</span>
-                    </button>
-                  )}
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoChange}
-                    className="hidden"
-                  />
-                </div>
-
-                {/* PDF Invoice Upload Box */}
-                <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
-                  <span className="font-bold text-slate-700 dark:text-slate-300 block">📄 File Faktur PDF Supplier:</span>
-                  {invoicePdfName ? (
-                    <div className="h-24 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl p-2.5 flex flex-col justify-between text-[11px]">
-                      <div className="font-bold text-red-900 dark:text-red-200 truncate">
-                        📕 {invoicePdfName}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => pdfInputRef.current?.click()}
-                        className="text-[10px] text-red-600 dark:text-red-400 font-bold hover:underline"
-                      >
-                        Ganti File PDF
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => pdfInputRef.current?.click()}
-                      className="w-full h-24 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:border-red-500 hover:text-red-500 transition-all text-[11px]"
-                    >
-                      <span>📕 Klik Upload PDF Invoice</span>
-                    </button>
-                  )}
-                  <input
-                    ref={pdfInputRef}
-                    type="file"
-                    accept=".pdf"
-                    onChange={handlePdfChange}
-                    className="hidden"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Catatan Inbound</label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Batch pengiriman roasting minggu ke-1 September"
-                  value={restockNotes}
-                  onChange={(e) => setRestockNotes(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2"
-                />
-              </div>
-
-              <div className="pt-2 flex justify-between items-center border-t border-slate-100 dark:border-slate-800">
-                <div className="font-mono">
-                  <span className="text-[10px] text-slate-400 block">Total Nilai Restock:</span>
-                  <span className="text-sm font-black text-red-600 dark:text-red-400">
-                    Rp {(quantity * unitCost).toLocaleString('id-ID')}
-                  </span>
-                </div>
-
-                <button
-                  type="submit"
-                  className="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2.5 rounded-2xl shadow-md shadow-red-600/20 transition-all active:scale-95"
-                >
-                  Simpan & Tambah Stok Masuk
-                </button>
-              </div>
-            </form>
+            <div className="text-xs text-slate-500 font-mono">
+              Total {filteredCatalog.length} SKU Terdaftar
+            </div>
           </div>
 
-          {/* Inbound History Log */}
-          <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-              Riwayat Pembelian & Faktur Masuk ({inbounds.length})
-            </h3>
+          {/* Catalog Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-mono text-[10px]">
+                  <th className="pb-3">Produk</th>
+                  <th className="pb-3">Kategori</th>
+                  <th className="pb-3">SKU / Barcode</th>
+                  <th className="pb-3 text-right">Harga Jual</th>
+                  <th className="pb-3 text-right">HPP Standar</th>
+                  <th className="pb-3 text-right">Margin Laba</th>
+                  <th className="pb-3 text-center">Stok Gudang</th>
+                  <th className="pb-3 text-right">Aksi Cepat</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredCatalog.map((p) => {
+                  const marginPct =
+                    p.sellingPrice > 0 ? Math.round(((p.sellingPrice - p.standardCost) / p.sellingPrice) * 100) : 0;
+                  const isLow = p.stockOnHand <= p.minStockLevel;
 
-            {inbounds.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-xs">
-                <span className="text-3xl mb-2 block">📋</span>
-                Belum ada transaksi belanja stok baru hari ini. Silakan input form di sebelah kiri.
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1">
-                {inbounds.map((inb) => (
-                  <div
-                    key={inb.id}
-                    className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-start justify-between gap-3"
-                  >
-                    <div className="flex items-start space-x-3">
-                      {inb.photoUrl ? (
-                        <img
-                          src={inb.photoUrl}
-                          alt={inb.productName}
-                          className="w-12 h-12 object-cover rounded-xl border border-red-500/40"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-xl">
-                          📦
+                  return (
+                    <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3 flex items-center space-x-2.5">
+                        <span className="text-2xl">{p.imageEmoji}</span>
+                        <div>
+                          <div className="font-bold text-slate-800 dark:text-slate-100">{p.name}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">Satuan: {p.uom}</div>
                         </div>
-                      )}
-
-                      <div className="space-y-0.5">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-mono text-[10px] font-bold text-red-600 dark:text-red-400">
-                            {inb.invoiceNumber}
-                          </span>
-                          <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                            {inb.productName}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-slate-500 font-mono">
-                          {inb.quantity}x @ Rp {inb.unitCost.toLocaleString('id-ID')} ➔ {inb.warehouseName}
-                        </div>
-                        <div className="text-[10px] text-slate-400">Vendor: {inb.vendorName}</div>
-                      </div>
-                    </div>
-
-                    <div className="text-right space-y-1">
-                      <div className="text-xs font-black font-mono text-red-600 dark:text-red-400">
-                        Rp {inb.totalCost.toLocaleString('id-ID')}
-                      </div>
-                      {inb.invoicePdfDataUrl && (
-                        <a
-                          href={inb.invoicePdfDataUrl}
-                          download={inb.invoicePdfName || 'faktur-supplier.pdf'}
-                          className="text-[10px] text-red-500 hover:underline font-bold inline-block"
+                      </td>
+                      <td className="py-3">
+                        <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full font-bold text-slate-600 dark:text-slate-400">
+                          {p.categoryName}
+                        </span>
+                      </td>
+                      <td className="py-3 font-mono text-[10px] text-slate-500">
+                        <div>SKU: {p.sku}</div>
+                        <div>Barcode: {p.barcode}</div>
+                      </td>
+                      <td className="py-3 text-right font-mono font-bold text-red-600 dark:text-red-400">
+                        Rp {p.sellingPrice.toLocaleString('id-ID')}
+                      </td>
+                      <td className="py-3 text-right font-mono text-slate-500">
+                        Rp {p.standardCost.toLocaleString('id-ID')}
+                      </td>
+                      <td className="py-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        {marginPct}%
+                      </td>
+                      <td className="py-3 text-center font-mono">
+                        <span
+                          className={`font-bold px-2.5 py-1 rounded-full text-xs ${
+                            isLow
+                              ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300'
+                              : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                          }`}
                         >
-                          📥 Unduh PDF
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                          {p.stockOnHand} {p.uom} {isLow && '⚠️ Sisa Sedikit'}
+                        </span>
+                      </td>
+                      <td className="py-3 text-right">
+                        <button
+                          onClick={() => {
+                            setSelectedExistingProdId(p.id);
+                            setExistingUnitCost(p.standardCost);
+                            setRestockFlowMode('existing_quick');
+                            setActiveTab('restock');
+                          }}
+                          className="bg-red-50 dark:bg-red-950/50 hover:bg-red-100 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 px-3 py-1.5 rounded-xl font-bold text-xs"
+                        >
+                          + Restock
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* 2. TRANSFER & TUKAR GULING TAB */}
-      {activeTab === 'transfer' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Transfer Form */}
-          <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-            <div className="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-              <span className="text-lg">🔄</span>
-              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                Mutasi & Tukar Guling Antar Gudang
-              </h3>
-            </div>
-
-            <form onSubmit={handleTransferSubmit} className="space-y-3.5 text-xs">
-              {/* Transfer Type Switcher */}
-              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setTransferType('TRANSFER_BIASA')}
-                  className={`py-2 rounded-xl text-xs font-bold transition-all ${
-                    transferType === 'TRANSFER_BIASA'
-                      ? 'bg-red-600 text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  Pindah Stok Biasa
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTransferType('TUKAR_GULING_BARTER')}
-                  className={`py-2 rounded-xl text-xs font-bold transition-all ${
-                    transferType === 'TUKAR_GULING_BARTER'
-                      ? 'bg-red-600 text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  Tukar Guling (Barter)
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Gudang Asal (Pengirim)</label>
-                  <select
-                    value={srcWarehouseId}
-                    onChange={(e) => setSrcWarehouseId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 font-semibold"
-                  >
-                    {availableWarehouses.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Gudang Tujuan (Penerima)</label>
-                  <select
-                    value={tgtWarehouseId}
-                    onChange={(e) => setTgtWarehouseId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 font-semibold"
-                  >
-                    {availableWarehouses.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
-                <span className="font-bold text-slate-800 dark:text-slate-200 block">
-                  Barang yang Dikirim (Asal ➔ Tujuan):
+      {/* 4. TAB 2: REDESIGNED MULTI-MODE RESTOCK & ADD PRODUCT (ALA OLSERA / MOKA) */}
+      {activeTab === 'restock' && (
+        <div className="space-y-4">
+          {/* FLOW MODE SWITCHER */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={() => setRestockFlowMode('existing_quick')}
+              className={`p-4 rounded-3xl border text-left space-y-1 transition-all ${
+                restockFlowMode === 'existing_quick'
+                  ? 'bg-red-50 dark:bg-red-950/50 border-red-500 shadow-md ring-1 ring-red-500/30'
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <span className="text-xl">⚡</span>
+                <span className="font-bold text-xs text-slate-800 dark:text-slate-100">
+                  1. Tambah Stok Cepat dari Katalog
                 </span>
-                <div className="grid grid-cols-3 gap-2">
-                  <input
-                    type="text"
-                    required
-                    value={transferProduct}
-                    onChange={(e) => setTransferProduct(e.target.value)}
-                    placeholder="Nama Barang"
-                    className="col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 font-semibold"
-                  />
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    value={transferQty}
-                    onChange={(e) => setTransferQty(parseInt(e.target.value) || 0)}
-                    placeholder="Qty"
-                    className="col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 font-mono font-bold text-center"
-                  />
-                </div>
               </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Pilih barang yang sudah ada di sistem dan langsung masukkan jumlah restock & faktur.
+              </p>
+            </button>
 
-              {/* Tukar Guling Return Item */}
-              {transferType === 'TUKAR_GULING_BARTER' && (
-                <div className="p-3 bg-red-50 dark:bg-red-950/40 rounded-2xl border border-red-200 dark:border-red-800/40 space-y-2">
-                  <span className="font-bold text-red-900 dark:text-red-200 block">
-                    🔄 Barang Pengganti / Tukar Guling (Tujuan ➔ Asal):
-                  </span>
-                  <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => setRestockFlowMode('category_first')}
+              className={`p-4 rounded-3xl border text-left space-y-1 transition-all ${
+                restockFlowMode === 'category_first'
+                  ? 'bg-red-50 dark:bg-red-950/50 border-red-500 shadow-md ring-1 ring-red-500/30'
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <span className="text-xl">🥐</span>
+                <span className="font-bold text-xs text-slate-800 dark:text-slate-100">
+                  2. Buat Barang Baru (Pilih Kategori)
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Alur ala Olsera: Pilih/buat kategori dulu, isi detail harga & HPP, lalu input stok awal.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRestockFlowMode('batch_inbound')}
+              className={`p-4 rounded-3xl border text-left space-y-1 transition-all ${
+                restockFlowMode === 'batch_inbound'
+                  ? 'bg-red-50 dark:bg-red-950/50 border-red-500 shadow-md ring-1 ring-red-500/30'
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <span className="text-xl">📋</span>
+                <span className="font-bold text-xs text-slate-800 dark:text-slate-100">
+                  3. Restock Masal (1 Faktur Multi-Item)
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Pemasukan beberapa jenis barang sekaligus dalam 1 nota/surat jalan supplier.
+              </p>
+            </button>
+          </div>
+
+          {/* FLOW FORM 1: QUICK RESTOCK EXISTING ITEM */}
+          {restockFlowMode === 'existing_quick' && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
+                <span>⚡</span>
+                <span>Pemasukan Stok Barang dari Katalog yang Sudah Terdaftar</span>
+              </h3>
+
+              <form onSubmit={handleQuickRestockSubmit} className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Pilih Produk</label>
+                    <select
+                      value={selectedExistingProdId}
+                      onChange={(e) => {
+                        setSelectedExistingProdId(e.target.value);
+                        const p = products.find((x) => x.id === e.target.value);
+                        if (p) setExistingUnitCost(p.standardCost);
+                      }}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                    >
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.imageEmoji} {p.name} (Stok Saat Ini: {p.stockOnHand} {p.uom})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Jumlah Masuk (Qty)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      required
+                      value={existingQty}
+                      onChange={(e) => setExistingQty(parseInt(e.target.value) || 1)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Harga Beli / HPP Satuan (Rp)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      required
+                      value={existingUnitCost}
+                      onChange={(e) => setExistingUnitCost(parseInt(e.target.value) || 0)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Total Nilai Pembelian (Rp)</label>
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-black text-red-600 dark:text-red-400">
+                      Rp {(existingQty * existingUnitCost).toLocaleString('id-ID')}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Vendor / Agen Supplier</label>
+                    <select
+                      value={existingVendorId}
+                      onChange={(e) => setExistingVendorId(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                    >
+                      {vendors.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.name} ({v.category})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Gudang Cabang Tujuan</label>
+                    <select
+                      value={existingWarehouseId}
+                      onChange={(e) => setExistingWarehouseId(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                    >
+                      {availableWarehouses.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nomor Faktur / Invoice</label>
                     <input
                       type="text"
                       required
-                      value={exchangedProduct}
-                      onChange={(e) => setExchangedProduct(e.target.value)}
-                      placeholder="Nama Barang Ditukar"
-                      className="col-span-2 bg-white dark:bg-slate-900 border border-red-300 dark:border-red-700 rounded-xl px-2.5 py-1.5 font-semibold"
+                      value={existingInvoiceNo}
+                      onChange={(e) => setExistingInvoiceNo(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold"
                     />
+                  </div>
+                </div>
+
+                {/* Upload Section */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 block">Foto Fisik Barang:</span>
+                      <span className="text-[10px] text-slate-400">
+                        {existingPhoto ? '✓ Foto berhasil diunggah' : 'Upload foto saat unboxing barang'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => photoInputRef.current?.click()}
+                      className="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 px-3 py-1.5 rounded-xl font-bold text-xs"
+                    >
+                      {existingPhoto ? 'Ganti Foto' : '📷 Upload Foto'}
+                    </button>
+                    <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                  </div>
+
+                  <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 block">Dokumen Faktur (PDF):</span>
+                      <span className="text-[10px] text-slate-400">
+                        {existingPdfName ? `📄 ${existingPdfName}` : 'Lampirkan PDF invoice supplier'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => pdfInputRef.current?.click()}
+                      className="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 px-3 py-1.5 rounded-xl font-bold text-xs"
+                    >
+                      {existingPdfName ? 'Ganti PDF' : '📄 Upload PDF'}
+                    </button>
+                    <input ref={pdfInputRef} type="file" accept="application/pdf" onChange={handlePdfUpload} className="hidden" />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    className="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2.5 rounded-2xl shadow-lg shadow-red-600/20 active:scale-95"
+                  >
+                    Simpan & Tambah Stok Masuk
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* FLOW FORM 2: CATEGORY-FIRST NEW PRODUCT CREATION */}
+          {restockFlowMode === 'category_first' && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
+                <span>🥐</span>
+                <span>Buat Barang Baru Mulai dari Kategori (Alur Olsera / Moka Modern)</span>
+              </h3>
+
+              <form onSubmit={handleCategoryFirstSubmit} className="space-y-4 text-xs">
+                {/* STEP 1: CATEGORY SELECTION OR CREATION */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      Langkah 1: Pilih atau Buat Kategori Produk
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsCreatingNewCategory(!isCreatingNewCategory)}
+                      className="text-red-600 dark:text-red-400 font-bold hover:underline"
+                    >
+                      {isCreatingNewCategory ? '← Gunakan Kategori yang Ada' : '+ Buat Kategori Baru'}
+                    </button>
+                  </div>
+
+                  {!isCreatingNewCategory ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                      {categories.map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setNewCatId(cat.id)}
+                          className={`p-3 rounded-xl border text-center font-bold transition-all ${
+                            newCatId === cat.id
+                              ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                          }`}
+                        >
+                          <span className="text-xl block mb-1">{cat.icon}</span>
+                          <span>{cat.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div>
+                        <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">Nama Kategori Baru</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Contoh: Aneka Jus & Smoothies"
+                          value={newCatName}
+                          onChange={(e) => setNewCatName(e.target.value)}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">Ikon / Emoji Kategori</label>
+                        <input
+                          type="text"
+                          placeholder="🍹"
+                          value={newCatIcon}
+                          onChange={(e) => setNewCatIcon(e.target.value)}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-center text-base"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">Kode Kategori</label>
+                        <input
+                          type="text"
+                          placeholder="BEV-JUS"
+                          value={newCatCode}
+                          onChange={(e) => setNewCatCode(e.target.value)}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 font-mono"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* STEP 2: PRODUCT IDENTITY & PRICING */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                    Langkah 2: Detail Identitas Barang & Penetapan Harga
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Produk Barang</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Contoh: Mango Tango Smoothie"
+                        value={newProdName}
+                        onChange={(e) => setNewProdName(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Satuan Satuan (UOM)</label>
+                      <select
+                        value={newProdUom}
+                        onChange={(e) => setNewProdUom(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                      >
+                        <option value="CUP">CUP (Gelas)</option>
+                        <option value="PCS">PCS (Pieces)</option>
+                        <option value="PORTION">PORTION (Porsi)</option>
+                        <option value="BOTTLE">BOTTLE (Botol)</option>
+                        <option value="BAG">BAG (Bungkus 250g/1kg)</option>
+                        <option value="KG">KG (Kilogram)</option>
+                        <option value="LITER">LITER</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Ikon / Emoji Produk</label>
+                      <input
+                        type="text"
+                        placeholder="🥭"
+                        value={newProdEmoji}
+                        onChange={(e) => setNewProdEmoji(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-center text-base"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Harga Jual Konsumen (Rp)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        required
+                        value={newProdSellingPrice}
+                        onChange={(e) => setNewProdSellingPrice(parseInt(e.target.value) || 0)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold text-red-600 dark:text-red-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">HPP Standar / Modal (Rp)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        required
+                        value={newProdStandardCost}
+                        onChange={(e) => setNewProdStandardCost(parseInt(e.target.value) || 0)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Estimasi Margin Laba</label>
+                      <div className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        {newProdSellingPrice > 0
+                          ? `${Math.round(((newProdSellingPrice - newProdStandardCost) / newProdSellingPrice) * 100)}% (Rp ${(newProdSellingPrice - newProdStandardCost).toLocaleString('id-ID')})`
+                          : '0%'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* STEP 3: INITIAL STOCK & WAREHOUSE ALLOCATION */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                    Langkah 3: Stok Awal & Alokasi Gudang Cabang
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Stok Awal Masuk</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={newProdInitialStock}
+                        onChange={(e) => setNewProdInitialStock(parseInt(e.target.value) || 0)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Batas Minimum Stok (Alert)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={newProdMinStock}
+                        onChange={(e) => setNewProdMinStock(parseInt(e.target.value) || 1)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Gudang Cabang</label>
+                      <select
+                        value={newProdWarehouseId}
+                        onChange={(e) => setNewProdWarehouseId(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                      >
+                        {availableWarehouses.map((w) => (
+                          <option key={w.id} value={w.id}>
+                            {w.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Vendor Pembelian</label>
+                      <select
+                        value={newProdVendorId}
+                        onChange={(e) => setNewProdVendorId(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                      >
+                        {vendors.map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {v.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    className="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2.5 rounded-2xl shadow-lg shadow-red-600/20 active:scale-95"
+                  >
+                    Simpan Produk & Masukkan ke Katalog
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* FLOW FORM 3: BATCH MULTI-ITEM RESTOCK */}
+          {restockFlowMode === 'batch_inbound' && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
+                <span>📋</span>
+                <span>Restock Masal Multi-Item (1 Faktur Pembelian Supplier)</span>
+              </h3>
+
+              <form onSubmit={handleBatchRestockSubmit} className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Vendor Supplier</label>
+                    <select
+                      value={batchVendorId}
+                      onChange={(e) => setBatchVendorId(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                    >
+                      {vendors.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.name} ({v.category})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Gudang Penerima</label>
+                    <select
+                      value={batchWarehouseId}
+                      onChange={(e) => setBatchWarehouseId(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                    >
+                      {availableWarehouses.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">No. Faktur / Invoice</label>
                     <input
-                      type="number"
+                      type="text"
                       required
-                      min={1}
-                      value={exchangedQty}
-                      onChange={(e) => setExchangedQty(parseInt(e.target.value) || 0)}
-                      placeholder="Qty"
-                      className="col-span-1 bg-white dark:bg-slate-900 border border-red-300 dark:border-red-700 rounded-xl px-2.5 py-1.5 font-mono font-bold text-center"
+                      value={batchInvoiceNo}
+                      onChange={(e) => setBatchInvoiceNo(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold"
                     />
+                  </div>
+                </div>
+
+                {/* Batch Items List */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      Daftar Item dalam Faktur ({batchItems.length})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBatchItems([
+                          ...batchItems,
+                          {
+                            productId: products[0]?.id || 'p-1',
+                            productName: products[0]?.name || 'Roasted Beans 250g',
+                            quantity: 10,
+                            unitCost: 45000,
+                            subtotalCost: 450000,
+                          },
+                        ])
+                      }
+                      className="text-red-600 dark:text-red-400 font-bold hover:underline"
+                    >
+                      + Tambah Baris Item
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {batchItems.map((item, idx) => (
+                      <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <div className="col-span-5">
+                          <select
+                            value={item.productId}
+                            onChange={(e) => {
+                              const found = products.find((p) => p.id === e.target.value);
+                              const updated = [...batchItems];
+                              updated[idx] = {
+                                ...updated[idx],
+                                productId: e.target.value,
+                                productName: found ? found.name : item.productName,
+                                unitCost: found ? found.standardCost : item.unitCost,
+                                subtotalCost: (found ? found.standardCost : item.unitCost) * updated[idx].quantity,
+                              };
+                              setBatchItems(updated);
+                            }}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 font-semibold text-xs"
+                          >
+                            {products.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="col-span-2">
+                          <input
+                            type="number"
+                            min={1}
+                            placeholder="Qty"
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const q = parseInt(e.target.value) || 1;
+                              const updated = [...batchItems];
+                              updated[idx] = {
+                                ...updated[idx],
+                                quantity: q,
+                                subtotalCost: q * updated[idx].unitCost,
+                              };
+                              setBatchItems(updated);
+                            }}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 font-mono font-bold text-xs"
+                          />
+                        </div>
+
+                        <div className="col-span-2">
+                          <input
+                            type="number"
+                            min={0}
+                            placeholder="HPP (Rp)"
+                            value={item.unitCost}
+                            onChange={(e) => {
+                              const c = parseInt(e.target.value) || 0;
+                              const updated = [...batchItems];
+                              updated[idx] = {
+                                ...updated[idx],
+                                unitCost: c,
+                                subtotalCost: updated[idx].quantity * c,
+                              };
+                              setBatchItems(updated);
+                            }}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 font-mono font-bold text-xs"
+                          />
+                        </div>
+
+                        <div className="col-span-2 text-right font-mono font-bold text-red-600 dark:text-red-400 text-xs">
+                          Rp {item.subtotalCost.toLocaleString('id-ID')}
+                        </div>
+
+                        <div className="col-span-1 text-center">
+                          {batchItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setBatchItems(batchItems.filter((_, i) => i !== idx))}
+                              className="text-rose-500 font-bold"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-2 flex justify-between items-center font-bold text-xs">
+                    <span>Total Keseluruhan Faktur:</span>
+                    <span className="font-mono text-base font-black text-red-600 dark:text-red-400">
+                      Rp {batchItems.reduce((s, i) => s + i.subtotalCost, 0).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    className="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2.5 rounded-2xl shadow-lg shadow-red-600/20 active:scale-95"
+                  >
+                    Proses Restock Masal
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 5. TAB 3: TRANSFER & INTER-WAREHOUSE BARTER */}
+      {activeTab === 'transfer' && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
+            <span>🔄</span>
+            <span>Mutasi Stok & Tukar Guling Antar Gudang Cabang (1 Brand)</span>
+          </h3>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Transfer Form */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const src = availableWarehouses.find((w) => w.id === srcWarehouseId);
+                const tgt = availableWarehouses.find((w) => w.id === tgtWarehouseId);
+
+                createStockTransfer({
+                  transferNumber: `TRF-${Date.now().toString().slice(-4)}`,
+                  transferType,
+                  sourceWarehouseId: srcWarehouseId,
+                  sourceWarehouseName: src?.name || 'Gudang Asal',
+                  targetWarehouseId: tgtWarehouseId,
+                  targetWarehouseName: tgt?.name || 'Gudang Tujuan',
+                  productId: 'prod-012',
+                  productName: transferProduct,
+                  quantity: transferQty,
+                  exchangedProductId: transferType === 'TUKAR_GULING_BARTER' ? 'prod-006' : undefined,
+                  exchangedProductName: transferType === 'TUKAR_GULING_BARTER' ? exchangedProduct : undefined,
+                  exchangedQuantity: transferType === 'TUKAR_GULING_BARTER' ? exchangedQty : undefined,
+                  status: 'COMPLETED',
+                  notes: transferNotes,
+                });
+
+                toast.success('Mutasi Berhasil', `${transferProduct} dipindahkan ke ${tgt?.name}`);
+              }}
+              className="space-y-3 text-xs"
+            >
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Jenis Mutasi</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTransferType('TRANSFER_BIASA')}
+                    className={`py-2 rounded-xl font-bold border transition-all ${
+                      transferType === 'TRANSFER_BIASA'
+                        ? 'bg-red-600 text-white border-red-500 shadow-sm'
+                        : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    Transfer Stok Biasa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTransferType('TUKAR_GULING_BARTER')}
+                    className={`py-2 rounded-xl font-bold border transition-all ${
+                      transferType === 'TUKAR_GULING_BARTER'
+                        ? 'bg-red-600 text-white border-red-500 shadow-sm'
+                        : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    🔄 Tukar Guling (Barter)
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Gudang Asal</label>
+                  <select
+                    value={srcWarehouseId}
+                    onChange={(e) => setSrcWarehouseId(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                  >
+                    {availableWarehouses.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Gudang Tujuan</label>
+                  <select
+                    value={tgtWarehouseId}
+                    onChange={(e) => setTgtWarehouseId(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                  >
+                    {availableWarehouses.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2">
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Produk yang Dikirim</label>
+                  <input
+                    type="text"
+                    value={transferProduct}
+                    onChange={(e) => setTransferProduct(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Qty</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={transferQty}
+                    onChange={(e) => setTransferQty(parseInt(e.target.value) || 1)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              {transferType === 'TUKAR_GULING_BARTER' && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-300 dark:border-amber-800 space-y-2">
+                  <span className="font-bold text-amber-800 dark:text-amber-300 block">
+                    🔄 Produk Pengganti Tukar Guling:
+                  </span>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2">
+                      <input
+                        type="text"
+                        value={exchangedProduct}
+                        onChange={(e) => setExchangedProduct(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-1.5 font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        min={1}
+                        value={exchangedQty}
+                        onChange={(e) => setExchangedQty(parseInt(e.target.value) || 1)}
+                        className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-1.5 font-mono font-bold"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
 
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Catatan Mutasi</label>
-                <input
-                  type="text"
-                  placeholder="Alasan pemindahan / tukar guling persediaan..."
-                  value={transferNotes}
-                  onChange={(e) => setTransferNotes(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2"
-                />
-              </div>
-
               <button
                 type="submit"
-                className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-2xl shadow-md shadow-red-600/20 transition-all active:scale-95"
+                className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-2xl shadow-md"
               >
-                {transferType === 'TUKAR_GULING_BARTER' ? 'Eksekusi Tukar Guling' : 'Eksekusi Pindah Stok'}
+                Kirim Mutasi Stok
               </button>
             </form>
-          </div>
 
-          {/* Transfer History Log */}
-          <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-              Riwayat Mutasi & Tukar Guling Antar Outlet ({transfers.length})
-            </h3>
-
-            <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1">
-              {transfers.map((tr) => (
-                <div
-                  key={tr.id}
-                  className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2"
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-mono text-xs font-bold text-red-600 dark:text-red-400">
-                        {tr.transferNumber}
-                      </span>
-                      <span
-                        className={`text-[9px] font-bold px-2 py-0.5 rounded-full font-mono ${
-                          tr.transferType === 'TUKAR_GULING_BARTER'
-                            ? 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300'
-                            : 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
-                        }`}
-                      >
-                        {tr.transferType.replace(/_/g, ' ')}
+            {/* Transfer History */}
+            <div className="space-y-2">
+              <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px] font-mono block">
+                Riwayat Mutasi & Barter ({transfers.length})
+              </span>
+              <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                {transfers.map((t) => (
+                  <div
+                    key={t.id}
+                    className="p-3.5 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs space-y-1"
+                  >
+                    <div className="flex justify-between items-start">
+                      <span className="font-bold text-slate-800 dark:text-slate-100">{t.transferNumber}</span>
+                      <span className="text-[9px] font-mono bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                        {t.status}
                       </span>
                     </div>
-
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {new Date(tr.transferredAt).toLocaleString('id-ID')}
-                    </span>
-                  </div>
-
-                  <div className="text-xs space-y-1">
-                    <div className="font-bold text-slate-800 dark:text-slate-100">
-                      {tr.sourceWarehouseName} ➔ {tr.targetWarehouseName}
+                    <div className="text-[11px] text-slate-600 dark:text-slate-400">
+                      <b>{t.quantity}x {t.productName}</b> dari <i>{t.sourceWarehouseName}</i> ➔ <i>{t.targetWarehouseName}</i>
                     </div>
-                    <div className="text-slate-600 dark:text-slate-300">
-                      Barang: <b>{tr.quantity}x {tr.productName}</b>
-                    </div>
-                    {tr.exchangedProductName && (
-                      <div className="text-purple-600 dark:text-purple-400 font-semibold">
-                        🔄 Ditukar dengan: <b>{tr.exchangedQuantity}x {tr.exchangedProductName}</b>
+                    {t.exchangedProductName && (
+                      <div className="text-[10px] text-amber-600 font-mono">
+                        🔄 Barter dengan: {t.exchangedQuantity}x {t.exchangedProductName}
                       </div>
                     )}
-                    {tr.notes && (
-                      <div className="text-[10px] text-slate-400 italic">Catatan: {tr.notes}</div>
-                    )}
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 3. VENDORS & AGENTS TAB */}
+      {/* 6. TAB 4: VENDORS DIRECTORY */}
       {activeTab === 'vendors' && (
-        <div className="space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-              Direktori Vendor, Roastery & Agen Pasokan ({vendors.length})
-            </h3>
-
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                Direktori Vendor & Agen Supplier Resmi
+              </h3>
+              <p className="text-xs text-slate-400">Manajemen kontrak vendor, kontak agen, dan termin pembayaran.</p>
+            </div>
             <button
               onClick={() => setIsAddVendorOpen(true)}
-              className="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2 rounded-2xl text-xs flex items-center space-x-1.5 shadow-md shadow-red-600/20"
+              className="bg-red-600 hover:bg-red-500 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-md"
             >
-              <span>+</span>
-              <span>Tambah Vendor Baru</span>
+              + Tambah Vendor Baru
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {vendors.map((v) => (
               <div
                 key={v.id}
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm flex flex-col justify-between space-y-3"
+                className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-xs"
               >
-                <div>
-                  <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-bold font-mono text-slate-400 uppercase">
-                      {v.category}
-                    </span>
-                    <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
-                      {v.paymentTerms}
-                    </span>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100">{v.name}</h4>
+                    <div className="text-[11px] text-slate-500">PIC: {v.contactPerson}</div>
                   </div>
-
-                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-2">{v.name}</h4>
-                  <div className="text-xs text-slate-500 mt-0.5">Kontak: {v.contactPerson}</div>
-                  <div className="text-[11px] text-red-600 dark:text-red-400 font-mono mt-1">{v.phone}</div>
-                  {v.address && <div className="text-[10px] text-slate-400 mt-1">{v.address}</div>}
+                  <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                    {v.paymentTerms}
+                  </span>
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-end">
-                  <div>
-                    <div className="text-[10px] text-slate-400">Total Belanja:</div>
-                    <div className="text-xs font-black font-mono text-slate-800 dark:text-slate-200">
-                      Rp {v.totalPurchases.toLocaleString('id-ID')}
-                    </div>
-                  </div>
+                <div className="text-[11px] text-slate-600 dark:text-slate-400 font-mono">
+                  <div>📱 {v.phone}</div>
+                  {v.email && <div>✉️ {v.email}</div>}
+                  {v.address && <div>📍 {v.address}</div>}
+                </div>
+
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                  <span className="text-[10px] text-slate-400">Kategori: <b>{v.category}</b></span>
                   <button
                     onClick={() => {
-                      let clean = v.phone.replace(/\D/g, '');
-                      if (clean.startsWith('08')) clean = '628' + clean.substring(2);
-                      window.open(`https://wa.me/${clean}?text=Halo%20${encodeURIComponent(v.name)},%20kami%20ingin%20repeat%20order%20stok.`, '_blank');
+                      window.open(`https://wa.me/62${v.phone.replace(/^0/, '')}?text=Halo%20${v.contactPerson}%20dari%20${v.name},%20kami%20ingin%20reorder%20stok.`, '_blank');
                     }}
-                    className="text-[10px] bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/40 px-2.5 py-1 rounded-xl font-bold"
+                    className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline text-[11px]"
                   >
-                    💬 Chat WA
+                    💬 Order via WA
                   </button>
                 </div>
               </div>
@@ -754,43 +1325,58 @@ export const InventoryManagementView: React.FC = () => {
         </div>
       )}
 
-      {/* ADD VENDOR MODAL */}
+      {/* MODAL ADD VENDOR */}
       {isAddVendorOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-xs">
             <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                Pendaftaran Vendor / Agen Baru
-              </h3>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Tambah Vendor / Supplier Baru</h3>
               <button onClick={() => setIsAddVendorOpen(false)} className="text-slate-400 font-bold">✕</button>
             </div>
 
-            <form onSubmit={handleCreateVendor} className="space-y-3 text-xs">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                addVendor({
+                  name: vName,
+                  contactPerson: vContact,
+                  phone: vPhone,
+                  category: vCategory,
+                  paymentTerms: vTerms,
+                  address: vAddress,
+                });
+                toast.success('Vendor Terdaftar', vName);
+                setIsAddVendorOpen(false);
+                setVName('');
+                setVContact('');
+                setVPhone('');
+              }}
+              className="space-y-3"
+            >
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Perusahaan / Vendor</label>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Perusahaan / Toko</label>
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: PT Toraja Specialty Coffee"
+                  placeholder="PT Roastery Mandiri"
                   value={vName}
                   onChange={(e) => setVName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Sales / PIC</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nama PIC / Kontak</label>
                   <input
                     type="text"
                     required
                     placeholder="Bpk. Hendra"
                     value={vContact}
                     onChange={(e) => setVContact(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2"
                   />
                 </div>
-
                 <div>
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">No. WhatsApp</label>
                   <input
@@ -799,7 +1385,7 @@ export const InventoryManagementView: React.FC = () => {
                     placeholder="081234567890"
                     value={vPhone}
                     onChange={(e) => setVPhone(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-mono"
                   />
                 </div>
               </div>
@@ -810,7 +1396,7 @@ export const InventoryManagementView: React.FC = () => {
                   <select
                     value={vCategory}
                     onChange={(e) => setVCategory(e.target.value as any)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 font-semibold"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 font-semibold"
                   >
                     <option value="Green Beans & Kopi">Green Beans & Kopi</option>
                     <option value="Dairy & Susu">Dairy & Susu</option>
@@ -819,13 +1405,12 @@ export const InventoryManagementView: React.FC = () => {
                     <option value="Pastry & Bakery">Pastry & Bakery</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Termin Pembayaran</label>
                   <select
                     value={vTerms}
                     onChange={(e) => setVTerms(e.target.value as any)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 font-semibold"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 font-semibold font-mono"
                   >
                     <option value="CASH">CASH (Langsung)</option>
                     <option value="TOP_14">TOP 14 Hari</option>
@@ -837,16 +1422,16 @@ export const InventoryManagementView: React.FC = () => {
 
               <div>
                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Alamat Gudang / Kantor</label>
-                <textarea
-                  rows={2}
-                  placeholder="Alamat lengkap supplier..."
+                <input
+                  type="text"
+                  placeholder="Jakarta / Bandung / Surabaya"
                   value={vAddress}
                   onChange={(e) => setVAddress(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2"
                 />
               </div>
 
-              <div className="flex justify-end space-x-2 pt-2">
+              <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsAddVendorOpen(false)}
@@ -858,7 +1443,7 @@ export const InventoryManagementView: React.FC = () => {
                   type="submit"
                   className="bg-red-600 hover:bg-red-500 text-white font-bold px-5 py-2 rounded-xl shadow-md"
                 >
-                  Simpan Vendor Baru
+                  Simpan Vendor
                 </button>
               </div>
             </form>
