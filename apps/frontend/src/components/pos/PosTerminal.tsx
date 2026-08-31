@@ -5,6 +5,8 @@ import { usePosCartStore } from '../../stores/usePosCartStore';
 import { useTenantStore } from '../../stores/useTenantStore';
 import { usePrinterStore } from '../../stores/usePrinterStore';
 import { useDensityStore } from '../../stores/useDensityStore';
+import { useCustomerStore } from '../../stores/useCustomerStore';
+import { toast } from '../../stores/useToastStore';
 import { submitPosCheckoutLive } from '../../lib/api';
 import { ReceiptModal } from './ReceiptModal';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
@@ -307,6 +309,7 @@ export const PosTerminal: React.FC = () => {
   const { currentBranch } = useTenantStore();
   const { connectedPrinterName, isConnecting, connectPrinter, autoPrintEnabled } = usePrinterStore();
   const { viewMode } = useDensityStore();
+  const { customers, recordPurchase } = useCustomerStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -318,6 +321,7 @@ export const PosTerminal: React.FC = () => {
   const [tenderAmount, setTenderAmount] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
 
   const [lastCompletedOrder, setLastCompletedOrder] = useState<{
     orderNumber: string;
@@ -396,7 +400,12 @@ export const PosTerminal: React.FC = () => {
     };
 
     const backendResult = await submitPosCheckoutLive(payload);
-    const orderNo = backendResult?.order?.order_number || `ORD-RAILS-${Date.now().toString().slice(-6)}`;
+    const orderNo = backendResult?.order?.order_number || `ORD-MODULA-${Date.now().toString().slice(-6)}`;
+
+    // Record purchase and points to member if selected
+    if (selectedMemberId) {
+      recordPurchase(selectedMemberId, grandTotal);
+    }
 
     setLastCompletedOrder({
       orderNumber: orderNo,
@@ -412,6 +421,8 @@ export const PosTerminal: React.FC = () => {
       payments: [...payments],
     });
 
+    toast.payment(orderNo, grandTotal);
+
     setIsProcessing(false);
     setIsPaymentModalOpen(false);
     clearCart();
@@ -421,9 +432,10 @@ export const PosTerminal: React.FC = () => {
 
   const handleSplitBillCompleted = (splitResults: any[]) => {
     setIsSplitBillOpen(false);
-    alert(`Split Bill Berhasil Diselesaikan untuk ${splitResults.length} Konsumen!`);
     handleFinalizeCheckout();
   };
+
+  const selectedMember = customers.find((c) => c.id === selectedMemberId);
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
@@ -479,10 +491,13 @@ export const PosTerminal: React.FC = () => {
 
           {heldOrders.length > 0 && (
             <button
-              onClick={() => restoreHeldOrder(heldOrders[0].id)}
+              onClick={() => {
+                restoreHeldOrder(heldOrders[0].id);
+                toast.info('Order Dipulihkan', `Open Table / Hold #${heldOrders[0].id}`);
+              }}
               className="bg-amber-50 dark:bg-amber-600/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 px-3 py-2 rounded-2xl text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-600/30 shadow-sm"
             >
-              Tersimpan ({heldOrders.length})
+              Open Table ({heldOrders.length})
             </button>
           )}
         </div>
@@ -526,7 +541,10 @@ export const PosTerminal: React.FC = () => {
           {filteredProducts.map((product) => (
             <button
               key={product.id}
-              onClick={() => addItem(product)}
+              onClick={() => {
+                addItem(product);
+                toast.cart(product.name);
+              }}
               className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 hover:border-red-500/50 rounded-3xl p-3.5 flex flex-col justify-between text-left transition-all duration-150 active:scale-95 group relative shadow-sm hover:shadow-md"
             >
               <div>
@@ -564,26 +582,62 @@ export const PosTerminal: React.FC = () => {
         </div>
       </div>
 
-      {/* RIGHT SECTION: CART */}
-      <div className="w-96 lg:w-[420px] flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-lg">
-        <div className="p-3 border-b border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-2 bg-slate-50/70 dark:bg-slate-900">
-          <input
-            type="text"
-            placeholder="Pelanggan (Walk-in)"
-            value={customerName}
-            onChange={(e) => setCustomerInfo(e.target.value, tableNumber)}
-            className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-red-500 focus:outline-none shadow-sm"
-          />
-          <input
-            type="text"
-            placeholder="No. Meja (F&B)"
-            value={tableNumber}
-            onChange={(e) => setCustomerInfo(customerName, e.target.value)}
-            className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-red-500 focus:outline-none shadow-sm"
-          />
+      {/* RIGHT SECTION: CART & CUSTOMER CRM SELECTOR */}
+      <div className="w-96 lg:w-[430px] flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-lg">
+        {/* CUSTOMER & TABLE NUMBER BAR */}
+        <div className="p-3 border-b border-slate-200 dark:border-slate-800 space-y-2 bg-slate-50/70 dark:bg-slate-900">
+          <div className="flex items-center space-x-2">
+            <div className="flex-1 relative">
+              <select
+                value={selectedMemberId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedMemberId(id);
+                  const member = customers.find((c) => c.id === id);
+                  if (member) {
+                    setCustomerInfo(member.name, tableNumber);
+                    toast.info('Member Terpilih', `${member.name} (${member.tier} • ${member.points} Pts)`);
+                  } else {
+                    setCustomerInfo('', tableNumber);
+                  }
+                }}
+                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2.5 py-1.5 text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-red-500 focus:outline-none"
+              >
+                <option value="">👤 Pilih / Cari Member Loyalitas...</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.tier} - {c.points} Pts) - {c.phone}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <input
+              type="text"
+              placeholder="Meja # (F&B)"
+              value={tableNumber}
+              onChange={(e) => setCustomerInfo(customerName, e.target.value)}
+              className="w-28 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-red-500 focus:outline-none font-mono font-bold text-center shadow-sm"
+            />
+          </div>
+
+          {/* Member Banner Status */}
+          {selectedMember && (
+            <div className="bg-red-50 dark:bg-red-950/40 p-2 rounded-xl border border-red-200 dark:border-red-800/40 flex justify-between items-center text-xs">
+              <div className="flex items-center space-x-2">
+                <span className="bg-red-600 text-white text-[9px] font-mono px-1.5 py-0.2 rounded font-bold">
+                  {selectedMember.tier}
+                </span>
+                <span className="font-bold text-red-900 dark:text-red-200">{selectedMember.name}</span>
+              </div>
+              <div className="text-[11px] font-mono font-bold text-amber-600 dark:text-amber-400">
+                ⭐ {selectedMember.points} Pts
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Cart Item List with Kitchen Notes Input */}
+        {/* Cart Item List with Kitchen Notes */}
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-xs">
@@ -633,7 +687,7 @@ export const PosTerminal: React.FC = () => {
                 {/* Optional Kitchen Note input per item */}
                 <input
                   type="text"
-                  placeholder="🍳 Catatan dapur (e.g. Less sugar, extra ice, pedas sedang)..."
+                  placeholder="🍳 Catatan dapur (e.g. Less sugar, pedas sedang)..."
                   value={itemNotes[item.productId] || ''}
                   onChange={(e) => setItemNotes({ ...itemNotes, [item.productId]: e.target.value })}
                   className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 text-[10px] text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500"
@@ -684,14 +738,20 @@ export const PosTerminal: React.FC = () => {
 
           <div className="grid grid-cols-3 gap-2 pt-2">
             <button
-              onClick={holdOrder}
+              onClick={() => {
+                holdOrder();
+                toast.warning('Order Disimpan', `Hold Bill atas nama ${customerName || 'Tamu'} (Meja ${tableNumber || '-'})`);
+              }}
               disabled={items.length === 0}
               className="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-50 text-slate-700 dark:text-slate-300 py-2.5 rounded-2xl font-bold text-xs transition-all shadow-sm"
             >
               Hold Bill
             </button>
             <button
-              onClick={clearCart}
+              onClick={() => {
+                clearCart();
+                toast.info('Keranjang Dikosongkan', 'Semua item pesanan dibatalkan.');
+              }}
               disabled={items.length === 0}
               className="bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 disabled:opacity-50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40 py-2.5 rounded-2xl font-bold text-xs transition-all shadow-sm"
             >
@@ -836,6 +896,7 @@ export const PosTerminal: React.FC = () => {
           products={EXTENDED_PRODUCTS}
           onProductScanned={(scannedProduct) => {
             addItem(scannedProduct);
+            toast.cart(scannedProduct.name);
           }}
           onClose={() => setIsScannerOpen(false)}
         />
