@@ -30,6 +30,7 @@ export default function App() {
     'pos' | 'crm' | 'finance' | 'inventory' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'benchmark' | 'tickets' | 'trash' | 'swagger' | 'database' | 'docs'
   >('owner');
 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const { setHierarchicalData } = useTenantStore();
@@ -130,30 +131,54 @@ export default function App() {
           />
         )}
 
-        {/* LEFT SIDEBAR NAVIGATION */}
+        {/* LEFT SIDEBAR NAVIGATION (AUTOHIDE / COLLAPSIBLE ALA GEMINI CHATGPT) */}
         <aside
-          className={`fixed md:relative top-0 bottom-0 left-0 z-40 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-3 transition-transform duration-200 shadow-xl md:shadow-sm overflow-y-auto ${
-            isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-          }`}
+          className={`fixed md:relative top-0 bottom-0 left-0 z-40 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-2.5 transition-all duration-300 shadow-xl md:shadow-sm overflow-y-auto ${
+            isMobileSidebarOpen
+              ? 'translate-x-0 w-64'
+              : '-translate-x-full md:translate-x-0'
+          } ${isSidebarCollapsed ? 'md:w-16' : 'md:w-64'}`}
         >
-          <div className="space-y-1 pt-12 md:pt-0">
+          <div className="space-y-1 pt-10 md:pt-0">
+            {/* AUTOHIDE / COLLAPSE TOGGLE BUTTON (TOP OF SIDEBAR) */}
+            <div className="hidden md:flex justify-between items-center px-1 mb-2">
+              {!isSidebarCollapsed && (
+                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                  Modula Menu
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition-all mx-auto"
+                title={isSidebarCollapsed ? 'Buka Sidebar (Expand)' : 'Sembunyikan Sidebar (Collapse ala Gemini)'}
+              >
+                <span className="text-xs">{isSidebarCollapsed ? '➔' : '❮'}</span>
+              </button>
+            </div>
+
             {/* EXECUTIVE & MANAGEMENT */}
             {(userRole === 'owner' || userRole === 'super_user') && (
               <div className="space-y-1">
-                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                  Executive Suite
-                </div>
+                {!isSidebarCollapsed && (
+                  <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    Executive
+                  </div>
+                )}
 
                 <button
                   onClick={() => handleSelectModule('owner')}
-                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  className={`w-full flex items-center ${
+                    isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
+                  } py-2 rounded-xl text-xs font-semibold transition-all ${
                     activeModule === 'owner'
                       ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
+                  title="Owner Dashboard & AI"
                 >
-                  <span>👑</span>
-                  <span>Owner Dashboard & AI</span>
+                  <span className="text-base">👑</span>
+                  {!isSidebarCollapsed && <span>Owner Dashboard</span>}
                 </button>
               </div>
             )}
@@ -162,14 +187,17 @@ export default function App() {
               <div className="space-y-1 pt-1">
                 <button
                   onClick={() => handleSelectModule('brand_admin')}
-                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  className={`w-full flex items-center ${
+                    isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
+                  } py-2 rounded-xl text-xs font-semibold transition-all ${
                     activeModule === 'brand_admin'
                       ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
+                  title="Brand & Staff Admin"
                 >
-                  <span>🏢</span>
-                  <span>Brand & Staff Admin</span>
+                  <span className="text-base">🏢</span>
+                  {!isSidebarCollapsed && <span>Brand & Staff Admin</span>}
                 </button>
               </div>
             )}
@@ -178,224 +206,211 @@ export default function App() {
               <div className="space-y-1 pt-1">
                 <button
                   onClick={() => handleSelectModule('superuser')}
-                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  className={`w-full flex items-center ${
+                    isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
+                  } py-2 rounded-xl text-xs font-semibold transition-all ${
                     activeModule === 'superuser'
                       ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
+                  title="Super User & Licensing"
                 >
-                  <span>⚡</span>
-                  <span>Super User & Licensing</span>
+                  <span className="text-base">⚡</span>
+                  {!isSidebarCollapsed && <span>Super User & Licensing</span>}
                 </button>
               </div>
             )}
 
             {/* OPERATIONAL MODULES */}
-            <div className="pt-3 px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Modul Operasional
-            </div>
+            {!isSidebarCollapsed && (
+              <div className="pt-3 px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                Operasional
+              </div>
+            )}
 
             <button
               onClick={() => handleSelectModule('pos')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+              className={`w-full flex items-center ${
+                isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+              } py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'pos'
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
+              title="Kasir POS & Dapur"
             >
               <div className="flex items-center space-x-2.5">
-                <span>🛒</span>
-                <span>Kasir POS & Dapur</span>
+                <span className="text-base">🛒</span>
+                {!isSidebarCollapsed && <span>Kasir POS & Dapur</span>}
               </div>
-              {isModuleLocked('pos') && <span className="text-[10px]">🔒</span>}
+              {!isSidebarCollapsed && isModuleLocked('pos') && <span className="text-[10px]">🔒</span>}
             </button>
 
             <button
               onClick={() => handleSelectModule('crm')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+              className={`w-full flex items-center ${
+                isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+              } py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'crm'
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
+              title="CRM & Loyalitas Member"
             >
               <div className="flex items-center space-x-2.5">
-                <span>👥</span>
-                <span>CRM & Loyalitas Member</span>
+                <span className="text-base">👥</span>
+                {!isSidebarCollapsed && <span>CRM & Member</span>}
               </div>
-              {isModuleLocked('crm') && <span className="text-[10px]">🔒</span>}
+              {!isSidebarCollapsed && isModuleLocked('crm') && <span className="text-[10px]">🔒</span>}
             </button>
 
             <button
               onClick={() => handleSelectModule('inventory')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+              className={`w-full flex items-center ${
+                isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+              } py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'inventory'
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
+              title="Gudang, Stok & Vendor"
             >
               <div className="flex items-center space-x-2.5">
-                <span>📦</span>
-                <span>Gudang, Stok & Vendor</span>
+                <span className="text-base">📦</span>
+                {!isSidebarCollapsed && <span>Gudang & SCM</span>}
               </div>
-              {isModuleLocked('inventory') && <span className="text-[10px]">🔒</span>}
+              {!isSidebarCollapsed && isModuleLocked('inventory') && <span className="text-[10px]">🔒</span>}
             </button>
 
             {(userRole === 'owner' || userRole === 'super_user') && (
               <button
                 onClick={() => handleSelectModule('finance')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                className={`w-full flex items-center ${
+                  isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+                } py-2 rounded-xl text-xs font-semibold transition-all ${
                   activeModule === 'finance'
                     ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
+                title="Akuntansi & GL PSAK"
               >
                 <div className="flex items-center space-x-2.5">
-                  <span>📊</span>
-                  <span>Akuntansi & GL (PSAK)</span>
+                  <span className="text-base">📊</span>
+                  {!isSidebarCollapsed && <span>Akuntansi & GL</span>}
                 </div>
-                {isModuleLocked('finance') && <span className="text-[10px]">🔒</span>}
+                {!isSidebarCollapsed && isModuleLocked('finance') && <span className="text-[10px]">🔒</span>}
               </button>
             )}
 
-            {/* TICKETS & SOFT DELETE GOVERNANCE */}
-            <div className="pt-3 px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Governance & Support
+            {/* GOVERNANCE & TICKETS */}
+            <div className="pt-2">
+              <button
+                onClick={() => handleSelectModule('tickets')}
+                className={`w-full flex items-center ${
+                  isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
+                } py-2 rounded-xl text-xs font-semibold transition-all ${
+                  activeModule === 'tickets'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+                title="Tiket Bug & Insiden"
+              >
+                <span className="text-base">🎫</span>
+                {!isSidebarCollapsed && <span>Tiket Insiden</span>}
+              </button>
+
+              <button
+                onClick={() => handleSelectModule('trash')}
+                className={`w-full flex items-center ${
+                  isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
+                } py-2 rounded-xl text-xs font-semibold transition-all ${
+                  activeModule === 'trash'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+                title="Soft-Delete & Trash"
+              >
+                <span className="text-base">🗑️</span>
+                {!isSidebarCollapsed && <span>Soft-Delete</span>}
+              </button>
             </div>
 
-            <button
-              onClick={() => handleSelectModule('tickets')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'tickets'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <span>🎫</span>
-              <span>Tiket Bug & Insiden</span>
-            </button>
+            {/* BENCHMARK & TOOLS */}
+            <div className="pt-2">
+              <button
+                onClick={() => handleSelectModule('benchmark')}
+                className={`w-full flex items-center ${
+                  isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
+                } py-2 rounded-xl text-xs font-semibold transition-all ${
+                  activeModule === 'benchmark'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+                title="Speed Benchmark"
+              >
+                <span className="text-base">🚀</span>
+                {!isSidebarCollapsed && <span>Benchmark</span>}
+              </button>
 
-            <button
-              onClick={() => handleSelectModule('trash')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'trash'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <span>🗑️</span>
-              <span>Soft-Delete & Trash</span>
-            </button>
-
-            {/* PERFORMANCE & DEV TOOLS */}
-            <div className="pt-3 px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Benchmark & Tools
+              <button
+                onClick={() => handleSelectModule('docs')}
+                className={`w-full flex items-center ${
+                  isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
+                } py-2 rounded-xl text-xs font-semibold transition-all ${
+                  activeModule === 'docs'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+                title="Dokumentasi Modula"
+              >
+                <span className="text-base">📚</span>
+                {!isSidebarCollapsed && <span>Dokumentasi</span>}
+              </button>
             </div>
-
-            <button
-              onClick={() => handleSelectModule('benchmark')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'benchmark'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <span>🚀</span>
-              <span>Speed & Benchmark</span>
-            </button>
-
-            <button
-              onClick={() => handleSelectModule('reviews')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'reviews'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <span>⭐</span>
-              <span>Portal Ulasan (/review)</span>
-            </button>
-
-            <button
-              onClick={() => handleSelectModule('docs')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'docs'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <span>📚</span>
-              <span>Dokumentasi Modula</span>
-            </button>
-
-            {userRole === 'super_user' && (
-              <>
-                <button
-                  onClick={() => handleSelectModule('swagger')}
-                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                    activeModule === 'swagger'
-                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <span>⚡</span>
-                  <span>Swagger API Console</span>
-                </button>
-
-                <button
-                  onClick={() => handleSelectModule('database')}
-                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                    activeModule === 'database'
-                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <span>🐬</span>
-                  <span>MySQL 8 / MariaDB</span>
-                </button>
-              </>
-            )}
           </div>
 
-          {/* SUBSCRIPTION TIER QUICK SWITCHER & LOGOUT BAR */}
+          {/* FOOTER & LOGOUT BAR */}
           <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
-            <div className="bg-slate-100 dark:bg-slate-800/80 p-2 rounded-2xl border border-slate-200 dark:border-slate-700/80 space-y-1.5">
-              <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 dark:text-slate-400">
-                <span className="font-bold">TIER: {subscriptionTier.toUpperCase()}</span>
-                <span className="text-emerald-500 font-bold">{remainingMonths} Bln</span>
+            {!isSidebarCollapsed && (
+              <div className="bg-slate-100 dark:bg-slate-800/80 p-2 rounded-2xl border border-slate-200 dark:border-slate-700/80 space-y-1.5">
+                <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                  <span className="font-bold">TIER: {subscriptionTier.toUpperCase()}</span>
+                  <span className="text-emerald-500 font-bold">{remainingMonths} Bln</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 text-[9px] font-bold">
+                  {(['starter', 'business', 'enterprise'] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => {
+                        setSubscriptionTier(t);
+                        toast.success('Tier Diganti', `Simulasi Paket ${t.toUpperCase()}`);
+                      }}
+                      className={`py-1 rounded-lg capitalize transition-all ${
+                        subscriptionTier === t
+                          ? 'bg-red-600 text-white shadow-sm'
+                          : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-1 text-[9px] font-bold">
-                {(['starter', 'business', 'enterprise'] as const).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => {
-                      setSubscriptionTier(t);
-                      toast.success('Tier Diganti', `Simulasi Paket ${t.toUpperCase()}`);
-                    }}
-                    className={`py-1 rounded-lg capitalize transition-all ${
-                      subscriptionTier === t
-                        ? 'bg-red-600 text-white shadow-sm'
-                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
 
             <button
               onClick={() => {
                 logout();
                 toast.info('Berhasil Keluar', 'Sesi pengguna telah diakhiri.');
               }}
-              className="w-full flex items-center justify-center space-x-2 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 p-2 rounded-xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700"
+              className={`w-full flex items-center ${
+                isSidebarCollapsed ? 'justify-center p-2' : 'justify-center space-x-2 p-2'
+              } bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 rounded-xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700`}
+              title="Keluar (Logout)"
             >
               <span>🚪</span>
-              <span>Keluar (Logout)</span>
+              {!isSidebarCollapsed && <span>Keluar</span>}
             </button>
-            <div className="text-[10px] text-center text-slate-400">
-              Modula by <a href="https://github.com/parikesitad-pm" target="_blank" rel="noreferrer" className="text-red-500 font-bold hover:underline">parikesitad-pm</a>
-            </div>
           </div>
         </aside>
 
