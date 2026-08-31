@@ -9,18 +9,31 @@ import { OwnerAnalyticsDashboard } from './components/owner/OwnerAnalyticsDashbo
 import { SuperUserDashboard } from './components/superuser/SuperUserDashboard';
 import { BrandAdminDashboard } from './components/admin/BrandAdminDashboard';
 import { CustomerReviewPage } from './components/reviews/CustomerReviewPage';
+import { BenchmarkViewer } from './components/benchmark/BenchmarkViewer';
+import { AuthPortal } from './components/auth/AuthPortal';
 import { useTenantStore } from './stores/useTenantStore';
 import { useThemeStore } from './stores/useThemeStore';
+import { useAuthStore } from './stores/useAuthStore';
 import { useModuleLicenseStore } from './stores/useModuleLicenseStore';
 
 export default function App() {
+  const { isAuthenticated, currentUser, logout } = useAuthStore();
   const [activeModule, setActiveModule] = useState<
-    'pos' | 'finance' | 'inventory' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'swagger' | 'database' | 'docs'
-  >('pos');
+    'pos' | 'finance' | 'inventory' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'benchmark' | 'swagger' | 'database' | 'docs'
+  >('owner');
 
   const { setHierarchicalData } = useTenantStore();
   const { theme, setTheme } = useThemeStore();
   const { modules } = useModuleLicenseStore();
+
+  // Check URL hash for /review guest access
+  const [isGuestReviewMode, setIsGuestReviewMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname === '/review') {
+      setIsGuestReviewMode(true);
+    }
+  }, []);
 
   useEffect(() => {
     setTheme(theme);
@@ -51,11 +64,34 @@ export default function App() {
     });
   }, [setHierarchicalData, theme, setTheme]);
 
-  // Check if a module is locked
+  // If on /review guest route
+  if (isGuestReviewMode) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col justify-between">
+        <CustomerReviewPage />
+        <div className="text-center pb-4 text-xs text-slate-500">
+          <button
+            onClick={() => setIsGuestReviewMode(false)}
+            className="text-red-400 font-bold hover:underline"
+          >
+            ← Kembali ke Dashboard Admin / Kasir
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If not logged in, render ultra-secure AuthPortal
+  if (!isAuthenticated) {
+    return <AuthPortal />;
+  }
+
   const isModuleLocked = (code: string) => {
     const mod = modules.find((m) => m.code === code);
     return mod ? !mod.isUnlocked : false;
   };
+
+  const userRole = currentUser.role;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
@@ -63,152 +99,150 @@ export default function App() {
       <MultiTierSwitcher />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* 2. LEFT SIDEBAR NAVIGATION */}
+        {/* 2. LEFT SIDEBAR NAVIGATION (ROLE-SCOPED) */}
         <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-3 transition-colors shadow-sm overflow-y-auto">
           <div className="space-y-1">
-            {/* ROLE DASHBOARDS */}
-            <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Executive & Management Dashboards
-            </div>
+            {/* ROLE-SPECIFIC DASHBOARD SECTIONS */}
+            {(userRole === 'owner' || userRole === 'super_user') && (
+              <div className="space-y-1">
+                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  Executive Suite
+                </div>
 
-            <button
-              onClick={() => setActiveModule('owner')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'owner'
-                  ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <span>👑</span>
-              <span>Owner Dashboard & AI</span>
-            </button>
+                <button
+                  onClick={() => setActiveModule('owner')}
+                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    activeModule === 'owner'
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <span>👑</span>
+                  <span>Owner Dashboard & AI</span>
+                </button>
+              </div>
+            )}
 
-            <button
-              onClick={() => setActiveModule('brand_admin')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'brand_admin'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <span>🏢</span>
-              <span>Brand & Staff Admin</span>
-            </button>
+            {(userRole === 'admin_brand' || userRole === 'owner' || userRole === 'super_user') && (
+              <div className="space-y-1 pt-1">
+                <button
+                  onClick={() => setActiveModule('brand_admin')}
+                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    activeModule === 'brand_admin'
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <span>🏢</span>
+                  <span>Brand & Staff Admin</span>
+                </button>
+              </div>
+            )}
 
-            <button
-              onClick={() => setActiveModule('superuser')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'superuser'
-                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <span>⚡</span>
-              <span>Super User & SaaS Licensing</span>
-            </button>
+            {userRole === 'super_user' && (
+              <div className="space-y-1 pt-1">
+                <button
+                  onClick={() => setActiveModule('superuser')}
+                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    activeModule === 'superuser'
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <span>⚡</span>
+                  <span>Super User & Licensing</span>
+                </button>
+              </div>
+            )}
 
             {/* OPERATIONAL MODULES */}
             <div className="pt-3 px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Modul Operasional Bisnis
+              Modul Operasional
             </div>
 
             <button
               onClick={() => setActiveModule('pos')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'pos'
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               <div className="flex items-center space-x-2.5">
                 <span>🛒</span>
-                <span>Point of Sale (POS)</span>
+                <span>Kasir POS & Dapur</span>
               </div>
               {isModuleLocked('pos') && <span className="text-[10px]">🔒</span>}
             </button>
 
-            <button
-              onClick={() => setActiveModule('finance')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'finance'
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <div className="flex items-center space-x-2.5">
-                <span>📊</span>
-                <span>Akuntansi & Buku Besar</span>
-              </div>
-              {isModuleLocked('finance') && <span className="text-[10px]">🔒</span>}
-            </button>
+            {(userRole === 'owner' || userRole === 'super_user') && (
+              <button
+                onClick={() => setActiveModule('finance')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  activeModule === 'finance'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5">
+                  <span>📊</span>
+                  <span>Akuntansi & GL (PSAK)</span>
+                </div>
+                {isModuleLocked('finance') && <span className="text-[10px]">🔒</span>}
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveModule('inventory')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'inventory'
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <div className="flex items-center space-x-2.5">
-                <span>📦</span>
-                <span>Gudang & Dead Stock</span>
-              </div>
-              {isModuleLocked('inventory') && <span className="text-[10px]">🔒</span>}
-            </button>
+            {userRole !== 'cashier' && (
+              <button
+                onClick={() => setActiveModule('inventory')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  activeModule === 'inventory'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5">
+                  <span>📦</span>
+                  <span>Gudang & Dead Stock</span>
+                </div>
+                {isModuleLocked('inventory') && <span className="text-[10px]">🔒</span>}
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveModule('hr')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'hr'
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <div className="flex items-center space-x-2.5">
-                <span>👥</span>
-                <span>HR & Payroll</span>
-              </div>
-              {isModuleLocked('hr') && <span className="text-[10px]">🔒</span>}
-            </button>
-
-            <button
-              onClick={() => setActiveModule('audit')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'audit'
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <div className="flex items-center space-x-2.5">
-                <span>🛡️</span>
-                <span>Anti-Fraud & Audit Trail</span>
-              </div>
-              {isModuleLocked('audit') && <span className="text-[10px]">🔒</span>}
-            </button>
-
-            {/* CONSUMER PORTAL & TOOLS */}
+            {/* PERFORMANCE, CONSUMER & DEV TOOLS */}
             <div className="pt-3 px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Portal Konsumen & Developer
+              Benchmark & Tools
             </div>
+
+            <button
+              onClick={() => setActiveModule('benchmark')}
+              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeModule === 'benchmark'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <span>🚀</span>
+              <span>Speed & Benchmark</span>
+            </button>
 
             <button
               onClick={() => setActiveModule('reviews')}
               className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'reviews'
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               <span>⭐</span>
-              <span>Landing Page Review</span>
+              <span>Portal Ulasan (/review)</span>
             </button>
 
             <button
               onClick={() => setActiveModule('docs')}
               className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeModule === 'docs'
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
@@ -216,29 +250,47 @@ export default function App() {
               <span>Dokumentasi & Slides</span>
             </button>
 
-            <button
-              onClick={() => setActiveModule('swagger')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'swagger'
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <span>⚡</span>
-              <span>Swagger API Console</span>
-            </button>
+            {userRole === 'super_user' && (
+              <>
+                <button
+                  onClick={() => setActiveModule('swagger')}
+                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    activeModule === 'swagger'
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <span>⚡</span>
+                  <span>Swagger API Console</span>
+                </button>
 
+                <button
+                  onClick={() => setActiveModule('database')}
+                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    activeModule === 'database'
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <span>🐬</span>
+                  <span>MySQL 8 / MariaDB</span>
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Quick Logout Button at Bottom of Sidebar */}
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
             <button
-              onClick={() => setActiveModule('database')}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'database'
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
+              onClick={logout}
+              className="w-full flex items-center justify-center space-x-2 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 p-2 rounded-xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700"
             >
-              <span>🐬</span>
-              <span>MySQL 8 / MariaDB</span>
+              <span>🚪</span>
+              <span>Keluar (Logout)</span>
             </button>
+            <div className="text-[10px] text-center text-slate-400">
+              Dev by <a href="https://github.com/parikesitad-pm" target="_blank" rel="noreferrer" className="text-red-400 font-bold hover:underline">parikesitad-pm</a>
+            </div>
           </div>
         </aside>
 
@@ -247,6 +299,7 @@ export default function App() {
           {activeModule === 'owner' && <OwnerAnalyticsDashboard />}
           {activeModule === 'brand_admin' && <BrandAdminDashboard />}
           {activeModule === 'superuser' && <SuperUserDashboard />}
+          {activeModule === 'benchmark' && <BenchmarkViewer />}
           {activeModule === 'reviews' && <CustomerReviewPage />}
           {activeModule === 'pos' && (
             isModuleLocked('pos') ? (
@@ -289,48 +342,6 @@ export default function App() {
                 Layanan `InventoryEngine::DeadStockService` aktif menghitung persediaan tidak bergerak $N$ hari dan menyusun draft PO otomatis.
               </p>
             </div>
-          )}
-          {activeModule === 'hr' && (
-            isModuleLocked('hr') ? (
-              <div className="p-12 text-center space-y-4">
-                <span className="text-5xl">🔒</span>
-                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                  Modul HR & Payroll Terkunci (Demo Lisensi Pay-Per-Module)
-                </h3>
-                <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  Modul ini dijual terpisah ala Accurate / Jurnal.id seharga Rp 299.000/bln. Buka kunci di menu <b>Super User & SaaS Licensing</b> untuk mengaktifkannya.
-                </p>
-              </div>
-            ) : (
-              <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-                <div className="text-4xl mb-3">👥</div>
-                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Modul HR, Presensi Geofence & Payroll</h3>
-                <p className="text-xs max-w-md mx-auto mt-2 text-slate-500 dark:text-slate-400">
-                  Layanan `HrEngine::PayrollProcessorService` siap memproses perhitungan lembur Depnaker, BPJS, PPh 21 TER, dan auto-jurnal payroll ke Akuntansi.
-                </p>
-              </div>
-            )
-          )}
-          {activeModule === 'audit' && (
-            isModuleLocked('audit') ? (
-              <div className="p-12 text-center space-y-4">
-                <span className="text-5xl">🔒</span>
-                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                  Modul Anti-Fraud & Audit Trail Terkunci
-                </h3>
-                <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  Buka kunci lisensi di menu <b>Super User & SaaS Licensing</b> untuk mengaktifkan audit logs dan deteksi anomali kasir.
-                </p>
-              </div>
-            ) : (
-              <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-                <div className="text-4xl mb-3">🛡️</div>
-                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Modul Audit Trail & Deteksi Anomali Fraud</h3>
-                <p className="text-xs max-w-md mx-auto mt-2 text-slate-500 dark:text-slate-400">
-                  Layanan `AuditEngine::FraudDetectorService` memonitor immutable logs, spike void transaksi kasir, dan manual drawer opening.
-                </p>
-              </div>
-            )
           )}
         </main>
       </div>
