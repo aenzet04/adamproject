@@ -5,11 +5,12 @@ import { useStaffStore, BrandStaffRole, BrandEmployee } from '../../stores/useSt
 import { useTenantStore } from '../../stores/useTenantStore';
 import { useCustomerStore } from '../../stores/useCustomerStore';
 import { toast } from '../../stores/useToastStore';
+import type { Branch } from '../../types';
 
 export const BrandAdminDashboard: React.FC = () => {
-  const { currentBrand, branches } = useTenantStore();
+  const { currentBrand, availableBranches } = useTenantStore();
   const { employees, addEmployee, transferStaffBranch, removeEmployee } = useStaffStore();
-  const { customers, updateTierAndPoints } = useCustomerStore();
+  const { customers } = useCustomerStore();
 
   const [activeTab, setActiveTab] = useState<'employees' | 'transfer_logs' | 'customers'>('employees');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -31,11 +32,14 @@ export const BrandAdminDashboard: React.FC = () => {
   const [newBranchId, setNewBranchId] = useState('br-01');
   const [newShift, setNewShift] = useState('Shift Pagi (07:00 - 15:00)');
 
-  const branchOptions = branches.length > 0 ? branches : [
-    { id: 'br-01', name: 'Outlet Grand Indonesia' },
-    { id: 'br-02', name: 'Outlet Senopati' },
-    { id: 'br-03', name: 'Store Kelapa Gading' },
-  ];
+  const branchOptions: Array<{ id: string; name: string }> =
+    availableBranches && availableBranches.length > 0
+      ? availableBranches.map((b: Branch) => ({ id: b.id, name: b.name }))
+      : [
+          { id: 'br-01', name: 'Outlet Grand Indonesia' },
+          { id: 'br-02', name: 'Outlet Senopati' },
+          { id: 'br-03', name: 'Store Kelapa Gading' },
+        ];
 
   const filteredEmployees = employees.filter((emp) => {
     const matchesRole = roleFilter === 'all' || emp.role === roleFilter;
@@ -51,7 +55,7 @@ export const BrandAdminDashboard: React.FC = () => {
     e.preventDefault();
     if (!transferringStaff || !targetBranchId) return;
 
-    const targetBranch = branchOptions.find((b) => b.id === targetBranchId);
+    const targetBranch = branchOptions.find((b: { id: string; name: string }) => b.id === targetBranchId);
     const targetBranchName = targetBranch ? targetBranch.name : 'Cabang Tujuan';
 
     transferStaffBranch(
@@ -74,7 +78,7 @@ export const BrandAdminDashboard: React.FC = () => {
 
   const handleAddEmployeeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const branch = branchOptions.find((b) => b.id === newBranchId);
+    const branch = branchOptions.find((b: { id: string; name: string }) => b.id === newBranchId);
 
     addEmployee({
       brandId: currentBrand?.id || 'b-01',
@@ -250,7 +254,7 @@ export const BrandAdminDashboard: React.FC = () => {
               >
                 <option value="all">Semua Penempatan Cabang</option>
                 <option value="br-all">Headquarters (Semua Cabang)</option>
-                {branchOptions.map((b) => (
+                {branchOptions.map((b: { id: string; name: string }) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
                   </option>
@@ -489,7 +493,7 @@ export const BrandAdminDashboard: React.FC = () => {
                   required
                 >
                   <option value="">-- Pilih Cabang Tujuan --</option>
-                  {branchOptions.map((b) => (
+                  {branchOptions.map((b: { id: string; name: string }) => (
                     <option key={b.id} value={b.id} disabled={b.id === transferringStaff.branchId}>
                       {b.name} {b.id === transferringStaff.branchId ? '(Cabang Asal)' : ''}
                     </option>
@@ -633,7 +637,7 @@ export const BrandAdminDashboard: React.FC = () => {
                     onChange={(e) => setNewBranchId(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 font-semibold"
                   >
-                    {branchOptions.map((b) => (
+                    {branchOptions.map((b: { id: string; name: string }) => (
                       <option key={b.id} value={b.id}>
                         {b.name}
                       </option>
