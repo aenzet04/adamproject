@@ -10,6 +10,7 @@ import {
   PurchaseInboundItem,
 } from '../../stores/useInventoryStore';
 import { useTenantStore } from '../../stores/useTenantStore';
+import { useAuthStore } from '../../stores/useAuthStore';
 import { toast } from '../../stores/useToastStore';
 
 export const InventoryManagementView: React.FC = () => {
@@ -28,9 +29,11 @@ export const InventoryManagementView: React.FC = () => {
   } = useInventoryStore();
 
   const { availableWarehouses } = useTenantStore();
+  const { currentUser } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState<'catalog' | 'restock' | 'inbound_history' | 'transfer' | 'vendors'>('catalog');
   const [restockFlowMode, setRestockFlowMode] = useState<'existing_quick' | 'category_first' | 'batch_inbound'>('existing_quick');
+  const [velocityFilter, setVelocityFilter] = useState<'all' | 'fast_moving' | 'slow_moving' | 'dead_stock'>('all');
 
   // Selected Inbound Detail Modal State
   const [selectedInboundDetail, setSelectedInboundDetail] = useState<PurchaseInbound | null>(null);
@@ -238,14 +241,24 @@ export const InventoryManagementView: React.FC = () => {
     setActiveTab('inbound_history');
   };
 
-  // Filtered Products for Catalog
+  // Filtered Products for Catalog with Velocity
   const filteredCatalog = products.filter((p) => {
     const matchesCat = selectedCatFilter === 'all' || p.categoryId === selectedCatFilter;
     const matchesSearch =
       p.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
       p.sku.toLowerCase().includes(catalogSearch.toLowerCase()) ||
       p.barcode.includes(catalogSearch);
-    return matchesCat && matchesSearch;
+
+    let matchesVelocity = true;
+    if (velocityFilter === 'fast_moving') {
+      matchesVelocity = p.stockOnHand >= 30;
+    } else if (velocityFilter === 'slow_moving') {
+      matchesVelocity = p.stockOnHand >= 10 && p.stockOnHand < 30;
+    } else if (velocityFilter === 'dead_stock') {
+      matchesVelocity = p.stockOnHand < 10 || p.stockOnHand <= p.minStockLevel;
+    }
+
+    return matchesCat && matchesSearch && matchesVelocity;
   });
 
   return (
