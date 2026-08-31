@@ -1,4 +1,4 @@
-# 👑 MODULA v2.4.0 — Enterprise Multi-Tenant Modular SaaS ERP-POS & Financial Core
+# 👑 MODULA v2.5.0 — Enterprise Multi-Tenant Modular SaaS ERP-POS & Financial Core
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue.svg)]()
@@ -20,35 +20,28 @@
 
 ---
 
-## 🚀 Changelog Versi Terbaru: Modula v2.4.0
+## 🚀 Changelog Versi Terbaru: Modula v2.5.0
 
-### 👥 1. Struktur Karyawan Brand & Mutasi Penugasan Antar Cabang
-- **Hierarki Peran Karyawan 1 Brand:**
-  1. 👑 **Owner Brand & CEO Group**
-  2. 👔 **General Manager Operasional**
-  3. 🏢 **Manajer Cabang (Branch Manager)**
-  4. 💻 **Admin IT & Sistem POS**
-  5. 🛒 **Senior Cashier / Frontliner POS**
-  6. ☕ **Staf Barista / Kitchen Cook / Gudang**
-- **Fitur Mutasi Cabang Instan (Inter-Branch Reassignment):**
-  - Karyawan di Cabang A dapat dipindahkan dinas ke Cabang B (atau sebaliknya) secara instan dengan alasan mutasi dan approval.
-  - **Efek Otomatis:** Sistem POS Terminal dan presensi di cabang tujuan langsung otomatis membaca dan mengenali karyawan tersebut aktif di cabang baru tanpa perlu buat akun ulang.
-  - Pencatatan log riwayat mutasi dinas secara permanen.
+### 🧾 1. Riwayat Belanja Multi-Item & Bukti Faktur Supplier (Stok Terakhir Masuk)
+- **Detail Rincian Pembelian Multi-Item:**
+  - Setiap kali ada penambahan stok / pembelian dari vendor, kasir/staf gudang dapat membuka faktur tersebut untuk melihat:
+    1. Waktu & tanggal belanja diterima.
+    2. Rincian seluruh item dalam 1 faktur (*Nama barang, Qty masuk, Harga beli satuan, Subtotal*).
+    3. Total nilai belanja faktur.
+    4. Supplier & Gudang penerima.
+    5. **Bukti Belanja:** Foto fisik barang saat unboxing & Pratinjau/Unduh Faktur PDF resmi.
+- **Rekap Riwayat Belanja di Menu Vendor / Seller:**
+  - Di direktori vendor, klik **`📋 Buka Riwayat Belanja`** untuk melihat daftar seluruh transaksi pembelian yang pernah dilakukan ke vendor tersebut.
 
-### 📥 2. Desain Baru Menu Tambah Stok & Barang (3 Opsi Fleksibel ala Olsera & Moka)
-1. **⚡ Opsi 1: Tambah Stok Cepat dari Katalog Produk yang Sudah Ada:**  
-   Pilih barang dari katalog $\rightarrow$ input jumlah restock, HPP beli, vendor, gudang cabang, no faktur & upload bukti PDF/foto fisik.
-2. **🥐 Opsi 2: Buat Barang Baru Mulai dari Kategori (Category-First Flow ala Olsera):**  
-   - **Langkah 1:** Pilih atau buat kategori baru (Kopi, Makanan, Minuman, Merchandise, Bahan Baku).
-   - **Langkah 2:** Isi detail nama, SKU, Barcode otomatis, UOM, harga jual, HPP standar, dan kalkulasi margin laba otomatis.
-   - **Langkah 3:** Input stok awal & alokasikan ke gudang cabang langsung.
-3. **📋 Opsi 3: Restock Masal Multi-Item (Batch Inbound 1 Faktur Supplier):**  
-   Pemasukan puluhan item sekaligus dalam 1 nota/surat jalan supplier dengan total nilai pembelian terkonsolidasi.
+### 📦 2. Peran Karyawan: Staf Gudang & SCM Supplier Lead
+- Penambahan role karyawan baru dalam 1 brand: **`warehouse_staff` (Staf Gudang & SCM)** yang bertanggung jawab atas penerimaan barang supplier, pencatatan surat jalan, dan koordinasi stok cabang.
 
-### ⭐ 3. Manajemen Detail Lengkap CRM Konsumen di Seluruh Dashboard
-- Profil member terintegrasi di Dashboard Owner, Brand Admin, POS Terminal, dan CRM:
-  - Tier loyalitas (*Bronze, Silver, Gold, Platinum, VIP*), total poin belanja, riwayat transaksi, dan nomor WhatsApp.
-  - Tombol 1-klik kirim pesan WhatsApp & cetak ringkasan loyalty.
+### 📋 3. Menu Sidebar Baru: Stok Opname Fisik Persediaan Gudang
+- Penambahan modul dan menu sidebar **`📋 Stok Opname`**:
+  - **Audit Fisik Berkala:** Input hitungan fisik aktual vs stok sistem di gudang cabang.
+  - **Kalkulasi Selisih Otomatis (Variance):** Menghitung selisih unit (*surplus/deficit*) dan total nilai kerugian/kelebihan dalam rupiah.
+  - **Tagging Alasan Selisih:** *Sesuai (Match), Rusak Fisik, Kedaluwarsa, Tumpah/Bocor, Selisih Hitung, Sample/Barista Testing, Hilang (Shrinkage)*.
+  - **Penyesuaian Stok 1-Klik (*Apply Stock Adjustment*):** Otomatis menyesuaikan data stok persediaan utama dan mencetak Berita Acara Opname.
 
 ---
 
