@@ -5,6 +5,8 @@ import QRCode from 'qrcode';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { usePrinterStore } from '../../stores/usePrinterStore';
+import { useModuleLicenseStore } from '../../stores/useModuleLicenseStore';
+import { toast } from '../../stores/useToastStore';
 import type { CartItem, PaymentAllocation } from '../../types';
 
 interface ReceiptModalProps {
@@ -58,7 +60,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     lastPrintStatus,
   } = usePrinterStore();
 
-  const invoiceUrl = `https://pos.adamcorp.id/e-invoice/${orderNumber}?verify=psak2026`;
+  const { subscriptionTier, customReceiptFooter } = useModuleLicenseStore();
+
+  const invoiceUrl = `https://pos.modula.id/e-invoice/${orderNumber}?verify=psak2026`;
+
+  const footerText =
+    subscriptionTier === 'enterprise'
+      ? customReceiptFooter
+      : 'Terima Kasih Atas Kunjungan Anda\nPowered by Modula ERP-POS';
 
   const getCustomerPrintData = () => ({
     orderNumber,
@@ -130,6 +139,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
   const handleManualPrint = async (type: 'customer' | 'kitchen') => {
     setIsBluetoothPrinting(true);
+    toast.print(type === 'kitchen' ? 'Tiket Dapur (58mm)' : 'Struk Konsumen Resmi');
     try {
       if (type === 'kitchen') {
         await printReceipt(getKitchenPrintData());
@@ -141,9 +151,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     }
   };
 
-  /**
-   * Unduh File Teks (.txt)
-   */
   const handleDownloadTxt = () => {
     const W = 32;
     const formatRow = (left: string, right: string) => {
@@ -199,7 +206,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       });
 
       txt += '-'.repeat(W) + '\n';
-      txt += '   Terima Kasih Atas Kunjungan Anda   \n';
+      txt += `   ${footerText}   \n`;
       txt += `     *${orderNumber}*\n`;
     }
 
@@ -210,11 +217,9 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     link.download = `${ticketType === 'kitchen' ? 'tiket-dapur' : 'struk'}-${orderNumber}.txt`;
     link.click();
     URL.revokeObjectURL(url);
+    toast.success('Unduh TXT Sukses', `File ${link.download} tersimpan.`);
   };
 
-  /**
-   * Unduh Dokumen PDF (.pdf)
-   */
   const handleDownloadPdf = async (): Promise<string | null> => {
     const targetElement = ticketType === 'kitchen' ? kitchenRef.current : receiptRef.current;
     if (!targetElement) return null;
@@ -240,10 +245,11 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       const filename = `${ticketType === 'kitchen' ? 'tiket-dapur' : 'struk'}-${orderNumber}.pdf`;
       pdf.save(filename);
+      toast.success('Unduh PDF Sukses', `Dokumen ${filename} siap cetak.`);
       return filename;
     } catch (err) {
       console.error('PDF Generation Error:', err);
-      alert('Gagal membuat file PDF.');
+      toast.error('Gagal Ekspor PDF', 'Terjadi kendala saat rendering kanvas.');
       return null;
     } finally {
       setIsGeneratingPdf(false);
@@ -260,7 +266,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   const handleSendWhatsappText = () => {
     const normalized = formatWhatsappNumber(whatsappPhone);
     if (!normalized || normalized.length < 10) {
-      alert('Mohon masukkan nomor WhatsApp pelanggan yang valid (contoh: 081234567890)');
+      toast.warning('Nomor WhatsApp Belum Valid', 'Masukkan no. HP lokal (contoh: 081234567890)');
       return;
     }
 
@@ -285,15 +291,16 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     msg += `💰 *TOTAL AKHIR   : Rp ${grandTotal.toLocaleString('id-ID')} (LUNAS)*\n`;
     msg += `--------------------------------------------\n`;
     msg += `🔗 *Lihat E-Struk / E-Faktur Online:* \n${invoiceUrl}\n\n`;
-    msg += `_Terima kasih atas kunjungan Anda!_`;
+    msg += `_${footerText}_`;
 
     window.open(`https://wa.me/${normalized}?text=${encodeURIComponent(msg)}`, '_blank');
+    toast.success('Membuka WhatsApp', `Mengirim e-struk ke ${normalized}`);
   };
 
   const handleSendPdfToWhatsapp = async () => {
     const normalized = formatWhatsappNumber(whatsappPhone);
     if (!normalized || normalized.length < 10) {
-      alert('Mohon masukkan nomor WhatsApp pelanggan terlebih dahulu (contoh: 081234567890)');
+      toast.warning('Nomor WhatsApp Belum Valid', 'Masukkan nomor WhatsApp pelanggan (contoh: 081234567890)');
       return;
     }
 
@@ -304,7 +311,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     msg += `Total Tagihan: *Rp ${grandTotal.toLocaleString('id-ID')}* *(LUNAS)*\n\n`;
     msg += `📄 File PDF Struk telah kami siapkan (*${filename || 'struk.pdf'}*).\n`;
     msg += `🔗 Unduh E-Faktur Digital: ${invoiceUrl}\n\n`;
-    msg += `_Terima kasih telah berbelanja di Kopi Nusantara Roastery!_`;
+    msg += `_${footerText}_`;
 
     window.open(`https://wa.me/${normalized}?text=${encodeURIComponent(msg)}`, '_blank');
   };
@@ -395,7 +402,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           </div>
         </div>
 
-        {/* SMART WHATSAPP DISPATCHER (ONLY IN CUSTOMER TAB) */}
+        {/* SMART WHATSAPP DISPATCHER */}
         {ticketType === 'customer' && (
           <div className="bg-rose-50 dark:bg-red-950/30 p-3.5 border-b border-rose-100 dark:border-red-800/40 space-y-2">
             <div className="flex items-center justify-between">
@@ -516,6 +523,9 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                   <img src={qrCodeDataUrl} alt="QR Code" className="w-16 h-16 mx-auto" />
                 </div>
               )}
+              <div className="text-[9px] text-slate-600 font-bold whitespace-pre-line mt-1">
+                {footerText}
+              </div>
               <span className="text-[8px] text-slate-600 font-mono">*{orderNumber}*</span>
             </div>
           </div>
