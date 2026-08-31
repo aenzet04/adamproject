@@ -1,3 +1,45 @@
+export interface Tenant {
+  id: string;
+  name: string;
+  subdomain: string;
+  legalEntityType: 'PT' | 'CV' | 'PERORANGAN';
+  taxId?: string;
+  status: 'active' | 'suspended';
+  featureFlags: Record<string, boolean>;
+}
+
+export interface Brand {
+  id: string;
+  tenantId: string;
+  name: string;
+  code: string;
+  industryType: 'fnb' | 'retail' | 'services';
+  status: 'active' | 'inactive';
+}
+
+export interface Branch {
+  id: string;
+  tenantId: string;
+  brandId: string;
+  name: string;
+  code: string;
+  branchType: 'store' | 'kiosk' | 'central_kitchen' | 'warehouse';
+  geofenceRadiusMeters: number;
+  latitude?: number;
+  longitude?: number;
+  isActive: boolean;
+}
+
+export interface Warehouse {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  name: string;
+  code: string;
+  isPrimary: boolean;
+  costingMethod: 'moving_average' | 'fifo' | 'standard';
+}
+
 export type UserRole = 'super_user' | 'owner' | 'admin_brand' | 'cashier';
 
 export interface UserProfile {
@@ -13,46 +55,6 @@ export interface UserProfile {
   phoneNumber?: string;
 }
 
-export interface Tenant {
-  id: string;
-  name: string;
-  subdomain: string;
-  legalEntityType: 'PT' | 'CV' | 'PERORANGAN';
-  taxIdentificationNumber?: string;
-  status: 'active' | 'suspended' | 'trial';
-  featureFlags: Record<string, boolean>;
-}
-
-export interface Brand {
-  id: string;
-  tenantId: string;
-  name: string;
-  code: string;
-  industryType: 'fnb' | 'retail' | 'services' | 'manufacturing';
-  status: 'active' | 'inactive';
-}
-
-export interface Branch {
-  id: string;
-  tenantId: string;
-  brandId: string;
-  name: string;
-  code: string;
-  branchType: 'store' | 'kiosk' | 'cloud_kitchen' | 'central_kitchen' | 'warehouse';
-  geofenceRadiusMeters: number;
-  isActive: boolean;
-}
-
-export interface Warehouse {
-  id: string;
-  tenantId: string;
-  branchId: string;
-  name: string;
-  code: string;
-  isPrimary: boolean;
-  costingMethod: 'fifo' | 'moving_average';
-}
-
 export interface Product {
   id: string;
   tenantId: string;
@@ -60,7 +62,7 @@ export interface Product {
   name: string;
   sku: string;
   barcode?: string;
-  productType: 'inventory' | 'non_inventory' | 'service' | 'composite';
+  productType: 'inventory' | 'non_inventory' | 'composite' | 'service';
   uomBase: string;
   sellingPrice: number;
   standardCost: number;
@@ -73,7 +75,6 @@ export interface Product {
 export interface CartItem {
   productId: string;
   productName: string;
-  sku: string;
   quantity: number;
   unitPrice: number;
   discountAmount: number;
@@ -122,11 +123,14 @@ export interface CustomerReview {
 export interface ModuleLicense {
   id: string;
   name: string;
-  code: 'pos' | 'finance' | 'inventory' | 'hr' | 'audit' | 'ai_insights';
-  icon: string;
+  code: 'pos' | 'crm' | 'finance' | 'inventory' | 'hr' | 'audit' | 'ai_insights' | 'ai_advisor';
+  icon?: string;
+  category?: string;
   description: string;
-  pricePerMonth: number;
+  pricePerMonth?: number;
+  priceMonthly?: number;
   isUnlocked: boolean;
+  featuresIncluded?: string[];
   expiresAt?: string;
 }
 

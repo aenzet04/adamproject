@@ -50,14 +50,16 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
 
     if (splitMode === 'equal') {
       for (let i = 0; i < numPeople; i++) {
+        const amt = i === numPeople - 1 ? grandTotal - equalAmount * (numPeople - 1) : equalAmount;
         resultPersons.push({
-          personIndex: i + 1,
-          name: customers[i]?.name || `Tamu Meja #${i + 1}`,
-          assignedItems: items,
-          subtotal: Math.round(subtotal / numPeople),
-          tax: Math.round(tax / numPeople),
-          discount: Math.round(discount / numPeople),
-          totalAmount: i === numPeople - 1 ? grandTotal - equalAmount * (numPeople - 1) : equalAmount,
+          personId: `ps-${i + 1}`,
+          personName: customers[i]?.name || `Tamu Meja #${i + 1}`,
+          assignedItems: items.map((it) => ({
+            productId: it.productId,
+            quantity: it.quantity,
+            amount: it.subtotal,
+          })),
+          customAmount: amt,
           isPaid: true,
         });
       }
@@ -68,24 +70,28 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
         return;
       }
       resultPersons = nominalPersons.map((p, idx) => ({
-        personIndex: idx + 1,
-        name: p.name,
-        assignedItems: items,
-        subtotal: p.amount,
-        tax: 0,
-        discount: 0,
-        totalAmount: p.amount,
+        personId: `ps-nom-${idx + 1}`,
+        personName: p.name,
+        assignedItems: items.map((it) => ({
+          productId: it.productId,
+          quantity: it.quantity,
+          amount: it.subtotal,
+        })),
+        customAmount: p.amount,
         isPaid: true,
       }));
     } else {
       resultPersons = itemPersons.map((p, idx) => ({
-        personIndex: idx + 1,
-        name: p.name,
-        assignedItems: items.filter((it) => p.itemIds.includes(it.productId)),
-        subtotal: p.total,
-        tax: 0,
-        discount: 0,
-        totalAmount: p.total,
+        personId: `ps-itm-${idx + 1}`,
+        personName: p.name,
+        assignedItems: items
+          .filter((it) => p.itemIds.includes(it.productId))
+          .map((it) => ({
+            productId: it.productId,
+            quantity: it.quantity,
+            amount: it.subtotal,
+          })),
+        customAmount: p.total,
         isPaid: true,
       }));
     }
