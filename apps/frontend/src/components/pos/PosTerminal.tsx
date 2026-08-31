@@ -1385,6 +1385,7 @@ export const PosTerminal: React.FC = () => {
           orderNumber={lastCompletedOrder.orderNumber}
           customerName={lastCompletedOrder.customerName}
           tableNumber={lastCompletedOrder.tableNumber}
+          orderChannel={lastCompletedOrder.orderChannel}
           items={lastCompletedOrder.items}
           subtotal={lastCompletedOrder.subtotal}
           discount={lastCompletedOrder.discount}
