@@ -1,4 +1,4 @@
-# 👑 MODULA v2.6.0 — Enterprise Multi-Tenant Modular SaaS ERP-POS & Financial Core
+# 👑 MODULA v2.7.0 — Enterprise Multi-Tenant Modular SaaS ERP-POS & Financial Core
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue.svg)]()
@@ -21,25 +21,32 @@
 
 ---
 
-## 🚀 Changelog Versi Terbaru: Modula v2.6.0
+## 🚀 Changelog Versi Terbaru: Modula v2.7.0
 
-### 🛒 1. Login Kasir Cepat dengan ID/Username/Email & Kode Cabang (Branch Code)
-- Kasir kini dapat masuk ke sistem POS tanpa form email panjang yang merepotkan:
-  - **Input:** Kode Cabang (e.g. `GI-01` - Outlet Grand Indonesia, `SNP-02` - Outlet Senopati, `KG-01` - Store Kelapa Gading), ID Kasir / Username, dan PIN / Password.
-  - **Otomatisasi:** Sistem langsung memvalidasi kode cabang dan mengarahkan kasir ke POS Terminal outlet tujuan dengan isolasi data yang tepat.
+### 🧙‍♂️ 1. First-Time Login Onboarding Wizard (Multi-Step Setup Stepper)
+- **Alur Interaktif Saat Login Pertama / Brand Baru:**
+  1. **🔹 Step 1: Identitas Brand & AI Magic Suggestion:**
+     - Input Nama Brand, Sektor Bisnis (*F&B / Kafe, Retail / Minimarket, Fashion & Apparel, Barbershop / Salon, Apotek / Klinik, Ekspedisi / Jasa*).
+     - Tombol **`[ ✨ Generate via AI ]`** yang otomatis meng-generate tagline menjual, deskripsi bisnis yang menarik, dan template kategori produk sesuai sektor usaha.
+     - Pratinjau & Upload Logo Brand (Square) serta Banner Header Lebar (16:9 aspect ratio) untuk branding struk, katalog web, dan dashboard.
+     - Input media sosial: Instagram, TikTok, WhatsApp Business, dan Website.
+  2. **🔹 Step 2: Multi-Branch Initializer & Auto Warehouse:**
+     - Setup Cabang Utama & tombol **`[ + Tambah Cabang Lainnya ]`** dinamis (Nama cabang, kode cabang, alamat, kota, telepon, dan jam operasional).
+     - Setiap cabang otomatis dibuatkan gudang persediaan utama (*default inventory storage*).
+  3. **🔹 Step 3: Setup Karyawan Awal & POS PIN:**
+     - Input Nama Karyawan, WhatsApp/Email, Peran (*Branch Manager, Head Cashier, Kasir POS, Staf Gudang SCM*), Penugasan Cabang, dan 4-6 digit numeric POS PIN untuk login cepat tablet/HP.
+     - List karyawan instan lengkap dengan status badge & masked PIN (`••••`).
+  4. **🔹 Step 4: Peluncuran Bisnis:**
+     - Review profil brand lengkap $\rightarrow$ tombol **`[ 🚀 Simpan & Luncurkan Bisnis Saya ]`**.
 
-### 📩 2. Konfirmasi Registrasi Akun via Token Email Mailpit (Port 8025)
-- Saat pengguna baru mendaftar akun:
-  - Sistem menghasilkan kode token verifikasi 6-digit (OTP) dan mengirimkannya melalui **Mailpit Local SMTP Server** (Port `1025` / Web UI `8025`).
-  - Web UI Mailpit otomatis terbuka di browser Chrome pada `http://localhost:8025/` untuk memeriksa email yang masuk secara instan dan tanpa spam.
-  - Pengguna memasukkan kode token 6-digit untuk mengaktifkan akun.
+### ⚡ 2. Backend Rails / Ruby Endpoints untuk Onboarding
+- `POST /api/v1/onboarding/ai_suggest` $\rightarrow$ Menghasilkan rekomendasi bio, tagline, kategori produk, dan cabang default berdasarkan sektor bisnis dalam 1ms.
+- `POST /api/v1/onboarding/complete` $\rightarrow$ Transaksi atomik (*Atomic Seeding Transaction*) yang menyimpan Brand, Media Branding, Multi-Cabang, Gudang, dan Karyawan sekaligus.
 
-### 🔒 3. Alur Lupa Kata Sandi (Forgot Password) dengan Token Reset
-- Pengguna yang lupa kata sandi dapat memasukkan email $\rightarrow$ token reset OTP 6-digit terkirim ke Mailpit $\rightarrow$ masukkan token dan buat kata sandi baru yang aman.
-
-### 📋 4. Stok Opname Fisik & Bukti Belanja Multi-Item
-- Modul Stok Opname (`📋 Stok Opname`) untuk audit fisik persediaan, deteksi selisih (*variance: surplus/deficit*), dan jurnal penyesuaian otomatis.
-- Riwayat belanja supplier multi-item dengan lampiran foto fisik unboxing & pratinjau PDF faktur resmi.
+### 🛒 3. Login Kasir Cepat Kode Cabang, Email Mailpit & Lupa Sandi
+- Mode login kasir kilat menggunakan **Kode Cabang (Branch Code)** + ID/Username Kasir + PIN.
+- Konfirmasi OTP pendaftaran akun via **Mailpit Local SMTP Server** (Port `1025` / Web UI `http://localhost:8025/`).
+- Alur Lupa Kata Sandi terintegrasi.
 
 ---
 
@@ -68,13 +75,16 @@
 
 ---
 
-## 🏃 Cara Menjalankan Aplikasi & Mailpit
+## 🏃 Cara Menjalankan Aplikasi
 
 ```bash
 # 1. Jalankan Mailpit Email Server (Background)
 mailpit &
 
-# 2. Masuk ke direktori frontend & jalankan
+# 2. Jalankan Backend Ruby API (Port 3001)
+ruby apps/backend/server.rb &
+
+# 3. Masuk ke direktori frontend & jalankan (Port 3000)
 cd apps/frontend
 npm install
 npm run build
