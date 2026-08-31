@@ -1237,20 +1237,62 @@ export const PosTerminal: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-2">
-                {(['cash', 'qris', 'edc_bca', 'customer_credit'] as const).map((m) => (
+              {/* QUICK DUAL SPLIT PRESET BUTTONS */}
+              {remaining > 0 && payments.length === 0 && (
+                <div className="flex space-x-2">
                   <button
-                    key={m}
-                    onClick={() => setPaymentMethod(m)}
-                    className={`py-2 px-2 rounded-2xl text-xs font-bold uppercase border transition-all ${
-                      paymentMethod === m
-                        ? 'bg-red-600 text-white border-red-500 shadow-md shadow-red-600/20'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                    }`}
+                    type="button"
+                    onClick={() => {
+                      const half = Math.round(grandTotal / 2);
+                      const rem = grandTotal - half;
+                      addPayment({ chartOfAccountId: 'acc-cash', paymentMethod: 'cash', amount: half, changeGiven: 0 });
+                      addPayment({ chartOfAccountId: 'acc-qris', paymentMethod: 'qris', amount: rem, changeGiven: 0, referenceNumber: `QRIS-${Date.now().toString().slice(-6)}` });
+                      toast.success('Dual Payment Diatur', `50% Tunai (Rp ${half.toLocaleString('id-ID')}) + 50% QRIS (Rp ${rem.toLocaleString('id-ID')})`);
+                    }}
+                    className="flex-1 py-1.5 px-2 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl text-[11px] font-bold text-red-700 dark:text-red-300 hover:bg-red-100"
                   >
-                    {m.replace('_', ' ')}
+                    ⚡ Dual: 50% Tunai + 50% QRIS
                   </button>
-                ))}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const half = Math.round(grandTotal / 2);
+                      const rem = grandTotal - half;
+                      addPayment({ chartOfAccountId: 'acc-cash', paymentMethod: 'cash', amount: half, changeGiven: 0 });
+                      addPayment({ chartOfAccountId: 'acc-edc_bca', paymentMethod: 'edc_bca', amount: rem, changeGiven: 0, referenceNumber: `EDC-${Date.now().toString().slice(-6)}` });
+                      toast.success('Dual Payment Diatur', `50% Tunai (Rp ${half.toLocaleString('id-ID')}) + 50% EDC BCA (Rp ${rem.toLocaleString('id-ID')})`);
+                    }}
+                    className="flex-1 py-1.5 px-2 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl text-[11px] font-bold text-blue-700 dark:text-blue-300 hover:bg-blue-100"
+                  >
+                    ⚡ Dual: 50% Tunai + 50% EDC BCA
+                  </button>
+                </div>
+              )}
+
+              {/* PAYMENT METHOD SELECTOR WITH DISABLED STATE FOR ALREADY SELECTED METHOD */}
+              <div className="grid grid-cols-5 gap-1.5">
+                {(['cash', 'qris', 'edc_bca', 'transfer_bank', 'customer_credit'] as const).map((m) => {
+                  const isAlreadyUsed = payments.some((p) => p.paymentMethod === m);
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      disabled={isAlreadyUsed}
+                      onClick={() => setPaymentMethod(m)}
+                      className={`py-2 px-1 rounded-2xl text-[10px] font-bold uppercase border transition-all truncate ${
+                        isAlreadyUsed
+                          ? 'bg-slate-100 dark:bg-slate-850 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-800 opacity-40 cursor-not-allowed line-through'
+                          : paymentMethod === m
+                          ? 'bg-red-600 text-white border-red-500 shadow-md shadow-red-600/20'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-red-400'
+                      }`}
+                      title={isAlreadyUsed ? `${m} sudah dipilih pada alokasi sebelumnya` : m}
+                    >
+                      {m.replace('_', ' ')}
+                    </button>
+                  );
+                })}
               </div>
 
               <div>
