@@ -297,6 +297,11 @@ export const PosTerminal: React.FC = () => {
     addItem,
     updateQuantity,
     setCustomerInfo,
+    customerName,
+    tableNumber,
+    orderChannel,
+    setOrderChannel,
+    setCustomerInfo,
     setDiscount,
     setTax,
     getSubtotal,
@@ -332,7 +337,7 @@ export const PosTerminal: React.FC = () => {
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isCartOptionsOpen, setIsCartOptionsOpen] = useState(false);
 
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris' | 'edc_bca' | 'customer_credit'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris' | 'edc_bca' | 'customer_credit' | 'transfer_bank'>('cash');
   const [tenderAmount, setTenderAmount] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
@@ -346,6 +351,7 @@ export const PosTerminal: React.FC = () => {
     orderNumber: string;
     customerName?: string;
     tableNumber?: string;
+    orderChannel?: string;
     items: typeof items;
     subtotal: number;
     discount: number;
@@ -431,6 +437,7 @@ export const PosTerminal: React.FC = () => {
     const payload = {
       customerName,
       tableNumber,
+      orderChannel,
       items: itemsWithNotes,
       subtotalAmount: getSubtotal(),
       discountAmount: getTotalDiscount(),
@@ -453,6 +460,7 @@ export const PosTerminal: React.FC = () => {
       orderNumber: orderNo,
       customerName,
       tableNumber,
+      orderChannel,
       items: itemsWithNotes,
       subtotal: getSubtotal(),
       discount: getTotalDiscount(),
