@@ -4,9 +4,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { usePosCartStore } from '../../stores/usePosCartStore';
 import { useTenantStore } from '../../stores/useTenantStore';
 import { usePrinterStore } from '../../stores/usePrinterStore';
+import { useDensityStore } from '../../stores/useDensityStore';
 import { submitPosCheckoutLive } from '../../lib/api';
 import { ReceiptModal } from './ReceiptModal';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
+import { SplitBillModal } from './SplitBillModal';
 import type { Product, PaymentAllocation } from '../../types';
 
 interface CategorizedProduct extends Product {
@@ -304,12 +306,14 @@ export const PosTerminal: React.FC = () => {
 
   const { currentBranch } = useTenantStore();
   const { connectedPrinterName, isConnecting, connectPrinter, autoPrintEnabled } = usePrinterStore();
+  const { viewMode } = useDensityStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [isSplitBillOpen, setIsSplitBillOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris' | 'edc_bca' | 'customer_credit'>('cash');
   const [tenderAmount, setTenderAmount] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -408,6 +412,12 @@ export const PosTerminal: React.FC = () => {
     setIsReceiptOpen(true);
   };
 
+  const handleSplitBillCompleted = (splitResults: any[]) => {
+    setIsSplitBillOpen(false);
+    alert(`Split Bill Berhasil Diselesaikan untuk ${splitResults.length} Konsumen!`);
+    handleFinalizeCheckout();
+  };
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
       {/* LEFT SECTION: CATALOG & BARCODE */}
@@ -421,9 +431,9 @@ export const PosTerminal: React.FC = () => {
               placeholder="Cari Produk / Scan Barcode [F2]..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm transition-all"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm transition-all"
             />
-            <span className="absolute right-3 top-2.5 text-[10px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono font-bold">
+            <span className="absolute right-3 top-2 text-[10px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono font-bold">
               ⌨️ F2
             </span>
           </div>
@@ -437,7 +447,7 @@ export const PosTerminal: React.FC = () => {
           {/* Optical Barcode Scanner Button */}
           <button
             onClick={() => setIsScannerOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2.5 rounded-2xl text-xs font-bold flex items-center space-x-1.5 shadow-md shadow-emerald-600/20 transition-all active:scale-95"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center space-x-1.5 shadow-md shadow-emerald-600/20 transition-all active:scale-95"
           >
             <span>📷</span>
             <span>Scan Barcode</span>
@@ -447,7 +457,7 @@ export const PosTerminal: React.FC = () => {
           <button
             onClick={() => connectPrinter()}
             disabled={isConnecting}
-            className={`px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center space-x-1.5 border transition-all shadow-sm ${
+            className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center space-x-1.5 border transition-all shadow-sm ${
               connectedPrinterName
                 ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700/60'
                 : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
@@ -463,7 +473,7 @@ export const PosTerminal: React.FC = () => {
           {heldOrders.length > 0 && (
             <button
               onClick={() => restoreHeldOrder(heldOrders[0].id)}
-              className="bg-amber-50 dark:bg-amber-600/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 px-3 py-2.5 rounded-2xl text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-600/30 shadow-sm"
+              className="bg-amber-50 dark:bg-amber-600/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 px-3 py-2 rounded-2xl text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-600/30 shadow-sm"
             >
               Tersimpan ({heldOrders.length})
             </button>
@@ -522,12 +532,17 @@ export const PosTerminal: React.FC = () => {
                 <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 line-clamp-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                   {product.name}
                 </h4>
-                <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
-                  SKU: {product.sku}
-                </div>
-                <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                  Bar: {product.barcode}
-                </div>
+
+                {/* Jira Sleek Detailed View Toggle fields */}
+                {viewMode === 'detailed' && (
+                  <div className="mt-1 space-y-0.5 border-t border-slate-100 dark:border-slate-800 pt-1">
+                    <div className="text-[9px] text-slate-400 font-mono">SKU: {product.sku}</div>
+                    <div className="text-[9px] text-slate-400 font-mono">Barcode: {product.barcode}</div>
+                    <div className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono">
+                      Std Cost: Rp {product.standardCost.toLocaleString('id-ID')}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex justify-between items-baseline">
@@ -611,7 +626,7 @@ export const PosTerminal: React.FC = () => {
           )}
         </div>
 
-        {/* Calculation Summary */}
+        {/* Calculation Summary & Split Bill Action */}
         <div className="bg-slate-50 dark:bg-slate-950 p-4 border-t border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
           <div className="flex justify-between text-slate-500 dark:text-slate-400">
             <span>Subtotal</span>
@@ -641,7 +656,17 @@ export const PosTerminal: React.FC = () => {
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 pt-3">
+          {/* SPLIT BILL SPECIAL ACTION BUTTON */}
+          <button
+            onClick={() => setIsSplitBillOpen(true)}
+            disabled={items.length === 0}
+            className="w-full bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 disabled:opacity-50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 py-2 rounded-2xl font-bold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-sm active:scale-95 mt-1"
+          >
+            <span>✂️</span>
+            <span>Split Bill (Pisah Pembayaran 3 Mode)</span>
+          </button>
+
+          <div className="grid grid-cols-3 gap-2 pt-2">
             <button
               onClick={holdOrder}
               disabled={items.length === 0}
@@ -775,6 +800,19 @@ export const PosTerminal: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {isSplitBillOpen && (
+        <SplitBillModal
+          items={items}
+          grandTotal={grandTotal}
+          subtotal={getSubtotal()}
+          tax={getTaxAmount()}
+          discount={getTotalDiscount()}
+          rounding={getRoundingAmount()}
+          onClose={() => setIsSplitBillOpen(false)}
+          onCompleteSplit={handleSplitBillCompleted}
+        />
       )}
 
       {isScannerOpen && (
