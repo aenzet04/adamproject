@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { PasswordStrengthMeter } from '../molecules/PasswordStrengthMeter';
+import { toast } from '../../stores/useToastStore';
 import type { UserRole } from '../../types';
 
 export const AuthPortal: React.FC = () => {
@@ -16,67 +18,74 @@ export const AuthPortal: React.FC = () => {
     e.preventDefault();
     if (mode === 'signin') {
       login(email, selectedRole);
+      toast.success('Berhasil Masuk', `Selamat datang kembali, ${selectedRole.toUpperCase()}!`);
     } else {
       if (!name) {
-        alert('Mohon isi nama lengkap Anda.');
+        toast.error('Gagal Mendaftar', 'Mohon isi nama lengkap Anda.');
         return;
       }
       signup(name, email, selectedRole);
+      toast.success('Pendaftaran Sukses', `Akun ${name} (${selectedRole}) berhasil diaktifkan.`);
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between p-6 relative overflow-hidden font-sans">
-      {/* Background Aesthetic Red Glow */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-red-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-rose-700/15 rounded-full blur-3xl pointer-events-none" />
+      {/* Background Aesthetic Red Floating Orbs (GSAP-like floating animations) */}
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-red-600/20 rounded-full blur-3xl pointer-events-none animate-float" />
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-rose-700/20 rounded-full blur-3xl pointer-events-none animate-float" style={{ animationDelay: '3s' }} />
 
-      {/* Top Header & Metadata */}
+      {/* Top Header & Modula Branding */}
       <header className="flex justify-between items-center z-10">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-500 flex items-center justify-center font-black text-white shadow-lg shadow-red-600/30 text-lg">
-            AD
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-red-600 via-rose-600 to-red-500 flex items-center justify-center font-black text-white shadow-xl shadow-red-600/30 text-xl tracking-tighter">
+            M
           </div>
           <div>
-            <h1 className="text-sm font-black tracking-tight text-white flex items-center space-x-2">
-              <span>ADAM ERP-POS & FINANCIAL CORE</span>
+            <h1 className="text-base font-black tracking-tight text-white flex items-center space-x-2">
+              <span className="bg-gradient-to-r from-white via-slate-100 to-red-200 bg-clip-text text-transparent">
+                MODULA ERP-POS
+              </span>
               <span className="bg-red-950 text-red-400 border border-red-800/80 text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
-                v1.4.0 Enterprise
+                v1.5.0 Enterprise
               </span>
             </h1>
             <p className="text-[11px] text-slate-400">
-              Developed by <b className="text-red-400 font-mono">parikesitad-pm</b> • Repository: <b className="text-slate-300 font-mono">aenzet04/adamproject</b>
+              Built by <b className="text-red-400 font-mono">parikesitad-pm</b> • Target Repo: <b className="text-slate-300 font-mono">aenzet04/adamproject</b>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 text-xs font-mono text-slate-400">
+        <div className="flex items-center space-x-2 text-xs font-mono text-slate-400 bg-slate-900/80 px-3 py-1.5 rounded-2xl border border-slate-800">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Security Engine: Active</span>
+          <span>Multi-Tenant Auth Shield</span>
         </div>
       </header>
 
       {/* Auth Card Container */}
-      <div className="max-w-md w-full mx-auto my-auto z-10">
-        <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl shadow-black/50 space-y-6">
+      <div className="max-w-md w-full mx-auto my-auto z-10 animate-fadeInScale">
+        <div className="bg-slate-900/90 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-8 shadow-2xl shadow-black/60 space-y-5">
           <div className="text-center space-y-1">
-            <h2 className="text-xl font-black text-white tracking-tight">
-              {mode === 'signin' ? 'Masuk ke Akun Enterprise' : 'Pendaftaran Pengguna Baru'}
+            <h2 className="text-2xl font-black text-white tracking-tight">
+              {mode === 'signin' ? 'Masuk ke Modula' : 'Pendaftaran Akun Baru'}
             </h2>
             <p className="text-xs text-slate-400">
-              Sistem Otentikasi Multi-Tenant dengan Proteksi JWT & RBAC
+              Platform ERP-POS Modular & Financial Core Multi-Tenant
             </p>
           </div>
 
           {/* Quick Demo 1-Click Role Login */}
           <div className="space-y-2">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block text-center">
-              ⚡ 1-Click Quick Demo Login (Pilih Peran):
+              ⚡ 1-Click Quick Demo Login:
             </span>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => quickLoginAs('owner')}
+                onClick={() => {
+                  quickLoginAs('owner');
+                  toast.success('Login Cepat Berhasil', 'Masuk sebagai Owner / Group CEO');
+                }}
                 className="bg-red-950/60 hover:bg-red-900/80 border border-red-800/60 p-2.5 rounded-2xl text-left transition-all group"
               >
                 <div className="text-xs font-bold text-red-300 group-hover:text-white flex items-center space-x-1">
@@ -88,7 +97,10 @@ export const AuthPortal: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => quickLoginAs('cashier')}
+                onClick={() => {
+                  quickLoginAs('cashier');
+                  toast.success('Login Cepat Berhasil', 'Masuk sebagai Kasir Outlet');
+                }}
                 className="bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 p-2.5 rounded-2xl text-left transition-all group"
               >
                 <div className="text-xs font-bold text-slate-200 group-hover:text-white flex items-center space-x-1">
@@ -100,7 +112,10 @@ export const AuthPortal: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => quickLoginAs('admin_brand')}
+                onClick={() => {
+                  quickLoginAs('admin_brand');
+                  toast.success('Login Cepat Berhasil', 'Masuk sebagai Branch Admin');
+                }}
                 className="bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 p-2.5 rounded-2xl text-left transition-all group"
               >
                 <div className="text-xs font-bold text-slate-200 group-hover:text-white flex items-center space-x-1">
@@ -112,7 +127,10 @@ export const AuthPortal: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => quickLoginAs('super_user')}
+                onClick={() => {
+                  quickLoginAs('super_user');
+                  toast.success('Login Cepat Berhasil', 'Masuk sebagai Super User Platform');
+                }}
                 className="bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 p-2.5 rounded-2xl text-left transition-all group"
               >
                 <div className="text-xs font-bold text-purple-300 group-hover:text-white flex items-center space-x-1">
@@ -126,12 +144,12 @@ export const AuthPortal: React.FC = () => {
 
           <div className="flex items-center space-x-3 text-slate-600 text-xs">
             <div className="h-[1px] flex-1 bg-slate-800" />
-            <span>atau login manual</span>
+            <span>atau isi kredensial</span>
             <div className="h-[1px] flex-1 bg-slate-800" />
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
             {mode === 'signup' && (
               <div>
                 <label className="block font-bold text-slate-300 mb-1">Nama Lengkap</label>
@@ -147,7 +165,7 @@ export const AuthPortal: React.FC = () => {
             )}
 
             <div>
-              <label className="block font-bold text-slate-300 mb-1">Alamat Email Perusahaan</label>
+              <label className="block font-bold text-slate-300 mb-1">Email Perusahaan</label>
               <input
                 type="email"
                 required
@@ -168,10 +186,14 @@ export const AuthPortal: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-red-500 font-mono"
               />
+              {/* Real-time Interactive Password Validator */}
+              <div className="mt-2">
+                <PasswordStrengthMeter password={password} />
+              </div>
             </div>
 
             <div>
-              <label className="block font-bold text-slate-300 mb-1">Otoritas Peran (Role RBAC)</label>
+              <label className="block font-bold text-slate-300 mb-1">Otoritas Peran (Role)</label>
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value as UserRole)}
@@ -180,7 +202,7 @@ export const AuthPortal: React.FC = () => {
                 <option value="owner">👑 Owner / Group CEO</option>
                 <option value="cashier">🛒 Kasir & Barista Outlet</option>
                 <option value="admin_brand">🏢 Brand & Branch Admin</option>
-                <option value="super_user">⚡ Super User / SaaS Platform Director</option>
+                <option value="super_user">⚡ Super User / SaaS Director</option>
               </select>
             </div>
 
@@ -188,7 +210,7 @@ export const AuthPortal: React.FC = () => {
               type="submit"
               className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold py-3 rounded-2xl text-xs shadow-lg shadow-red-600/30 transition-all active:scale-95 mt-2"
             >
-              {mode === 'signin' ? 'Masuk ke Dashboard Sistem' : 'Daftar Akun Baru'}
+              {mode === 'signin' ? 'Masuk ke Modula Dashboard' : 'Daftar Akun Baru'}
             </button>
           </form>
 
