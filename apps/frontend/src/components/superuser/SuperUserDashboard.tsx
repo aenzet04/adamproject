@@ -211,7 +211,7 @@ export const SuperUserDashboard: React.FC = () => {
 
               <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
                 <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400">
-                  Rp {m.priceMonthly.toLocaleString('id-ID')}/bln
+                  Rp {(m.priceMonthly || 149000).toLocaleString('id-ID')}/bln
                 </span>
                 <button
                   onClick={() => {
