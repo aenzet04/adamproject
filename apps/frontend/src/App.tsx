@@ -10,23 +10,26 @@ import { SuperUserDashboard } from './components/superuser/SuperUserDashboard';
 import { BrandAdminDashboard } from './components/admin/BrandAdminDashboard';
 import { CustomerReviewPage } from './components/reviews/CustomerReviewPage';
 import { BenchmarkViewer } from './components/benchmark/BenchmarkViewer';
+import { BugTicketingCenter } from './components/tickets/BugTicketingCenter';
+import { SoftDeleteManager } from './components/trash/SoftDeleteManager';
 import { AuthPortal } from './components/auth/AuthPortal';
+import { ToastContainer } from './components/atoms/ToastContainer';
 import { useTenantStore } from './stores/useTenantStore';
 import { useThemeStore } from './stores/useThemeStore';
 import { useAuthStore } from './stores/useAuthStore';
 import { useModuleLicenseStore } from './stores/useModuleLicenseStore';
+import { toast } from './stores/useToastStore';
 
 export default function App() {
   const { isAuthenticated, currentUser, logout } = useAuthStore();
   const [activeModule, setActiveModule] = useState<
-    'pos' | 'finance' | 'inventory' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'benchmark' | 'swagger' | 'database' | 'docs'
+    'pos' | 'finance' | 'inventory' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'benchmark' | 'tickets' | 'trash' | 'swagger' | 'database' | 'docs'
   >('owner');
 
   const { setHierarchicalData } = useTenantStore();
   const { theme, setTheme } = useThemeStore();
   const { modules } = useModuleLicenseStore();
 
-  // Check URL hash for /review guest access
   const [isGuestReviewMode, setIsGuestReviewMode] = useState<boolean>(false);
 
   useEffect(() => {
@@ -64,7 +67,6 @@ export default function App() {
     });
   }, [setHierarchicalData, theme, setTheme]);
 
-  // If on /review guest route
   if (isGuestReviewMode) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col justify-between">
@@ -74,14 +76,13 @@ export default function App() {
             onClick={() => setIsGuestReviewMode(false)}
             className="text-red-400 font-bold hover:underline"
           >
-            ← Kembali ke Dashboard Admin / Kasir
+            ← Kembali ke Modula App Dashboard
           </button>
         </div>
       </div>
     );
   }
 
-  // If not logged in, render ultra-secure AuthPortal
   if (!isAuthenticated) {
     return <AuthPortal />;
   }
@@ -95,14 +96,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
-      {/* 1. TOP MULTI-TIER SWITCHER & PROFILE BAR */}
+      <ToastContainer />
       <MultiTierSwitcher />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* 2. LEFT SIDEBAR NAVIGATION (ROLE-SCOPED) */}
+        {/* LEFT SIDEBAR NAVIGATION */}
         <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-3 transition-colors shadow-sm overflow-y-auto">
           <div className="space-y-1">
-            {/* ROLE-SPECIFIC DASHBOARD SECTIONS */}
+            {/* EXECUTIVE & MANAGEMENT */}
             {(userRole === 'owner' || userRole === 'super_user') && (
               <div className="space-y-1">
                 <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -145,8 +146,8 @@ export default function App() {
                   onClick={() => setActiveModule('superuser')}
                   className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                     activeModule === 'superuser'
-                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span>⚡</span>
@@ -209,7 +210,36 @@ export default function App() {
               </button>
             )}
 
-            {/* PERFORMANCE, CONSUMER & DEV TOOLS */}
+            {/* TICKETS & SOFT DELETE GOVERNANCE */}
+            <div className="pt-3 px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              Governance & Support
+            </div>
+
+            <button
+              onClick={() => setActiveModule('tickets')}
+              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeModule === 'tickets'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <span>🎫</span>
+              <span>Tiket Bug & Insiden</span>
+            </button>
+
+            <button
+              onClick={() => setActiveModule('trash')}
+              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeModule === 'trash'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <span>🗑️</span>
+              <span>Soft-Delete & Trash</span>
+            </button>
+
+            {/* PERFORMANCE & DEV TOOLS */}
             <div className="pt-3 px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
               Benchmark & Tools
             </div>
@@ -247,7 +277,7 @@ export default function App() {
               }`}
             >
               <span>📚</span>
-              <span>Dokumentasi & Slides</span>
+              <span>Dokumentasi Modula</span>
             </button>
 
             {userRole === 'super_user' && (
@@ -279,17 +309,20 @@ export default function App() {
             )}
           </div>
 
-          {/* Quick Logout Button at Bottom of Sidebar */}
+          {/* Quick Logout Button */}
           <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
             <button
-              onClick={logout}
+              onClick={() => {
+                logout();
+                toast.info('Berhasil Keluar', 'Sesi pengguna telah diakhiri.');
+              }}
               className="w-full flex items-center justify-center space-x-2 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 p-2 rounded-xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700"
             >
               <span>🚪</span>
               <span>Keluar (Logout)</span>
             </button>
             <div className="text-[10px] text-center text-slate-400">
-              Dev by <a href="https://github.com/parikesitad-pm" target="_blank" rel="noreferrer" className="text-red-400 font-bold hover:underline">parikesitad-pm</a>
+              Modula by <a href="https://github.com/parikesitad-pm" target="_blank" rel="noreferrer" className="text-red-500 font-bold hover:underline">parikesitad-pm</a>
             </div>
           </div>
         </aside>
@@ -300,6 +333,8 @@ export default function App() {
           {activeModule === 'brand_admin' && <BrandAdminDashboard />}
           {activeModule === 'superuser' && <SuperUserDashboard />}
           {activeModule === 'benchmark' && <BenchmarkViewer />}
+          {activeModule === 'tickets' && <BugTicketingCenter />}
+          {activeModule === 'trash' && <SoftDeleteManager />}
           {activeModule === 'reviews' && <CustomerReviewPage />}
           {activeModule === 'pos' && (
             isModuleLocked('pos') ? (
@@ -309,7 +344,7 @@ export default function App() {
                   Modul POS Enterprise Terkunci
                 </h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  Hubungi Account Manager Anda atau buka kunci lisensi di menu <b>Super User & SaaS Licensing</b>.
+                  Hubungi Account Manager Modula Anda atau buka kunci lisensi di menu <b>Super User & SaaS Licensing</b>.
                 </p>
               </div>
             ) : (
