@@ -64,15 +64,11 @@ export const BrandAdminDashboard: React.FC = () => {
       transferringStaff.id,
       targetBranchId,
       targetBranchName,
-      transferReason || 'Penugasan rotasi operasional cabang',
-      'Parikesit (Brand Owner / GM)'
       transferReason || 'Penugasan rotasi kerja berkala',
       'Owner / GM Approved'
     );
 
     toast.success(
-      'Mutasi Cabang Berhasil',
-      `${transferringStaff.name} resmi dipindahkan ke ${targetBranchName}. Otomatis aktif di sistem POS & presensi cabang baru!`
       'Mutasi Berhasil Dieksekusi',
       `${transferringStaff.name} resmi dipindahkan ke ${targetBranchName}`
     );
@@ -123,7 +119,6 @@ export const BrandAdminDashboard: React.FC = () => {
             <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100">
               Brand & Staff Management Command Center
             </h2>
-            <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
             <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:bg-red-400 border border-red-300 dark:border-red-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
               {currentBrand?.name || 'Kopi Nusantara Roastery'}
             </span>

@@ -241,7 +241,6 @@ export const InventoryManagementView: React.FC = () => {
     setActiveTab('inbound_history');
   };
 
-  // Filtered Products for Catalog
   // Filtered Products for Catalog with Velocity
   const filteredCatalog = products.filter((p) => {
     const matchesCat = selectedCatFilter === 'all' || p.categoryId === selectedCatFilter;
@@ -249,7 +248,6 @@ export const InventoryManagementView: React.FC = () => {
       p.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
       p.sku.toLowerCase().includes(catalogSearch.toLowerCase()) ||
       p.barcode.includes(catalogSearch);
-    return matchesCat && matchesSearch;
 
     let matchesVelocity = true;
     if (velocityFilter === 'fast_moving') {
@@ -359,7 +357,6 @@ export const InventoryManagementView: React.FC = () => {
         </button>
       </div>
 
-      {/* 3. TAB 1: PRODUCT CATALOG & REALTIME STOCK MATRIX */}
       {/* RBAC ROLE CHECK BANNER (KASIR & IT HANYA BISA BACA) */}
       {(currentUser.role === 'cashier' || (currentUser.role as string) === 'staff_it') && (
         <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-2xl flex items-center justify-between text-xs text-amber-800 dark:text-amber-300 font-semibold">
