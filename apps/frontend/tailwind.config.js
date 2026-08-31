@@ -7,6 +7,10 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Ubuntu', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        mono: ['Ubuntu Mono', 'monospace'],
+      },
       colors: {
         brand: {
           50: '#fff1f2',
@@ -38,12 +42,18 @@ export default {
           '0%': { transform: 'scale(0.95)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
         },
+        progressBar: {
+          '0%': { width: '0%' },
+          '50%': { width: '70%' },
+          '100%': { width: '100%' },
+        },
       },
       animation: {
         shimmer: 'shimmer 1.5s infinite',
         float: 'float 6s ease-in-out infinite',
         slideInRight: 'slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
         fadeInScale: 'fadeInScale 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        progressBar: 'progressBar 0.4s ease-in-out',
       },
     },
   },
