@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { CartItem } from '../../types';
+import { useCustomerStore } from '../../stores/useCustomerStore';
+import { toast } from '../../stores/useToastStore';
+import type { CartItem, SplitBillPerson } from '../../types';
 
 interface SplitBillModalProps {
   items: CartItem[];
@@ -11,16 +13,7 @@ interface SplitBillModalProps {
   discount: number;
   rounding: number;
   onClose: () => void;
-  onCompleteSplit: (splitResults: any[]) => void;
-}
-
-interface SplitCustomer {
-  id: string;
-  name: string;
-  nominal: number;
-  isPaid: boolean;
-  paymentMethod?: string;
-  assignedItems: Array<{ productId: string; quantity: number; subtotal: number }>;
+  onCompleteSplit: (splitPersons: SplitBillPerson[]) => void;
 }
 
 export const SplitBillModal: React.FC<SplitBillModalProps> = ({
@@ -33,89 +26,87 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
   onClose,
   onCompleteSplit,
 }) => {
-  const [splitMode, setSplitMode] = useState<'equal' | 'nominal' | 'items'>('equal');
+  const { customers } = useCustomerStore();
+  const [splitMode, setSplitMode] = useState<'equal' | 'nominal' | 'by_item'>('equal');
   const [numPeople, setNumPeople] = useState<number>(2);
 
-  // For Equal / Nominal split state
-  const [customers, setCustomers] = useState<SplitCustomer[]>([
-    { id: 'p-1', name: 'Konsumen 1', nominal: Math.round(grandTotal / 2), isPaid: false, assignedItems: [] },
-    { id: 'p-2', name: 'Konsumen 2', nominal: grandTotal - Math.round(grandTotal / 2), isPaid: false, assignedItems: [] },
+  // Equal Split State
+  const equalAmount = Math.round(grandTotal / numPeople);
+
+  // Nominal Split State
+  const [nominalPersons, setNominalPersons] = useState<Array<{ name: string; amount: number; isPaid: boolean }>>([
+    { name: customers[0]?.name || 'Konsumen 1 (Bpk. Irwan)', amount: Math.round(grandTotal / 2), isPaid: false },
+    { name: customers[1]?.name || 'Konsumen 2 (Ibu Dian)', amount: grandTotal - Math.round(grandTotal / 2), isPaid: false },
   ]);
 
-  // For Itemized Split state: Map of ItemIndex -> Assigned Person ID
-  const [itemAssignments, setItemAssignments] = useState<Record<string, string>>({});
+  // Itemized Split State
+  const [itemPersons, setItemPersons] = useState<Array<{ name: string; itemIds: string[]; total: number }>>([
+    { name: customers[0]?.name || 'Konsumen 1', itemIds: [], total: 0 },
+    { name: customers[1]?.name || 'Konsumen 2', itemIds: [], total: 0 },
+  ]);
 
-  // Active person paying
-  const [payingCustomerId, setPayingCustomerId] = useState<string | null>(null);
-  const [selectedMethod, setSelectedMethod] = useState<string>('qris');
+  const handleComplete = () => {
+    let resultPersons: SplitBillPerson[] = [];
 
-  // Handle Equal Split adjustment
-  const handleSetPeopleCount = (count: number) => {
-    const validCount = Math.max(2, Math.min(10, count));
-    setNumPeople(validCount);
-    const equalShare = Math.floor(grandTotal / validCount);
-    const remainder = grandTotal - equalShare * validCount;
+    if (splitMode === 'equal') {
+      for (let i = 0; i < numPeople; i++) {
+        resultPersons.push({
+          personIndex: i + 1,
+          name: customers[i]?.name || `Tamu Meja #${i + 1}`,
+          assignedItems: items,
+          subtotal: Math.round(subtotal / numPeople),
+          tax: Math.round(tax / numPeople),
+          discount: Math.round(discount / numPeople),
+          totalAmount: i === numPeople - 1 ? grandTotal - equalAmount * (numPeople - 1) : equalAmount,
+          isPaid: true,
+        });
+      }
+    } else if (splitMode === 'nominal') {
+      const sum = nominalPersons.reduce((acc, p) => acc + p.amount, 0);
+      if (sum !== grandTotal) {
+        toast.warning('Nominal Belum Seimbang', `Total pembagian (Rp ${sum.toLocaleString('id-ID')}) harus sama dengan Total Tagihan (Rp ${grandTotal.toLocaleString('id-ID')})`);
+        return;
+      }
+      resultPersons = nominalPersons.map((p, idx) => ({
+        personIndex: idx + 1,
+        name: p.name,
+        assignedItems: items,
+        subtotal: p.amount,
+        tax: 0,
+        discount: 0,
+        totalAmount: p.amount,
+        isPaid: true,
+      }));
+    } else {
+      resultPersons = itemPersons.map((p, idx) => ({
+        personIndex: idx + 1,
+        name: p.name,
+        assignedItems: items.filter((it) => p.itemIds.includes(it.productId)),
+        subtotal: p.total,
+        tax: 0,
+        discount: 0,
+        totalAmount: p.total,
+        isPaid: true,
+      }));
+    }
 
-    const newCustomers: SplitCustomer[] = Array.from({ length: validCount }).map((_, i) => ({
-      id: `p-${i + 1}`,
-      name: `Konsumen ${i + 1}`,
-      nominal: i === 0 ? equalShare + remainder : equalShare,
-      isPaid: false,
-      assignedItems: [],
-    }));
-    setCustomers(newCustomers);
-  };
-
-  // Handle Nominal Update
-  const handleUpdateNominal = (id: string, amount: number) => {
-    setCustomers((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, nominal: amount } : c))
-    );
-  };
-
-  // Add new customer in nominal mode
-  const handleAddCustomer = () => {
-    const nextIdx = customers.length + 1;
-    setCustomers((prev) => [
-      ...prev,
-      { id: `p-${nextIdx}`, name: `Konsumen ${nextIdx}`, nominal: 0, isPaid: false, assignedItems: [] },
-    ]);
-  };
-
-  // Mark a person as paid
-  const handlePayCustomer = (id: string) => {
-    setCustomers((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, isPaid: true, paymentMethod: selectedMethod } : c))
-    );
-    setPayingCustomerId(null);
-  };
-
-  const totalAllocated =
-    splitMode === 'items'
-      ? items.reduce((acc, it) => (itemAssignments[it.productId] ? acc + it.subtotal : acc), 0)
-      : customers.reduce((acc, c) => acc + (c.nominal || 0), 0);
-
-  const totalPaid = customers.filter((c) => c.isPaid).reduce((acc, c) => acc + c.nominal, 0);
-  const isFullyAllocated = splitMode === 'items' ? Object.keys(itemAssignments).length === items.length : totalAllocated === grandTotal;
-  const isAllPaid = customers.every((c) => c.isPaid);
-
-  const handleFinish = () => {
-    onCompleteSplit(customers);
+    toast.success('Split Bill Selesai', `Tagihan berhasil dibagi untuk ${resultPersons.length} orang.`);
+    onCompleteSplit(resultPersons);
   };
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh] transition-colors">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh] transition-colors">
         {/* Header */}
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
           <div className="flex items-center space-x-2">
             <span className="text-xl">✂️</span>
             <div>
               <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                Split Bill (Pisah Pembayaran Konsumen)
+                Pusat Split Bill (Pisah Pembayaran Kasir)
               </h3>
               <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                Total Tagihan POS: <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">Rp {grandTotal.toLocaleString('id-ID')}</span>
+                Total Tagihan: <span className="font-bold text-red-600 dark:text-red-400 font-mono">Rp {grandTotal.toLocaleString('id-ID')}</span>
               </div>
             </div>
           </div>
@@ -127,218 +118,88 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
           </button>
         </div>
 
-        {/* Mode Selector Tabs */}
+        {/* 3 Modes Switcher */}
         <div className="p-3 bg-slate-100 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex space-x-2">
           <button
-            onClick={() => {
-              setSplitMode('equal');
-              handleSetPeopleCount(numPeople);
-            }}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+            onClick={() => setSplitMode('equal')}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
               splitMode === 'equal'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
                 : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
             }`}
           >
-            1. Dibagi Rata (N Orang)
+            <span>⚖️</span>
+            <span>1. Bagi Rata (N Orang)</span>
           </button>
+
           <button
             onClick={() => setSplitMode('nominal')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
               splitMode === 'nominal'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
                 : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
             }`}
           >
-            2. Split per Nominal Custom
+            <span>💵</span>
+            <span>2. Nominal Custom</span>
           </button>
+
           <button
-            onClick={() => setSplitMode('items')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-              splitMode === 'items'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+            onClick={() => setSplitMode('by_item')}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
+              splitMode === 'by_item'
+                ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
                 : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
             }`}
           >
-            3. Split per Item Menu
+            <span>🍽️</span>
+            <span>3. Split per Item</span>
           </button>
         </div>
 
-        {/* Body Content */}
+        {/* Content Area */}
         <div className="p-5 overflow-y-auto space-y-4 flex-1 text-xs">
-          {/* MODE 1: EQUAL SPLIT */}
+          {/* 1. EQUAL SPLIT */}
           {splitMode === 'equal' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800">
-                <span className="font-bold text-slate-700 dark:text-slate-300">Jumlah Konsumen (Orang):</span>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handleSetPeopleCount(numPeople - 1)}
-                    disabled={numPeople <= 2}
-                    className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-40 font-black text-sm"
-                  >
-                    -
-                  </button>
-                  <span className="w-8 text-center font-bold text-base font-mono text-emerald-600 dark:text-emerald-400">
-                    {numPeople}
-                  </span>
-                  <button
-                    onClick={() => handleSetPeopleCount(numPeople + 1)}
-                    disabled={numPeople >= 10}
-                    className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-40 font-black text-sm"
-                  >
-                    +
-                  </button>
+              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Jumlah Orang Rombongan:</span>
+                <div className="flex items-center space-x-3">
+                  {[2, 3, 4, 5, 6].map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => setNumPeople(num)}
+                      className={`flex-1 py-2 rounded-xl font-bold font-mono text-xs border transition-all ${
+                        numPeople === num
+                          ? 'bg-red-600 text-white border-red-500 shadow-md shadow-red-600/20'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {num} Orang
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Customers List */}
               <div className="space-y-2">
-                {customers.map((c, idx) => (
+                {Array.from({ length: numPeople }).map((_, idx) => (
                   <div
-                    key={c.id}
-                    className={`p-3 rounded-2xl border flex items-center justify-between transition-all ${
-                      c.isPaid
-                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800/60'
-                        : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2.5">
-                      <span className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold flex items-center justify-center text-[10px]">
-                        {idx + 1}
-                      </span>
-                      <div>
-                        <div className="font-bold text-slate-800 dark:text-slate-200">{c.name}</div>
-                        <div className="text-[10px] text-slate-500">
-                          Porsi: {((1 / numPeople) * 100).toFixed(0)}% dari total tagihan
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                      <span className="text-sm font-black font-mono text-slate-900 dark:text-slate-100">
-                        Rp {c.nominal.toLocaleString('id-ID')}
-                      </span>
-
-                      {c.isPaid ? (
-                        <span className="bg-emerald-600 text-white font-bold text-[10px] px-2.5 py-1 rounded-xl flex items-center space-x-1">
-                          <span>✓ Lunas</span>
-                          <span className="uppercase text-[9px] font-mono">({c.paymentMethod})</span>
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => setPayingCustomerId(c.id)}
-                          className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm transition-all"
-                        >
-                          Bayar Porsi Ini
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* MODE 2: NOMINAL SPLIT */}
-          {splitMode === 'nominal' && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                {customers.map((c, idx) => (
-                  <div
-                    key={c.id}
-                    className="p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <span className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 font-bold flex items-center justify-center text-[10px]">
-                        {idx + 1}
-                      </span>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">{c.name}</span>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <span className="text-slate-400 font-mono">Rp</span>
-                      <input
-                        type="number"
-                        value={c.nominal || ''}
-                        disabled={c.isPaid}
-                        onChange={(e) => handleUpdateNominal(c.id, parseFloat(e.target.value) || 0)}
-                        className="w-32 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1 text-right font-mono font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                      />
-
-                      {c.isPaid ? (
-                        <span className="bg-emerald-600 text-white font-bold text-[10px] px-2.5 py-1 rounded-xl">
-                          ✓ Lunas
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => setPayingCustomerId(c.id)}
-                          disabled={c.nominal <= 0}
-                          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm"
-                        >
-                          Bayar
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-between items-center">
-                <button
-                  onClick={handleAddCustomer}
-                  className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
-                >
-                  + Tambah Konsumen Lain
-                </button>
-                <div className="text-right text-xs">
-                  <span className="text-slate-500">Total Terbagi: </span>
-                  <span
-                    className={`font-mono font-bold ${
-                      totalAllocated === grandTotal ? 'text-emerald-600' : 'text-rose-500'
-                    }`}
-                  >
-                    Rp {totalAllocated.toLocaleString('id-ID')} / Rp {grandTotal.toLocaleString('id-ID')}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* MODE 3: ITEM SPLIT */}
-          {splitMode === 'items' && (
-            <div className="space-y-4">
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Pilih konsumen yang bertanggung jawab untuk setiap item menu yang dipesan:
-              </p>
-              <div className="space-y-2">
-                {items.map((it) => (
-                  <div
-                    key={it.productId}
-                    className="p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-center justify-between"
+                    key={idx}
+                    className="p-3.5 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex justify-between items-center"
                   >
                     <div>
-                      <div className="font-bold text-slate-800 dark:text-slate-200">{it.productName}</div>
-                      <div className="text-[10px] text-slate-500 font-mono">
-                        {it.quantity} x Rp {it.unitPrice.toLocaleString('id-ID')} = Rp {it.subtotal.toLocaleString('id-ID')}
+                      <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
+                        <span>👤 {customers[idx]?.name || `Tamu ${idx + 1}`}</span>
+                        {customers[idx] && (
+                          <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 text-[9px] px-1.5 py-0.2 rounded font-mono">
+                            {customers[idx].tier}
+                          </span>
+                        )}
                       </div>
+                      <div className="text-[10px] text-slate-400">Pembagian Rata (1/{numPeople})</div>
                     </div>
-
-                    <div className="flex items-center space-x-2">
-                      <select
-                        value={itemAssignments[it.productId] || ''}
-                        onChange={(e) =>
-                          setItemAssignments((prev) => ({ ...prev, [it.productId]: e.target.value }))
-                        }
-                        className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-xl px-2.5 py-1.5 border border-slate-200 dark:border-slate-700 font-semibold focus:outline-none"
-                      >
-                        <option value="">-- Pilih Konsumen --</option>
-                        {customers.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
+                    <div className="text-sm font-black text-red-600 dark:text-red-400 font-mono">
+                      Rp {equalAmount.toLocaleString('id-ID')}
                     </div>
                   </div>
                 ))}
@@ -346,76 +207,133 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
             </div>
           )}
 
-          {/* PAYMENT DRAWER POPUP FOR INDIVIDUAL PERSON */}
-          {payingCustomerId && (
-            <div className="bg-slate-100 dark:bg-slate-950 border-2 border-emerald-500/50 rounded-2xl p-4 space-y-3 animate-in fade-in">
+          {/* 2. NOMINAL CUSTOM SPLIT */}
+          {splitMode === 'nominal' && (
+            <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="font-bold text-slate-800 dark:text-slate-200">
-                  Pembayaran: {customers.find((c) => c.id === payingCustomerId)?.name}
-                </span>
-                <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
-                  Rp {customers.find((c) => c.id === payingCustomerId)?.nominal.toLocaleString('id-ID')}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2">
-                {(['qris', 'cash', 'edc_bca', 'transfer_bank'] as const).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setSelectedMethod(m)}
-                    className={`py-1.5 px-2 rounded-xl text-[11px] font-bold uppercase transition-all ${
-                      selectedMethod === m
-                        ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                    }`}
-                  >
-                    {m.replace('_', ' ')}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-1">
+                <span className="font-bold text-slate-700 dark:text-slate-300">Daftar Nominal per Konsumen:</span>
                 <button
-                  onClick={() => setPayingCustomerId(null)}
-                  className="px-3 py-1 text-xs text-slate-500 font-semibold hover:text-slate-700"
+                  onClick={() =>
+                    setNominalPersons([
+                      ...nominalPersons,
+                      { name: customers[nominalPersons.length]?.name || `Konsumen ${nominalPersons.length + 1}`, amount: 0, isPaid: false },
+                    ])
+                  }
+                  className="text-red-600 dark:text-red-400 font-bold hover:underline"
                 >
-                  Batal
-                </button>
-                <button
-                  onClick={() => handlePayCustomer(payingCustomerId)}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-1.5 rounded-xl text-xs shadow-md"
-                >
-                  Konfirmasi Pembayaran ({selectedMethod.toUpperCase()})
+                  + Tambah Orang
                 </button>
               </div>
+
+              {nominalPersons.map((p, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center space-x-2"
+                >
+                  <input
+                    type="text"
+                    value={p.name}
+                    onChange={(e) => {
+                      const copy = [...nominalPersons];
+                      copy[idx].name = e.target.value;
+                      setNominalPersons(copy);
+                    }}
+                    placeholder="Nama Konsumen"
+                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200"
+                  />
+                  <div className="flex items-center space-x-1">
+                    <span className="text-slate-400 text-xs">Rp</span>
+                    <input
+                      type="number"
+                      value={p.amount}
+                      onChange={(e) => {
+                        const copy = [...nominalPersons];
+                        copy[idx].amount = parseFloat(e.target.value) || 0;
+                        setNominalPersons(copy);
+                      }}
+                      className="w-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-red-600 dark:text-red-400"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 3. BY ITEM SPLIT */}
+          {splitMode === 'by_item' && (
+            <div className="space-y-3">
+              <span className="font-bold text-slate-700 dark:text-slate-300">Pilih Menu untuk Tiap Konsumen:</span>
+              {itemPersons.map((p, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2"
+                >
+                  <div className="flex justify-between items-center">
+                    <input
+                      type="text"
+                      value={p.name}
+                      onChange={(e) => {
+                        const copy = [...itemPersons];
+                        copy[idx].name = e.target.value;
+                        setItemPersons(copy);
+                      }}
+                      className="font-bold bg-transparent text-slate-800 dark:text-slate-100 text-xs border-b border-dashed border-slate-400 focus:outline-none"
+                    />
+                    <span className="font-mono font-bold text-red-600 dark:text-red-400">
+                      Subtotal: Rp {p.total.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5 pt-1">
+                    {items.map((it) => {
+                      const isChecked = p.itemIds.includes(it.productId);
+                      return (
+                        <button
+                          key={it.productId}
+                          type="button"
+                          onClick={() => {
+                            const copy = [...itemPersons];
+                            if (isChecked) {
+                              copy[idx].itemIds = copy[idx].itemIds.filter((id) => id !== it.productId);
+                              copy[idx].total -= it.subtotal;
+                            } else {
+                              copy[idx].itemIds.push(it.productId);
+                              copy[idx].total += it.subtotal;
+                            }
+                            setItemPersons(copy);
+                          }}
+                          className={`p-2 rounded-xl text-left border text-[11px] transition-all ${
+                            isChecked
+                              ? 'bg-red-50 dark:bg-red-950/60 border-red-500 text-red-700 dark:text-red-300'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          <div className="font-bold truncate">{it.productName}</div>
+                          <div className="text-[10px] font-mono">Rp {it.subtotal.toLocaleString('id-ID')}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
 
         {/* Footer Actions */}
         <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
-          <div className="text-xs">
-            <span className="text-slate-500">Status Pembayaran: </span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-              Rp {totalPaid.toLocaleString('id-ID')} / Rp {grandTotal.toLocaleString('id-ID')}
-            </span>
-          </div>
-
-          <div className="flex space-x-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400"
-            >
-              Kembali
-            </button>
-            <button
-              onClick={handleFinish}
-              disabled={!isAllPaid}
-              className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold px-6 py-2 rounded-2xl text-xs shadow-lg shadow-emerald-600/20 transition-all"
-            >
-              {isAllPaid ? 'Selesaikan Semua Split Bill (Lunas)' : 'Belum Semua Konsumen Lunas'}
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleComplete}
+            className="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2.5 rounded-2xl text-xs shadow-lg shadow-red-600/20 transition-all active:scale-95"
+          >
+            Selesaikan & Cetak Struk Terpisah
+          </button>
         </div>
       </div>
     </div>
