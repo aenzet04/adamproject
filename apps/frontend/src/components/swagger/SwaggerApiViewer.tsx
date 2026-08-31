@@ -220,35 +220,35 @@ export const SwaggerApiViewer: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-slate-950 text-slate-100 min-h-screen">
+    <div className="p-6 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen transition-colors">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <div className="flex items-center space-x-2">
             <span className="text-2xl">⚡</span>
-            <h2 className="text-xl font-bold text-slate-100">Swagger / OpenAPI 3.0 Live Console</h2>
-            <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono px-2 py-0.5 rounded-full font-bold">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Swagger / OpenAPI 3.0 Live Console</h2>
+            <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
               v1.0.0 OAS3
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Dokumentasi & Testing REST API Backend Ruby on Rails 8 secara Live dengan integrasi Database MySQL / MariaDB.
           </p>
         </div>
 
         <div className="flex items-center space-x-2">
-          <span className="text-xs text-slate-400">Target Server:</span>
-          <code className="text-xs bg-slate-900 border border-slate-700 text-emerald-400 px-2 py-1 rounded font-mono">
+          <span className="text-xs text-slate-500 dark:text-slate-400">Target Server:</span>
+          <code className="text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-xl font-mono shadow-sm">
             http://localhost:3001
           </code>
         </div>
       </div>
 
-      {/* Main Grid: Endpoints List & Interactive Inspector */}
+      {/* Main Grid */}
       <div className="grid grid-cols-12 gap-6">
         {/* Left: Endpoint Explorer */}
         <div className="col-span-4 space-y-2">
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
             Endpoints Tersedia ({ENDPOINTS.length})
           </div>
 
@@ -258,60 +258,58 @@ export const SwaggerApiViewer: React.FC = () => {
               <button
                 key={ep.id}
                 onClick={() => handleSelectEndpoint(ep)}
-                className={`w-full text-left p-3 rounded-xl border transition-all ${
+                className={`w-full text-left p-3 rounded-2xl border transition-all ${
                   isSelected
-                    ? 'bg-slate-900 border-emerald-500 shadow-lg shadow-emerald-950/40'
-                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
+                    ? 'bg-white dark:bg-slate-900 border-emerald-500 shadow-md shadow-emerald-500/10'
+                    : 'bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-900'
                 }`}
               >
                 <div className="flex items-center space-x-2 mb-1">
                   <span
-                    className={`text-[10px] font-black font-mono px-2 py-0.5 rounded uppercase ${
+                    className={`text-[10px] font-black font-mono px-2 py-0.5 rounded-lg uppercase ${
                       ep.method === 'GET'
-                        ? 'bg-blue-950 text-blue-400 border border-blue-800'
-                        : 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                        ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                        : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
                     }`}
                   >
                     {ep.method}
                   </span>
-                  <span className="text-xs font-mono font-bold text-slate-200 truncate">{ep.path}</span>
+                  <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 truncate">{ep.path}</span>
                 </div>
-                <div className="text-[11px] text-slate-400 line-clamp-1">{ep.summary}</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">{ep.summary}</div>
               </button>
             );
           })}
 
-          {/* Usage Guide Card */}
-          <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-2 text-xs text-slate-300 mt-4">
-            <div className="font-bold text-emerald-400 flex items-center space-x-1.5">
+          <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-2 text-xs text-slate-600 dark:text-slate-300 mt-4 shadow-sm">
+            <div className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center space-x-1.5">
               <span>📖</span>
               <span>Panduan Pengetesan API:</span>
             </div>
-            <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-400">
+            <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
               <li>Pilih salah satu endpoint di atas.</li>
               <li>Edit payload JSON pada tab <b>Request Body</b> (untuk POST).</li>
               <li>Klik tombol <b>▶ Send Request (Execute)</b>.</li>
-              <li>Response status code, waktu eksekusi (ms), dan body JSON akan tampil secara live.</li>
+              <li>Response status code, latency (ms), dan body JSON akan tampil secara live.</li>
             </ol>
           </div>
         </div>
 
         {/* Right: Interactive Console */}
         <div className="col-span-8 space-y-4">
-          {/* Endpoint Details Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
             <div className="flex justify-between items-start mb-3">
               <div className="flex items-center space-x-3">
                 <span
-                  className={`text-xs font-black font-mono px-2.5 py-1 rounded uppercase ${
+                  className={`text-xs font-black font-mono px-2.5 py-1 rounded-xl uppercase ${
                     selectedEndpoint.method === 'GET'
-                      ? 'bg-blue-950 text-blue-400 border border-blue-800'
-                      : 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                      ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                      : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
                   }`}
                 >
                   {selectedEndpoint.method}
                 </span>
-                <span className="text-base font-mono font-bold text-slate-100">
+                <span className="text-base font-mono font-bold text-slate-800 dark:text-slate-100">
                   {selectedEndpoint.path}
                 </span>
               </div>
@@ -319,23 +317,22 @@ export const SwaggerApiViewer: React.FC = () => {
               <button
                 onClick={handleExecuteLiveTest}
                 disabled={isLoading}
-                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold px-5 py-2 rounded-xl text-xs flex items-center space-x-2 shadow-lg shadow-emerald-950 transition-all active:scale-95"
+                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold px-5 py-2 rounded-2xl text-xs flex items-center space-x-2 shadow-md shadow-emerald-600/20 transition-all active:scale-95"
               >
                 <span>{isLoading ? '⏳' : '▶'}</span>
                 <span>{isLoading ? 'Mengirim...' : 'Send Request'}</span>
               </button>
             </div>
 
-            <p className="text-xs text-slate-400 mb-4">{selectedEndpoint.description}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">{selectedEndpoint.description}</p>
 
-            {/* Request Body (If POST) */}
             {selectedEndpoint.method === 'POST' && (
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-bold text-slate-300">Request Body (application/json)</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Request Body (application/json)</span>
                   <button
                     onClick={() => setRequestBody(selectedEndpoint.defaultPayload || '')}
-                    className="text-[10px] text-slate-400 hover:text-slate-200"
+                    className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                   >
                     Reset Payload
                   </button>
@@ -344,32 +341,31 @@ export const SwaggerApiViewer: React.FC = () => {
                   rows={8}
                   value={requestBody}
                   onChange={(e) => setRequestBody(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 font-mono text-xs text-emerald-700 dark:text-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-inner"
                 />
               </div>
             )}
 
-            {/* Response Section */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-bold text-slate-300">Live Response Inspector</span>
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Live Response Inspector</span>
                 {liveResponse && (
                   <div className="flex items-center space-x-2 text-xs font-mono">
                     <span
-                      className={`px-2 py-0.5 rounded font-bold ${
+                      className={`px-2 py-0.5 rounded-lg font-bold ${
                         liveResponse.status < 300
-                          ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                          : 'bg-rose-950 text-rose-400 border border-rose-800'
+                          ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                          : 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800'
                       }`}
                     >
                       HTTP {liveResponse.status}
                     </span>
-                    <span className="text-slate-400">{liveResponse.timeMs} ms</span>
+                    <span className="text-slate-500 dark:text-slate-400">{liveResponse.timeMs} ms</span>
                   </div>
                 )}
               </div>
 
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs overflow-x-auto max-h-80">
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 font-mono text-xs overflow-x-auto max-h-80 shadow-inner">
                 {liveResponse ? (
                   <pre className="text-slate-200">
                     {JSON.stringify(liveResponse.data, null, 2)}
