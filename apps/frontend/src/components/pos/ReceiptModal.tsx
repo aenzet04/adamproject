@@ -40,13 +40,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   branchName,
   onClose,
 }) => {
+  const [ticketType, setTicketType] = useState<'customer' | 'kitchen'>('customer');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [isBluetoothPrinting, setIsBluetoothPrinting] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [whatsappPhone, setWhatsappPhone] = useState<string>('');
-  const [showWhatsappInput, setShowWhatsappInput] = useState<boolean>(true);
 
   const receiptRef = useRef<HTMLDivElement>(null);
+  const kitchenRef = useRef<HTMLDivElement>(null);
 
   const {
     autoPrintEnabled,
@@ -59,7 +60,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
   const invoiceUrl = `https://pos.adamcorp.id/e-invoice/${orderNumber}?verify=psak2026`;
 
-  const getPrintData = () => ({
+  const getCustomerPrintData = () => ({
     orderNumber,
     storeName: 'KOPI NUSANTARA ROASTERY',
     branchName,
@@ -67,7 +68,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     customerName,
     tableNumber,
     items: items.map((i) => ({
-      name: i.productName,
+      name: i.productName + (i.notes ? ` (${i.notes})` : ''),
       quantity: i.quantity,
       unitPrice: i.unitPrice,
       subtotal: i.subtotal,
@@ -86,6 +87,29 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     })),
   });
 
+  const getKitchenPrintData = () => ({
+    orderNumber: `DAPUR-${orderNumber.slice(-4)}`,
+    storeName: '*** PESANAN DAPUR / BARISTA ***',
+    branchName,
+    cashierName,
+    customerName,
+    tableNumber: tableNumber || 'Take Away',
+    items: items.map((i) => ({
+      name: `[${i.quantity}x] ${i.productName}${i.notes ? `\n   NOTE: ${i.notes}` : ''}`,
+      quantity: i.quantity,
+      unitPrice: 0,
+      subtotal: 0,
+      discount: 0,
+    })),
+    subtotal: 0,
+    discount: 0,
+    tax: 0,
+    serviceCharge: 0,
+    rounding: 0,
+    grandTotal: 0,
+    payments: [],
+  });
+
   useEffect(() => {
     QRCode.toDataURL(invoiceUrl, {
       width: 140,
@@ -100,14 +124,18 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
     if (autoPrintEnabled && connectedPrinterName) {
       setIsBluetoothPrinting(true);
-      printReceipt(getPrintData()).finally(() => setIsBluetoothPrinting(false));
+      printReceipt(getCustomerPrintData()).finally(() => setIsBluetoothPrinting(false));
     }
   }, [invoiceUrl, autoPrintEnabled, connectedPrinterName]);
 
-  const handleManualBluetoothPrint = async () => {
+  const handleManualPrint = async (type: 'customer' | 'kitchen') => {
     setIsBluetoothPrinting(true);
     try {
-      await printReceipt(getPrintData());
+      if (type === 'kitchen') {
+        await printReceipt(getKitchenPrintData());
+      } else {
+        await printReceipt(getCustomerPrintData());
+      }
     } finally {
       setIsBluetoothPrinting(false);
     }
@@ -124,46 +152,62 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     };
 
     let txt = '';
-    txt += '      KOPI NUSANTARA ROASTERY   \n';
-    txt += `       ${branchName}\n`;
-    txt += '       NPWP: 01.892.435.1-014.000\n';
-    txt += '-'.repeat(W) + '\n';
-    txt += `No. Nota : ${orderNumber}\n`;
-    txt += `Waktu    : ${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}\n`;
-    txt += `Kasir    : ${cashierName} (POS-01)\n`;
-    if (customerName || tableNumber) {
-      txt += `Tamu     : ${customerName || 'Walk-in'}${tableNumber ? ` (Meja ${tableNumber})` : ''}\n`;
+    if (ticketType === 'kitchen') {
+      txt += '   *** TIKET DAPUR / BARISTA ***   \n';
+      txt += `Outlet   : ${branchName}\n`;
+      txt += `No. Order: ${orderNumber}\n`;
+      txt += `Meja     : ${tableNumber || 'Take Away'}\n`;
+      txt += `Waktu    : ${new Date().toLocaleTimeString('id-ID')} WIB\n`;
+      txt += `Tamu     : ${customerName || 'Walk-in'}\n`;
+      txt += '='.repeat(W) + '\n';
+      items.forEach((it) => {
+        txt += `[${it.quantity}x] ${it.productName}\n`;
+        if (it.notes) txt += `  * CATATAN: ${it.notes}\n`;
+      });
+      txt += '='.repeat(W) + '\n';
+    } else {
+      txt += '      KOPI NUSANTARA ROASTERY   \n';
+      txt += `       ${branchName}\n`;
+      txt += '       NPWP: 01.892.435.1-014.000\n';
+      txt += '-'.repeat(W) + '\n';
+      txt += `No. Nota : ${orderNumber}\n`;
+      txt += `Waktu    : ${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}\n`;
+      txt += `Kasir    : ${cashierName} (POS-01)\n`;
+      if (customerName || tableNumber) {
+        txt += `Tamu     : ${customerName || 'Walk-in'}${tableNumber ? ` (Meja ${tableNumber})` : ''}\n`;
+      }
+      txt += '-'.repeat(W) + '\n';
+
+      items.forEach((item) => {
+        txt += item.productName.substring(0, W) + '\n';
+        if (item.notes) txt += `  * ${item.notes}\n`;
+        const qtyPrice = `  ${item.quantity} x ${item.unitPrice.toLocaleString('id-ID')}`;
+        txt += formatRow(qtyPrice, item.subtotal.toLocaleString('id-ID')) + '\n';
+      });
+
+      txt += '-'.repeat(W) + '\n';
+      txt += formatRow('Subtotal', subtotal.toLocaleString('id-ID')) + '\n';
+      if (discount > 0) txt += formatRow('Diskon', `-${discount.toLocaleString('id-ID')}`) + '\n';
+      txt += formatRow('PPN (11%)', tax.toLocaleString('id-ID')) + '\n';
+      if (rounding !== 0) txt += formatRow('Pembulatan', rounding.toLocaleString('id-ID')) + '\n';
+      txt += '='.repeat(W) + '\n';
+      txt += formatRow('TOTAL AKHIR', `Rp ${grandTotal.toLocaleString('id-ID')}`) + '\n';
+      txt += '='.repeat(W) + '\n';
+
+      payments.forEach((p) => {
+        txt += formatRow(p.paymentMethod.toUpperCase(), p.amount.toLocaleString('id-ID')) + '\n';
+      });
+
+      txt += '-'.repeat(W) + '\n';
+      txt += '   Terima Kasih Atas Kunjungan Anda   \n';
+      txt += `     *${orderNumber}*\n`;
     }
-    txt += '-'.repeat(W) + '\n';
-
-    items.forEach((item) => {
-      txt += item.productName.substring(0, W) + '\n';
-      const qtyPrice = `  ${item.quantity} x ${item.unitPrice.toLocaleString('id-ID')}`;
-      txt += formatRow(qtyPrice, item.subtotal.toLocaleString('id-ID')) + '\n';
-    });
-
-    txt += '-'.repeat(W) + '\n';
-    txt += formatRow('Subtotal', subtotal.toLocaleString('id-ID')) + '\n';
-    if (discount > 0) txt += formatRow('Diskon', `-${discount.toLocaleString('id-ID')}`) + '\n';
-    txt += formatRow('PPN (11%)', tax.toLocaleString('id-ID')) + '\n';
-    if (rounding !== 0) txt += formatRow('Pembulatan', rounding.toLocaleString('id-ID')) + '\n';
-    txt += '='.repeat(W) + '\n';
-    txt += formatRow('TOTAL AKHIR', `Rp ${grandTotal.toLocaleString('id-ID')}`) + '\n';
-    txt += '='.repeat(W) + '\n';
-
-    payments.forEach((p) => {
-      txt += formatRow(p.paymentMethod.toUpperCase(), p.amount.toLocaleString('id-ID')) + '\n';
-    });
-
-    txt += '-'.repeat(W) + '\n';
-    txt += '   Terima Kasih Atas Kunjungan Anda   \n';
-    txt += `     *${orderNumber}*\n`;
 
     const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `struk-${orderNumber}.txt`;
+    link.download = `${ticketType === 'kitchen' ? 'tiket-dapur' : 'struk'}-${orderNumber}.txt`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -172,13 +216,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
    * Unduh Dokumen PDF (.pdf)
    */
   const handleDownloadPdf = async (): Promise<string | null> => {
-    if (!receiptRef.current) return null;
+    const targetElement = ticketType === 'kitchen' ? kitchenRef.current : receiptRef.current;
+    if (!targetElement) return null;
     setIsGeneratingPdf(true);
 
     try {
-      const canvas = await (html2canvas as any)(receiptRef.current, {
+      const canvas = await (html2canvas as any)(targetElement, {
         scale: 2,
-        backgroundColor: '#fffdfa',
+        backgroundColor: ticketType === 'kitchen' ? '#f1f5f9' : '#fffdfa',
         useCORS: true,
       });
 
@@ -193,7 +238,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       });
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      const filename = `struk-${orderNumber}.pdf`;
+      const filename = `${ticketType === 'kitchen' ? 'tiket-dapur' : 'struk'}-${orderNumber}.pdf`;
       pdf.save(filename);
       return filename;
     } catch (err) {
@@ -205,9 +250,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     }
   };
 
-  /**
-   * Normalisasi WhatsApp (081xxx -> 6281xxx)
-   */
   const formatWhatsappNumber = (input: string): string => {
     let clean = input.replace(/\D/g, '');
     if (clean.startsWith('08')) clean = '628' + clean.substring(2);
@@ -215,9 +257,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     return clean;
   };
 
-  /**
-   * 1. KIRIM WA (FORMAT TEKS LENGKAP & INFORMATIF)
-   */
   const handleSendWhatsappText = () => {
     const normalized = formatWhatsappNumber(whatsappPhone);
     if (!normalized || normalized.length < 10) {
@@ -228,37 +267,29 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     let msg = `🧾 *STRUK PEMBELIAN RESMI*\n`;
     msg += `🏪 *KOPI NUSANTARA ROASTERY*\n`;
     msg += `📍 ${branchName}\n`;
-    msg += `NPWP: 01.892.435.1-014.000\n`;
     msg += `--------------------------------------------\n`;
     msg += `📄 *No. Nota*    : ${orderNumber}\n`;
     msg += `📅 *Waktu*       : ${new Date().toLocaleString('id-ID')} WIB\n`;
-    msg += `👤 *Kasir*       : ${cashierName} (POS-01)\n`;
+    msg += `👤 *Kasir*       : ${cashierName}\n`;
     msg += `👥 *Pelanggan*   : ${customerName || 'Walk-in Guest'}${tableNumber ? ` (Meja ${tableNumber})` : ''}\n`;
     msg += `--------------------------------------------\n`;
     msg += `*RINCIAN PESANAN:*\n`;
 
     items.forEach((item, idx) => {
       msg += `${idx + 1}. *${item.productName}*\n`;
+      if (item.notes) msg += `   _Catatan: ${item.notes}_\n`;
       msg += `   ${item.quantity} x Rp ${item.unitPrice.toLocaleString('id-ID')} = *Rp ${item.subtotal.toLocaleString('id-ID')}*\n`;
     });
 
     msg += `--------------------------------------------\n`;
-    msg += `Subtotal          : Rp ${subtotal.toLocaleString('id-ID')}\n`;
-    if (discount > 0) msg += `Diskon            : -Rp ${discount.toLocaleString('id-ID')}\n`;
-    msg += `PPN (11%)         : Rp ${tax.toLocaleString('id-ID')}\n`;
-    if (rounding !== 0) msg += `Pembulatan        : Rp ${rounding.toLocaleString('id-ID')}\n`;
-    msg += `============================================\n`;
     msg += `💰 *TOTAL AKHIR   : Rp ${grandTotal.toLocaleString('id-ID')} (LUNAS)*\n`;
-    msg += `============================================\n`;
+    msg += `--------------------------------------------\n`;
     msg += `🔗 *Lihat E-Struk / E-Faktur Online:* \n${invoiceUrl}\n\n`;
     msg += `_Terima kasih atas kunjungan Anda!_`;
 
     window.open(`https://wa.me/${normalized}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  /**
-   * 2. KIRIM PDF KE WA (DOWNLOAD PDF INSTAN + BUKA CHAT WA)
-   */
   const handleSendPdfToWhatsapp = async () => {
     const normalized = formatWhatsappNumber(whatsappPhone);
     if (!normalized || normalized.length < 10) {
@@ -266,10 +297,8 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       return;
     }
 
-    // 1. Generate & download the PDF to cashier machine
     const filename = await handleDownloadPdf();
 
-    // 2. Open WhatsApp chat with PDF notice & download link
     let msg = `Halo Kak ${customerName || ''},\n\n`;
     msg += `Berikut kami lampirkan Dokumen Resmi E-Struk Pembelian Anda (*No. Nota: ${orderNumber}*).\n`;
     msg += `Total Tagihan: *Rp ${grandTotal.toLocaleString('id-ID')}* *(LUNAS)*\n\n`;
@@ -286,10 +315,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
         {/* Modal Header */}
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/80 dark:bg-slate-950/80">
           <div className="flex items-center space-x-2">
-            <span className="text-emerald-500 text-lg">🧾</span>
+            <span className="text-red-600 text-lg">🧾</span>
             <div>
-              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Struk Konsumen Resmi</h3>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Format Thermal 58mm & E-Invoice WhatsApp</div>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                Pusat Cetak Struk & Tiket Dapur (58mm)
+              </h3>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                Pilih Cetak Konsumen atau Cetak Tiket Dapur / Barista
+              </div>
             </div>
           </div>
           <button
@@ -300,13 +333,40 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           </button>
         </div>
 
+        {/* Tab Switcher: Struk Konsumen vs Tiket Dapur */}
+        <div className="p-2 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex space-x-2">
+          <button
+            onClick={() => setTicketType('customer')}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
+              ticketType === 'customer'
+                ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            <span>🧾</span>
+            <span>Struk Konsumen (Harga & QR)</span>
+          </button>
+
+          <button
+            onClick={() => setTicketType('kitchen')}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
+              ticketType === 'kitchen'
+                ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            <span>🍳</span>
+            <span>Tiket Dapur (Catatan Menu)</span>
+          </button>
+        </div>
+
         {/* Bluetooth Device Banner Bar */}
         <div className="bg-slate-100/70 dark:bg-slate-950 px-4 py-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
           <div className="flex items-center space-x-2">
             <span className="text-blue-500 text-sm">📶</span>
             <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
               {connectedPrinterName ? (
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold">Terhubung: {connectedPrinterName}</span>
+                <span className="text-red-600 dark:text-red-400 font-bold">Terhubung: {connectedPrinterName}</span>
               ) : (
                 <span className="text-slate-500 dark:text-slate-400">BT Printer Belum Terhubung</span>
               )}
@@ -319,7 +379,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 type="checkbox"
                 checked={autoPrintEnabled}
                 onChange={toggleAutoPrint}
-                className="w-3.5 h-3.5 accent-emerald-500 rounded"
+                className="w-3.5 h-3.5 accent-red-600 rounded"
               />
               <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">Auto-Print</span>
             </label>
@@ -335,165 +395,176 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           </div>
         </div>
 
-        {/* SMART WHATSAPP DISPATCHER (TEXT & PDF) */}
-        <div className="bg-emerald-50 dark:bg-emerald-950/40 p-3.5 border-b border-emerald-100 dark:border-emerald-800/40 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="text-emerald-600 dark:text-emerald-400 text-sm">💬</span>
-              <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                Kirim E-Struk ke WhatsApp Pelanggan
-              </span>
-            </div>
-            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full">
-              Format 081...
-            </span>
-          </div>
-
-          <div className="space-y-2">
-            <input
-              type="tel"
-              placeholder="Ketik No. WhatsApp (contoh: 081234567890)"
-              value={whatsappPhone}
-              onChange={(e) => setWhatsappPhone(e.target.value)}
-              className="w-full bg-white dark:bg-slate-950 border border-emerald-300 dark:border-emerald-600/50 rounded-2xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-emerald-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
-            />
-
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={handleSendWhatsappText}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-emerald-600/20 transition-all active:scale-95"
-              >
-                <span>💬</span>
-                <span>Kirim WA (Teks)</span>
-              </button>
-
-              <button
-                onClick={handleSendPdfToWhatsapp}
-                disabled={isGeneratingPdf}
-                className="bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-teal-600/20 transition-all active:scale-95"
-              >
-                <span>📕</span>
-                <span>{isGeneratingPdf ? 'Membuat PDF...' : 'Kirim PDF ke WA'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Thermal Receipt Paper Style (Ref captured for PDF generation) */}
-        <div
-          ref={receiptRef}
-          className="p-5 bg-amber-50/90 text-slate-900 font-mono text-[11px] leading-relaxed shadow-inner max-h-[42vh] overflow-y-auto print:max-h-none print:p-0"
-        >
-          <div className="text-center pb-3 border-b border-dashed border-slate-400">
-            <h2 className="text-sm font-black tracking-wider uppercase text-slate-900">
-              KOPI NUSANTARA ROASTERY
-            </h2>
-            <div className="text-[10px] text-slate-700">{branchName}</div>
-            <div className="text-[9px] text-slate-600">NPWP: 01.892.435.1-014.000</div>
-          </div>
-
-          <div className="py-2.5 border-b border-dashed border-slate-400 text-[10px] space-y-0.5">
-            <div className="flex justify-between">
-              <span>No. Nota:</span>
-              <span className="font-bold">{orderNumber}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Tanggal:</span>
-              <span>{new Date().toLocaleString('id-ID')}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Kasir:</span>
-              <span>{cashierName} (POS-01)</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Pelanggan:</span>
-              <span>{customerName || 'Walk-in Guest'}{tableNumber ? ` (Meja ${tableNumber})` : ''}</span>
-            </div>
-          </div>
-
-          <div className="py-2.5 border-b border-dashed border-slate-400 space-y-1.5">
-            {items.map((item, idx) => (
-              <div key={idx} className="space-y-0.5">
-                <div className="font-bold text-slate-900">{item.productName}</div>
-                <div className="flex justify-between text-[10px] text-slate-700">
-                  <span>
-                    {item.quantity} x Rp {item.unitPrice.toLocaleString('id-ID')}
-                    {item.discountAmount > 0 && ` (-${item.discountAmount})`}
-                  </span>
-                  <span className="font-bold">Rp {item.subtotal.toLocaleString('id-ID')}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="py-2.5 border-b border-dashed border-slate-400 space-y-1 text-[10px]">
-            <div className="flex justify-between">
-              <span>Subtotal:</span>
-              <span>Rp {subtotal.toLocaleString('id-ID')}</span>
-            </div>
-            {discount > 0 && (
-              <div className="flex justify-between text-rose-700 font-semibold">
-                <span>Diskon:</span>
-                <span>- Rp {discount.toLocaleString('id-ID')}</span>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span>PPN (11%):</span>
-              <span>Rp {tax.toLocaleString('id-ID')}</span>
-            </div>
-            {rounding !== 0 && (
-              <div className="flex justify-between">
-                <span>Pembulatan:</span>
-                <span>Rp {rounding.toLocaleString('id-ID')}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-xs font-black pt-1 border-t border-slate-300 text-slate-950">
-              <span>TOTAL AKHIR:</span>
-              <span>Rp {grandTotal.toLocaleString('id-ID')}</span>
-            </div>
-          </div>
-
-          <div className="py-2.5 border-b border-dashed border-slate-400 space-y-0.5 text-[10px]">
-            {payments.map((p, i) => (
-              <div key={i} className="flex justify-between">
-                <span className="uppercase font-semibold">{p.paymentMethod.replace('_', ' ')}:</span>
-                <span>
-                  Rp {p.amount.toLocaleString('id-ID')}
-                  {p.changeGiven > 0 && ` (Kembali: Rp ${p.changeGiven.toLocaleString('id-ID')})`}
+        {/* SMART WHATSAPP DISPATCHER (ONLY IN CUSTOMER TAB) */}
+        {ticketType === 'customer' && (
+          <div className="bg-rose-50 dark:bg-red-950/30 p-3.5 border-b border-rose-100 dark:border-red-800/40 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-red-600 dark:text-red-400 text-sm">💬</span>
+                <span className="text-xs font-bold text-red-900 dark:text-red-300">
+                  Kirim E-Struk ke WhatsApp Pelanggan
                 </span>
               </div>
-            ))}
-          </div>
-
-          <div className="pt-3 flex flex-col items-center justify-center text-center space-y-2">
-            {qrCodeDataUrl ? (
-              <div className="bg-white p-1.5 rounded-lg border border-slate-300 shadow-sm">
-                <img src={qrCodeDataUrl} alt="QR Code" className="w-20 h-20 mx-auto" />
-                <div className="text-[7.5px] font-sans font-bold text-slate-600 mt-0.5 uppercase">
-                  Scan QR E-Faktur
-                </div>
-              </div>
-            ) : null}
-
-            <div className="flex flex-col items-center">
-              <div className="flex items-center justify-center space-x-[2px] h-6 bg-white px-2.5 py-0.5 rounded border border-slate-300">
-                {Array.from({ length: 30 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`h-full bg-slate-900 ${
-                      i % 3 === 0 ? 'w-[2.5px]' : i % 2 === 0 ? 'w-[1.2px]' : 'w-[0.8px]'
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="text-[8.5px] tracking-widest text-slate-700 font-mono mt-0.5">
-                *{orderNumber}*
+              <span className="text-[10px] font-bold text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/60 px-2 py-0.5 rounded-full">
+                Format 081...
               </span>
             </div>
-          </div>
-        </div>
 
-        {/* EXPORT OPTIONS: 1 TXT & 1 PDF + BLUETOOTH */}
+            <div className="space-y-2">
+              <input
+                type="tel"
+                placeholder="Ketik No. WhatsApp (contoh: 081234567890)"
+                value={whatsappPhone}
+                onChange={(e) => setWhatsappPhone(e.target.value)}
+                className="w-full bg-white dark:bg-slate-950 border border-red-300 dark:border-red-600/50 rounded-2xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-red-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm"
+              />
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleSendWhatsappText}
+                  className="bg-red-600 hover:bg-red-500 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-red-600/20 transition-all active:scale-95"
+                >
+                  <span>💬</span>
+                  <span>Kirim WA (Teks)</span>
+                </button>
+
+                <button
+                  onClick={handleSendPdfToWhatsapp}
+                  disabled={isGeneratingPdf}
+                  className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-md transition-all active:scale-95"
+                >
+                  <span>📕</span>
+                  <span>{isGeneratingPdf ? 'Membuat PDF...' : 'Kirim PDF ke WA'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 1. CUSTOMER RECEIPT VIEW */}
+        {ticketType === 'customer' && (
+          <div
+            ref={receiptRef}
+            className="p-5 bg-amber-50/90 text-slate-900 font-mono text-[11px] leading-relaxed shadow-inner max-h-[38vh] overflow-y-auto"
+          >
+            <div className="text-center pb-3 border-b border-dashed border-slate-400">
+              <h2 className="text-sm font-black tracking-wider uppercase text-slate-900">
+                KOPI NUSANTARA ROASTERY
+              </h2>
+              <div className="text-[10px] text-slate-700">{branchName}</div>
+              <div className="text-[9px] text-slate-600">NPWP: 01.892.435.1-014.000</div>
+            </div>
+
+            <div className="py-2 border-b border-dashed border-slate-400 text-[10px] space-y-0.5">
+              <div className="flex justify-between">
+                <span>No. Nota:</span>
+                <span className="font-bold">{orderNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tanggal:</span>
+                <span>{new Date().toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Kasir:</span>
+                <span>{cashierName} (POS-01)</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Pelanggan:</span>
+                <span>{customerName || 'Walk-in Guest'}{tableNumber ? ` (Meja ${tableNumber})` : ''}</span>
+              </div>
+            </div>
+
+            <div className="py-2 border-b border-dashed border-slate-400 space-y-1.5">
+              {items.map((item, idx) => (
+                <div key={idx} className="space-y-0.5">
+                  <div className="font-bold text-slate-900">{item.productName}</div>
+                  {item.notes && <div className="text-[9.5px] text-slate-600 italic"> Catatan: {item.notes}</div>}
+                  <div className="flex justify-between text-[10px] text-slate-700">
+                    <span>
+                      {item.quantity} x Rp {item.unitPrice.toLocaleString('id-ID')}
+                    </span>
+                    <span className="font-bold">Rp {item.subtotal.toLocaleString('id-ID')}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="py-2 border-b border-dashed border-slate-400 space-y-1 text-[10px]">
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span>Rp {subtotal.toLocaleString('id-ID')}</span>
+              </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-rose-700 font-semibold">
+                  <span>Diskon:</span>
+                  <span>- Rp {discount.toLocaleString('id-ID')}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span>PPN (11%):</span>
+                <span>Rp {tax.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between text-xs font-black pt-1 border-t border-slate-300 text-slate-950">
+                <span>TOTAL AKHIR:</span>
+                <span>Rp {grandTotal.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-col items-center justify-center text-center space-y-1">
+              {qrCodeDataUrl && (
+                <div className="bg-white p-1 rounded border border-slate-300">
+                  <img src={qrCodeDataUrl} alt="QR Code" className="w-16 h-16 mx-auto" />
+                </div>
+              )}
+              <span className="text-[8px] text-slate-600 font-mono">*{orderNumber}*</span>
+            </div>
+          </div>
+        )}
+
+        {/* 2. KITCHEN ORDER TICKET VIEW */}
+        {ticketType === 'kitchen' && (
+          <div
+            ref={kitchenRef}
+            className="p-5 bg-slate-100 text-slate-900 font-mono text-xs leading-relaxed shadow-inner max-h-[38vh] overflow-y-auto border-2 border-slate-300 m-2 rounded-2xl"
+          >
+            <div className="text-center pb-2 border-b-2 border-dashed border-slate-800">
+              <h2 className="text-sm font-black tracking-wider uppercase text-slate-900">
+                🍳 TIKET DAPUR / BARISTA
+              </h2>
+              <div className="text-xs font-bold text-red-600 mt-1">
+                MEJA: {tableNumber ? `MEJA #${tableNumber}` : 'TAKE AWAY / BUNGKUS'}
+              </div>
+              <div className="text-[10px] text-slate-600 font-mono">Order: {orderNumber}</div>
+              <div className="text-[10px] text-slate-600">Waktu: {new Date().toLocaleTimeString('id-ID')} WIB</div>
+            </div>
+
+            <div className="py-3 space-y-3">
+              {items.map((item, idx) => (
+                <div key={idx} className="border-b border-dashed border-slate-300 pb-2">
+                  <div className="flex justify-between items-start font-black text-sm">
+                    <span>{item.productName}</span>
+                    <span className="bg-slate-900 text-white px-2 py-0.5 rounded text-xs">
+                      {item.quantity}x
+                    </span>
+                  </div>
+                  {item.notes ? (
+                    <div className="mt-1 bg-red-100 text-red-900 font-bold p-1.5 rounded text-[11px] border border-red-300">
+                      ⚡ CATATAN: {item.notes}
+                    </div>
+                  ) : (
+                    <div className="text-[10px] text-slate-500 italic mt-0.5">Standar resep</div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2 text-center text-[10px] text-slate-600 font-bold uppercase border-t-2 border-dashed border-slate-800">
+              Segera Disiapkan untuk {customerName || 'Walk-in'}
+            </div>
+          </div>
+        )}
+
+        {/* EXPORT & PRINT BUTTONS */}
         <div className="p-3.5 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex flex-col space-y-2.5">
           {lastPrintStatus && (
             <div className="text-[10px] text-center text-slate-500 dark:text-slate-400 font-mono">
@@ -501,27 +572,25 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </div>
           )}
 
-          {/* Download 1 TXT & 1 PDF Buttons Row */}
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={handleDownloadTxt}
               className="bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition-all active:scale-95 shadow-sm"
             >
               <span>📄</span>
-              <span>Unduh Struk (.TXT)</span>
+              <span>Unduh TXT ({ticketType === 'kitchen' ? 'Dapur' : 'Struk'})</span>
             </button>
 
             <button
               onClick={() => handleDownloadPdf()}
               disabled={isGeneratingPdf}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-amber-500/20 transition-all active:scale-95"
+              className="bg-red-600 hover:bg-red-500 text-white font-extrabold px-3 py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-red-600/20 transition-all active:scale-95"
             >
               <span>📕</span>
-              <span>{isGeneratingPdf ? 'Membuat PDF...' : 'Unduh Dokumen (.PDF)'}</span>
+              <span>{isGeneratingPdf ? 'Membuat PDF...' : 'Unduh PDF (' + (ticketType === 'kitchen' ? 'Dapur' : 'Struk') + ')'}</span>
             </button>
           </div>
 
-          {/* Primary Action Row */}
           <div className="flex justify-between items-center pt-1 border-t border-slate-200 dark:border-slate-800">
             <button
               onClick={onClose}
@@ -531,12 +600,12 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </button>
 
             <button
-              onClick={handleManualBluetoothPrint}
+              onClick={() => handleManualPrint(ticketType)}
               disabled={isBluetoothPrinting}
-              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+              className="bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center space-x-1.5 shadow-lg shadow-red-600/25 transition-all active:scale-95"
             >
               <span>🖨️</span>
-              <span>{isBluetoothPrinting ? 'Mencetak...' : 'Cetak Bluetooth 58mm'}</span>
+              <span>{isBluetoothPrinting ? 'Mencetak...' : ticketType === 'kitchen' ? 'Cetak Tiket Dapur (58mm)' : 'Cetak Struk Konsumen'}</span>
             </button>
           </div>
         </div>
