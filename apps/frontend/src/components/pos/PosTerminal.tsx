@@ -6,6 +6,7 @@ import { useTenantStore } from '../../stores/useTenantStore';
 import { usePrinterStore } from '../../stores/usePrinterStore';
 import { useCustomerStore } from '../../stores/useCustomerStore';
 import { useShiftStore } from '../../stores/useShiftStore';
+import { useCartViewStore } from '../../stores/useCartViewStore';
 import { toast } from '../../stores/useToastStore';
 import { submitPosCheckoutLive } from '../../lib/api';
 import { ReceiptModal } from './ReceiptModal';
@@ -13,6 +14,7 @@ import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { SplitBillModal } from './SplitBillModal';
 import { ShiftManagementModal } from '../shifts/ShiftManagementModal';
 import { TableManagementModal } from './TableManagementModal';
+import { CartDisplayOptionsModal } from './CartDisplayOptionsModal';
 import type { Product, PaymentAllocation } from '../../types';
 
 interface CategorizedProduct extends Product {
@@ -304,7 +306,6 @@ export const PosTerminal: React.FC = () => {
     getRoundingAmount,
     getGrandTotal,
     clearCart,
-    holdCurrentOrder,
     heldOrders,
     payments,
     addPayment,
@@ -317,6 +318,7 @@ export const PosTerminal: React.FC = () => {
   const { connectedPrinterName, isConnecting, connectPrinter } = usePrinterStore();
   const { customers, addCustomer, recordPurchase } = useCustomerStore();
   const { isShiftOpen } = useShiftStore();
+  const { layoutStyle, density, alwaysShowNotes, showSkuBarcode, showCogsMargin } = useCartViewStore();
 
   const [mobileTab, setMobileTab] = useState<'catalog' | 'cart'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
@@ -328,6 +330,7 @@ export const PosTerminal: React.FC = () => {
   const [isQuickAddCustomerOpen, setIsQuickAddCustomerOpen] = useState(false);
   const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const [isCartOptionsOpen, setIsCartOptionsOpen] = useState(false);
 
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris' | 'edc_bca' | 'customer_credit'>('cash');
   const [tenderAmount, setTenderAmount] = useState<string>('');
@@ -638,10 +641,7 @@ export const PosTerminal: React.FC = () => {
           {filteredProducts.map((product) => (
             <button
               key={product.id}
-              onClick={() => {
-                addItem(product);
-                toast.cart(product.name);
-              }}
+              onClick={() => addItem(product)}
               className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 hover:border-red-500/50 rounded-3xl p-3 md:p-3.5 flex flex-col justify-between text-left transition-all duration-150 active:scale-95 group shadow-sm hover:shadow-md"
             >
               <div>
@@ -669,13 +669,13 @@ export const PosTerminal: React.FC = () => {
         </div>
       </div>
 
-      {/* RIGHT SECTION: CART & CUSTOMER CRM */}
+      {/* RIGHT SECTION: CART WITH MULTIPLE RICH LAYOUT OPTIONS */}
       <div
-        className={`w-full md:w-96 lg:w-[430px] flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-lg ${
+        className={`w-full md:w-96 lg:w-[440px] flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-lg ${
           mobileTab === 'catalog' ? 'hidden md:flex' : 'flex'
         }`}
       >
-        {/* Customer & Table Number Bar */}
+        {/* Customer, Table Number & Cart Display Layout Options Button */}
         <div className="p-3 border-b border-slate-200 dark:border-slate-800 space-y-2 bg-slate-50/70 dark:bg-slate-900">
           <div className="flex items-center space-x-2">
             <div className="flex-1 relative">
@@ -708,8 +708,17 @@ export const PosTerminal: React.FC = () => {
               placeholder="Meja #"
               value={tableNumber}
               onChange={(e) => setCustomerInfo(customerName, e.target.value, selectedMemberId, selectedMember?.tier)}
-              className="w-24 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-red-500 focus:outline-none font-mono font-bold text-center shadow-sm"
+              className="w-20 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-red-500 focus:outline-none font-mono font-bold text-center shadow-sm"
             />
+
+            {/* Cart Display Options Switcher Button */}
+            <button
+              onClick={() => setIsCartOptionsOpen(true)}
+              className="p-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 font-bold shadow-sm transition-all"
+              title="Pilihan Tampilan Cart (Cards, Table List, Grid, KDS, Accounting)"
+            >
+              🎨
+            </button>
           </div>
 
           {selectedMember && (
@@ -727,62 +736,220 @@ export const PosTerminal: React.FC = () => {
           )}
         </div>
 
-        {/* Cart Item List */}
+        {/* CART ITEM LIST - MULTIPLE LAYOUT RENDERERS */}
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs">
               <span className="text-3xl mb-2">🛒</span>
               <span className="font-semibold">Keranjang Belanja Kosong</span>
-              <span className="text-[10px] mt-1">Pilih item dari katalog atau scan barcode</span>
+              <span className="text-[10px] mt-1">Pilih item dari katalog atau scan barcode [F2]</span>
             </div>
           ) : (
-            items.map((item) => (
-              <div
-                key={item.productId}
-                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 space-y-1.5 shadow-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 mr-2">
-                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{item.productName}</div>
-                    <div className="text-[10px] text-slate-500 font-mono">
-                      Rp {item.unitPrice.toLocaleString('id-ID')}
-                    </div>
-                  </div>
+            <>
+              {/* 1. MODERN SLEEK CARDS (LAYOUT = 'card') */}
+              {layoutStyle === 'card' &&
+                items.map((item) => (
+                  <div
+                    key={item.productId}
+                    className={`bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl ${
+                      density === 'touch_large' ? 'p-3.5 space-y-2' : density === 'compact' ? 'p-2 space-y-1' : 'p-2.5 space-y-1.5'
+                    } shadow-sm`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 mr-2">
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{item.productName}</div>
+                        {showSkuBarcode && <div className="text-[9px] font-mono text-slate-400">{item.sku}</div>}
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          Rp {item.unitPrice.toLocaleString('id-ID')}
+                        </div>
+                      </div>
 
-                  <div className="flex items-center space-x-1.5">
-                    <button
-                      onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                      className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center text-xs font-bold"
-                    >
-                      -
-                    </button>
-                    <span className="w-6 text-center text-xs font-bold font-mono">
-                      {item.quantity}
-                    </span>
-                    <button
-                      onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                      className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center text-xs font-bold"
-                    >
-                      +
-                    </button>
-                  </div>
+                      <div className="flex items-center space-x-1.5">
+                        <button
+                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                          className={`${
+                            density === 'touch_large' ? 'w-8 h-8 text-sm' : 'w-6 h-6 text-xs'
+                          } rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold`}
+                        >
+                          -
+                        </button>
+                        <span className="w-6 text-center text-xs font-bold font-mono">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                          className={`${
+                            density === 'touch_large' ? 'w-8 h-8 text-sm' : 'w-6 h-6 text-xs'
+                          } rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold`}
+                        >
+                          +
+                        </button>
+                      </div>
 
-                  <div className="w-24 text-right">
-                    <div className="text-xs font-bold font-mono">
-                      Rp {item.subtotal.toLocaleString('id-ID')}
+                      <div className="w-24 text-right">
+                        <div className="text-xs font-bold font-mono">
+                          Rp {item.subtotal.toLocaleString('id-ID')}
+                        </div>
+                      </div>
                     </div>
+
+                    {alwaysShowNotes && (
+                      <input
+                        type="text"
+                        placeholder="🍳 Catatan dapur (e.g. Less sugar)..."
+                        value={itemNotes[item.productId] || ''}
+                        onChange={(e) => setItemNotes({ ...itemNotes, [item.productId]: e.target.value })}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 text-[10px] focus:outline-none focus:ring-1 focus:ring-red-500"
+                      />
+                    )}
                   </div>
+                ))}
+
+              {/* 2. COMPACT TABLE LIST (LAYOUT = 'compact_list' - SUPERMARKET STYLE) */}
+              {layoutStyle === 'compact_list' && (
+                <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                  <table className="w-full text-left text-[11px] font-mono">
+                    <thead className="bg-slate-200/60 dark:bg-slate-800/80 text-slate-500 text-[10px] uppercase">
+                      <tr>
+                        <th className="p-2">Item</th>
+                        <th className="p-2 text-center">Qty</th>
+                        <th className="p-2 text-right">Harga</th>
+                        <th className="p-2 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200/60 dark:divide-slate-800/60">
+                      {items.map((item) => (
+                        <tr key={item.productId} className="hover:bg-slate-100 dark:hover:bg-slate-900">
+                          <td className="p-2 font-sans font-bold text-slate-800 dark:text-slate-200">
+                            <div>{item.productName}</div>
+                            {itemNotes[item.productId] && (
+                              <div className="text-[9px] text-amber-600 italic font-mono">
+                                🍳 {itemNotes[item.productId]}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-2 text-center">
+                            <div className="flex items-center justify-center space-x-1">
+                              <button
+                                onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                                className="w-4 h-4 bg-slate-300 dark:bg-slate-700 rounded text-[9px] font-bold"
+                              >
+                                -
+                              </button>
+                              <span className="font-bold">{item.quantity}</span>
+                              <button
+                                onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                                className="w-4 h-4 bg-slate-300 dark:bg-slate-700 rounded text-[9px] font-bold"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </td>
+                          <td className="p-2 text-right text-slate-500">
+                            {item.unitPrice.toLocaleString('id-ID')}
+                          </td>
+                          <td className="p-2 text-right font-bold text-red-600 dark:text-red-400">
+                            {item.subtotal.toLocaleString('id-ID')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+              )}
 
-                <input
-                  type="text"
-                  placeholder="🍳 Catatan dapur (e.g. Less sugar, pedas sedang)..."
-                  value={itemNotes[item.productId] || ''}
-                  onChange={(e) => setItemNotes({ ...itemNotes, [item.productId]: e.target.value })}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 text-[10px] focus:outline-none focus:ring-1 focus:ring-red-500"
-                />
-              </div>
-            ))
+              {/* 3. VISUAL THUMBNAIL GRID (LAYOUT = 'visual_grid') */}
+              {layoutStyle === 'visual_grid' && (
+                <div className="grid grid-cols-2 gap-2">
+                  {items.map((item) => (
+                    <div
+                      key={item.productId}
+                      className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-2xl flex flex-col justify-between space-y-1.5 shadow-sm"
+                    >
+                      <div className="font-bold text-xs text-slate-800 dark:text-slate-200 line-clamp-1">
+                        {item.productName}
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] font-mono">
+                        <span>@{item.unitPrice.toLocaleString('id-ID')}</span>
+                        <span className="font-bold text-red-600 dark:text-red-400">
+                          Rp {item.subtotal.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center pt-1 border-t border-slate-200 dark:border-slate-800">
+                        <button
+                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                          className="w-6 h-6 bg-slate-200 dark:bg-slate-800 rounded font-bold"
+                        >
+                          -
+                        </button>
+                        <span className="font-mono font-bold text-xs">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                          className="w-6 h-6 bg-slate-200 dark:bg-slate-800 rounded font-bold"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 4. KITCHEN / BARISTA KDS TICKET VIEW (LAYOUT = 'kitchen_kds') */}
+              {layoutStyle === 'kitchen_kds' &&
+                items.map((item) => (
+                  <div
+                    key={item.productId}
+                    className="p-3 bg-amber-50/70 dark:bg-amber-950/20 border-2 border-amber-300 dark:border-amber-800/60 rounded-2xl space-y-2 text-xs"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="font-black text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+                        <span className="bg-amber-500 text-white font-mono px-2 py-0.5 rounded-lg text-xs">
+                          {item.quantity}x
+                        </span>
+                        <span>{item.productName}</span>
+                      </div>
+                      <span className="font-mono font-bold">
+                        Rp {item.subtotal.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-900 p-2 rounded-xl border border-amber-200 dark:border-amber-900/50">
+                      <input
+                        type="text"
+                        placeholder="📝 Instruksi Dapur: Less sugar, extra shot, no ice..."
+                        value={itemNotes[item.productId] || ''}
+                        onChange={(e) => setItemNotes({ ...itemNotes, [item.productId]: e.target.value })}
+                        className="w-full bg-transparent font-bold text-amber-800 dark:text-amber-300 text-[11px] focus:outline-none placeholder-amber-400/80"
+                      />
+                    </div>
+                  </div>
+                ))}
+
+              {/* 5. ACCOUNTING & TAX DETAILED VIEW (LAYOUT = 'accounting_detail') */}
+              {layoutStyle === 'accounting_detail' &&
+                items.map((item) => (
+                  <div
+                    key={item.productId}
+                    className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 font-mono text-[11px] space-y-1"
+                  >
+                    <div className="flex justify-between font-bold font-sans text-slate-800 dark:text-slate-100">
+                      <span>{item.productName}</span>
+                      <span>Rp {item.subtotal.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 text-[10px] text-slate-500">
+                      <div>SKU: {item.sku || 'N/A'}</div>
+                      <div>Qty: {item.quantity}x @ Rp {item.unitPrice.toLocaleString('id-ID')}</div>
+                      <div>PPN/PB1 (11%): Rp {Math.round(item.subtotal * 0.11).toLocaleString('id-ID')}</div>
+                      {showCogsMargin && item.unitCogs && (
+                        <div className="text-emerald-600 dark:text-emerald-400 font-bold">
+                          Margin: Rp {(item.subtotal - item.quantity * item.unitCogs).toLocaleString('id-ID')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+            </>
           )}
         </div>
 
@@ -923,6 +1090,11 @@ export const PosTerminal: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* CART DISPLAY OPTIONS MODAL */}
+      {isCartOptionsOpen && (
+        <CartDisplayOptionsModal onClose={() => setIsCartOptionsOpen(false)} />
+      )}
 
       {/* TABLE & HOLD ORDER MANAGEMENT MODAL [F8] */}
       {isTableModalOpen && (

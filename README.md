@@ -1,4 +1,4 @@
-# 👑 MODULA v2.0.0 — Enterprise Multi-Tenant Modular SaaS ERP-POS & Financial Core
+# 👑 MODULA v2.2.0 — Enterprise Multi-Tenant Modular SaaS ERP-POS & Financial Core
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue.svg)]()
@@ -9,7 +9,7 @@
 [![Database](https://img.shields.io/badge/Database-MySQL%208%20%2F%20MariaDB-orange.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)]()
 
-> **Modula** adalah platform ERP, Point of Sale (POS), Manajemen Gudang SCM, dan Inti Akuntansi Buku Besar PSAK multi-tenant tingkat enterprise. Dirancang untuk skalabilitas grup holding, multi-brand, multi-cabang, dan multi-gudang dengan isolasi data yang sangat ketat dan performa tinggi.
+> **Modula** adalah platform ERP, Point of Sale (POS), Manajemen Gudang SCM, dan Inti Akuntansi Buku Besar PSAK multi-tenant tingkat enterprise. Dirancang untuk grup holding, multi-brand, multi-cabang, dan multi-gudang dengan isolasi data yang sangat ketat dan performa tinggi.
 
 ---
 
@@ -19,42 +19,29 @@
 
 ---
 
-## 🚀 Changelog Versi Terbaru: Modula v2.0.0
+## 🚀 Changelog Versi Terbaru: Modula v2.2.0
 
-### 🔊 1. Web Audio API "Ceting" Notification (WhatsApp / Ping Chime)
-- Menggunakan **Web Audio API Synthesizer** murni (zero download asset, zero latency, 100% offline).
-- Setiap *action* (tambah keranjang, bayar, hold bill, pesan chat baru, keterlambatan shift) menghasilkan suara *chime/ping* yang renyah dan interaktif.
+### 🎨 1. Pilihan Beragam Gaya & Layout Tampilan Keranjang (Cart Display Modes)
+Tersedia 5 gaya tampilan keranjang yang dapat diganti sewaktu-waktu melalui tombol `🎨`:
+1. **Modern Sleek Cards:** Kartu modern dengan kontrol kuantitas dan input catatan preferensi dapur individual.
+2. **Compact Table List (Supermarket / Retail Mode):** Baris tabel berdensitas tinggi untuk kecepatan input kasir minimarket.
+3. **Visual Thumbnail Grid:** Kotak media visual dengan tombol sentuh kuantitas cepat.
+4. **Kitchen / Barista KDS Ticket View:** Menonjolkan catatan resep dapur (*Less sugar, extra hot, no ice, dsb*).
+5. **Detailed Accounting & Tax Breakdown:** Menampilkan breakdown SKU, harga satuan, PPN/PB1, dan estimasi margin laba kotor item.
 
-### ⏱️ 2. Open & Close Shift Kasir dengan Deteksi Keterlambatan Realtime
-- **Open Shift:** Kasir menginput modal kas awal laci (*cash float*) dan jadwal masuk.
-- **Deteksi Keterlambatan Masuk Shift:** Otomatis menghitung keterlambatan kasir (*e.g. Telat 18 menit*) dan langsung mengirimkan kartu peringatan (*Alert Card*) ke **Dashboard Owner**.
-- **Close Shift & Rekonsiliasi Kas Fisik:** Rekonsiliasi otomatis kas fisik vs sistem dengan laporan selisih kas (*discrepancy*).
+### 🍽️ 2. Manajemen Table & Hold Bill Multi-Konsumen (`[F8]`)
+- Simpan transaksi pesanan aktif per nomor meja & nama pelanggan secara terpisah.
+- Kasir dapat beralih antar meja aktif (*Switch/Resume Table*), menambah item pesanan, atau langsung menyelesaikan pembayaran.
+- Keranjang kasir langsung bersih setelah pesanan di-hold, siap melayani tamu berikutnya tanpa risiko data tertukar.
 
-### 🔔 3. Real-Time Command & Notification Feed di Dashboard Owner
-- Kartu alert *real-time* untuk Owner:
-  1. *⚠️ Keterlambatan Masuk Shift Kasir*.
-  2. *🚨 Peringatan Sisa Stok Menipis Gudang*.
-  3. *🟢 Notifikasi Kasir Buka Shift Tepat Waktu*.
-  4. *📋 Rekonsiliasi Tutup Shift & Omzet*.
-- Tombol aksi 1-klik untuk langsung menghubungi kasir via WhatsApp atau membuat PO restock.
+### 📁 3. Sidebar Auto-Hide / Collapsible Ala Gemini & ChatGPT
+- Toggle collapse/expand sidebar (`w-16` vs `w-64`) untuk memaksimalkan area kerja kasir dan laporan keuangan (*full-width workspace*).
 
-### 💬 4. Brand Team Chat & Isolasi Ketat Multi-Tenant
-- **Internal Brand Team Chat:** Kasir ↔ Admin Brand ↔ Owner dalam 1 brand dapat berkoordinasi secara langsung.
-- **Strict Multi-Tenant Isolation:** Brand $B$ tidak dapat melihat atau mengakses ruang chat maupun data internal milik Brand $A$.
+### 📈 4. Grafik Garis Standar Laporan Keuangan
+- Grafik garis pendapatan bersih dengan interactive hover tooltip, filter harian/mingguan/bulanan/tahunan, dan ringkasan tren omzet.
 
-### 🛡️ 5. Super User Ticket Authorization & Direct Owner Live Chat
-- Super User **TIDAK DAPAT** menginspeksi data brand secara sembarangan tanpa adanya tiket permohonan akses aktif (*Escalated Incident Ticket*).
-- Super User dan Owner memiliki ruang **Real-Time Live Chat khusus** di dalam tiket untuk mendiskusikan perbaikan bug dan verifikasi sistem.
-
-### 📈 6. Grafik Saham Interaktif (Candlestick & Volume ala TradingView)
-- Grafik Candlestick *Bullish/Bearish* lengkap dengan sumbu atas & bawah (*High/Low/Open/Close*), Moving Average MA(5), dan indikator Volume transaksi.
-- Filter timeframe: `1D`, `1W`, `1M`, `3M`, `1Y`.
-
-### ✂️ 7. Split Bill Manual Input Bebas
-- Tidak terbatas 1-6 orang; kasir bebas mengetik jumlah orang secara manual (*e.g. 7, 15, 25 orang*) dengan perhitungan rata hingga nominal rupiah terkecil.
-
-### 📱 8. 100% Mobile Responsive & Ergonomis
-- Mobile navigation drawer, floating module switcher, dan split mobile tab (Katalog vs Keranjang) untuk kemudahan operasional satu jempol di layar HP.
+### 🔇 5. Suara Cart Dinonaktifkan (Silent Mode)
+- Menghilangkan suara saat kasir menambahkan menu ke cart agar tidak mengganggu/risih, sementara suara notifikasi tetap aktif untuk pembayaran berhasil, chat tim, dan alert shift.
 
 ---
 
@@ -87,7 +74,6 @@ npm run dev
 Akses portal aplikasi di:
 - **Modula Core:** `http://localhost:3000/`
 - **Customer Guest Review Portal:** `http://localhost:3000/review`
-- **Swagger API Console:** Akses modul Swagger di sidebar aplikasi.
 
 ---
 *Dikembangkan dengan standar arsitektur enterprise oleh **parikesitad-pm**.*
