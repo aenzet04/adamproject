@@ -17,6 +17,7 @@ import { BugTicketingCenter } from './components/tickets/BugTicketingCenter';
 import { SoftDeleteManager } from './components/trash/SoftDeleteManager';
 import { BrandTeamChatWidget } from './components/chat/BrandTeamChatWidget';
 import { OnboardingWizardModal } from './components/onboarding/OnboardingWizardModal';
+import { InvestorPitchDeckModal } from './components/presentation/InvestorPitchDeckModal';
 import { AuthPortal } from './components/auth/AuthPortal';
 import { ToastContainer } from './components/atoms/ToastContainer';
 import { PageTransitionPreloader } from './components/atoms/PageTransitionPreloader';
@@ -35,11 +36,12 @@ export default function App() {
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isInvestorDeckOpen, setIsInvestorDeckOpen] = useState(false);
 
-  const { currentTenant, availableBrands, setHierarchicalData } = useTenantStore();
+  const { currentTenant, setHierarchicalData } = useTenantStore();
   const { theme, setTheme } = useThemeStore();
   const { modules, subscriptionTier, remainingMonths, setSubscriptionTier } = useModuleLicenseStore();
-  const { isOnboardingOpen, openOnboarding } = useOnboardingStore();
+  const { openOnboarding } = useOnboardingStore();
 
   const [isGuestReviewMode, setIsGuestReviewMode] = useState<boolean>(false);
 
@@ -145,6 +147,9 @@ export default function App() {
       <BrandTeamChatWidget />
       <OnboardingWizardModal />
 
+      {/* Global Investor Presentation Slide Deck Modal */}
+      {isInvestorDeckOpen && <InvestorPitchDeckModal onClose={() => setIsInvestorDeckOpen(false)} />}
+
       {/* Floating Mobile Sidebar Toggle Button */}
       <button
         onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
@@ -214,6 +219,28 @@ export default function App() {
                 </button>
               </div>
             )}
+
+            {/* INVESTOR SLIDE DECK BUTTON */}
+            <div className="space-y-1 pt-1">
+              <button
+                type="button"
+                onClick={() => setIsInvestorDeckOpen(true)}
+                className={`w-full flex items-center ${
+                  isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+                } py-2 rounded-xl text-xs font-semibold transition-all bg-gradient-to-r from-red-600/10 via-rose-600/10 to-transparent hover:from-red-600/20 hover:to-rose-600/20 text-red-600 dark:text-red-400 border border-red-500/20`}
+                title="Slide Presentasi Investor PowerPoint"
+              >
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-base">🖥️</span>
+                  {!isSidebarCollapsed && <span>Investor Slide Deck</span>}
+                </div>
+                {!isSidebarCollapsed && (
+                  <span className="text-[9px] bg-red-600 text-white font-mono px-1.5 py-0.2 rounded-full font-bold">
+                    PITCH
+                  </span>
+                )}
+              </button>
+            </div>
 
             {(userRole === 'admin_brand' || userRole === 'owner' || userRole === 'super_user') && (
               <div className="space-y-1 pt-1">
@@ -314,7 +341,7 @@ export default function App() {
               {!isSidebarCollapsed && isModuleLocked('inventory') && <span className="text-[10px]">🔒</span>}
             </button>
 
-            {/* STOK OPNAME SIDEBAR MENU */}
+            {/* STOK OPNAME SIDEBAR MENU (HIGHLIGHTED) */}
             <button
               onClick={() => handleSelectModule('opname')}
               className={`w-full flex items-center ${
@@ -330,6 +357,11 @@ export default function App() {
                 <span className="text-base">📋</span>
                 {!isSidebarCollapsed && <span>Stok Opname</span>}
               </div>
+              {!isSidebarCollapsed && (
+                <span className="text-[9px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono px-1.5 py-0.2 rounded-full font-bold">
+                  AUDIT
+                </span>
+              )}
             </button>
 
             {(userRole === 'owner' || userRole === 'super_user') && (
