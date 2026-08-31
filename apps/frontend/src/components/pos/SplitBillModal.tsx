@@ -28,10 +28,13 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
 }) => {
   const { customers } = useCustomerStore();
   const [splitMode, setSplitMode] = useState<'equal' | 'nominal' | 'by_item'>('equal');
-  const [numPeople, setNumPeople] = useState<number>(2);
+  
+  // MANUAL INPUT FOR NUMBER OF PEOPLE (BEBAS INPUT BERAPAPUN)
+  const [numPeople, setNumPeople] = useState<number>(3);
 
-  // Equal Split State
-  const equalAmount = Math.round(grandTotal / numPeople);
+  // Equal Split calculation
+  const validNumPeople = Math.max(1, numPeople || 1);
+  const equalAmount = Math.round(grandTotal / validNumPeople);
 
   // Nominal Split State
   const [nominalPersons, setNominalPersons] = useState<Array<{ name: string; amount: number; isPaid: boolean }>>([
@@ -49,8 +52,8 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
     let resultPersons: SplitBillPerson[] = [];
 
     if (splitMode === 'equal') {
-      for (let i = 0; i < numPeople; i++) {
-        const amt = i === numPeople - 1 ? grandTotal - equalAmount * (numPeople - 1) : equalAmount;
+      for (let i = 0; i < validNumPeople; i++) {
+        const amt = i === validNumPeople - 1 ? grandTotal - equalAmount * (validNumPeople - 1) : equalAmount;
         resultPersons.push({
           personId: `ps-${i + 1}`,
           personName: customers[i]?.name || `Tamu Meja #${i + 1}`,
@@ -135,7 +138,7 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
             }`}
           >
             <span>⚖️</span>
-            <span>1. Bagi Rata (N Orang)</span>
+            <span>1. Bagi Rata (Input Manual)</span>
           </button>
 
           <button
@@ -165,50 +168,101 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
 
         {/* Content Area */}
         <div className="p-5 overflow-y-auto space-y-4 flex-1 text-xs">
-          {/* 1. EQUAL SPLIT */}
+          {/* 1. EQUAL SPLIT WITH MANUAL INPUT */}
           {splitMode === 'equal' && (
             <div className="space-y-4">
               <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Jumlah Orang Rombongan:</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    Masukkan Jumlah Orang (Bebas Input Berapapun):
+                  </span>
+                  <span className="text-[10px] font-mono text-red-600 dark:text-red-400 font-bold">
+                    Rp {equalAmount.toLocaleString('id-ID')} / orang
+                  </span>
+                </div>
+
+                {/* MANUAL NUMBER INPUT CONTROLS */}
                 <div className="flex items-center space-x-3">
-                  {[2, 3, 4, 5, 6].map((num) => (
+                  <button
+                    type="button"
+                    onClick={() => setNumPeople(Math.max(1, numPeople - 1))}
+                    className="w-10 h-10 rounded-2xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-black text-base flex items-center justify-center transition-all shadow-sm active:scale-95"
+                  >
+                    -
+                  </button>
+
+                  <div className="flex-1 relative">
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={numPeople}
+                      onChange={(e) => setNumPeople(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-full bg-white dark:bg-slate-900 border-2 border-red-500/50 rounded-2xl py-2 px-4 text-center text-lg font-black font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-inner"
+                    />
+                    <span className="absolute right-4 top-3 text-[11px] font-bold text-slate-400 font-mono">
+                      Orang
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setNumPeople(numPeople + 1)}
+                    className="w-10 h-10 rounded-2xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-black text-base flex items-center justify-center transition-all shadow-sm active:scale-95"
+                  >
+                    +
+                  </button>
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex items-center space-x-2 pt-1">
+                  <span className="text-[10px] text-slate-400">Preset Cepat:</span>
+                  {[2, 3, 4, 5, 8, 10, 15, 20].map((n) => (
                     <button
-                      key={num}
-                      onClick={() => setNumPeople(num)}
-                      className={`flex-1 py-2 rounded-xl font-bold font-mono text-xs border transition-all ${
-                        numPeople === num
-                          ? 'bg-red-600 text-white border-red-500 shadow-md shadow-red-600/20'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                      key={n}
+                      type="button"
+                      onClick={() => setNumPeople(n)}
+                      className={`px-2 py-0.5 rounded-lg font-mono text-[10px] font-bold transition-all ${
+                        numPeople === n
+                          ? 'bg-red-600 text-white'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-300'
                       }`}
                     >
-                      {num} Orang
+                      {n}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                {Array.from({ length: numPeople }).map((_, idx) => (
+              {/* Dynamic Person Card Breakdown */}
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                {Array.from({ length: Math.min(10, validNumPeople) }).map((_, idx) => (
                   <div
                     key={idx}
                     className="p-3.5 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex justify-between items-center"
                   >
                     <div>
                       <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
-                        <span>👤 {customers[idx]?.name || `Tamu ${idx + 1}`}</span>
+                        <span>👤 {customers[idx]?.name || `Tamu #${idx + 1}`}</span>
                         {customers[idx] && (
                           <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 text-[9px] px-1.5 py-0.2 rounded font-mono">
                             {customers[idx].tier}
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] text-slate-400">Pembagian Rata (1/{numPeople})</div>
+                      <div className="text-[10px] text-slate-400">Pembagian Rata (1/{validNumPeople})</div>
                     </div>
                     <div className="text-sm font-black text-red-600 dark:text-red-400 font-mono">
                       Rp {equalAmount.toLocaleString('id-ID')}
                     </div>
                   </div>
                 ))}
+
+                {validNumPeople > 10 && (
+                  <div className="text-center py-2 text-[11px] text-slate-400 font-mono">
+                    ... dan {validNumPeople - 10} tamu lainnya (@ Rp {equalAmount.toLocaleString('id-ID')})
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -338,7 +392,7 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
             onClick={handleComplete}
             className="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2.5 rounded-2xl text-xs shadow-lg shadow-red-600/20 transition-all active:scale-95"
           >
-            Selesaikan & Cetak Struk Terpisah
+            Selesaikan & Cetak Struk Terpisah ({validNumPeople} Orang)
           </button>
         </div>
       </div>
