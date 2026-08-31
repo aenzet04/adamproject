@@ -101,30 +101,39 @@ export interface CategorizedProduct extends Product {
 export interface CartItem {
   id: string;
   productId: string;
-  name: string;
+  name?: string;
+  productName?: string;
   sku: string;
   unitPrice: number;
   quantity: number;
+  subtotal?: number;
   discountPercent?: number;
   discountAmount?: number;
   note?: string;
+  notes?: string;
   taxRate?: number;
   imageEmoji?: string;
 }
 
 export interface PaymentAllocation {
   id: string;
-  method: 'cash' | 'qris' | 'edc_bca' | 'edc_mandiri' | 'transfer' | 'member_points';
+  method?: 'cash' | 'qris' | 'edc_bca' | 'edc_mandiri' | 'transfer' | 'member_points';
+  paymentMethod?: string;
   amount: number;
   referenceNumber?: string;
 }
 
 export interface SplitBillPerson {
-  id: string;
-  name: string;
-  items: CartItem[];
-  allocatedAmount: number;
-  paid: boolean;
+  id?: string;
+  personId?: string;
+  name?: string;
+  personName?: string;
+  items?: CartItem[];
+  assignedItems?: any[];
+  allocatedAmount?: number;
+  customAmount?: number;
+  paid?: boolean;
+  isPaid?: boolean;
   paymentMethod?: string;
 }
 
@@ -134,6 +143,7 @@ export interface ModuleLicense {
   name: string;
   description: string;
   icon: string;
+  category?: string;
   isUnlocked: boolean;
   requiredTier: 'starter' | 'business' | 'enterprise';
   priceMonthly: number;
@@ -141,6 +151,7 @@ export interface ModuleLicense {
 
 export interface CustomerReview {
   id: string;
+  branchId?: string;
   customerName: string;
   rating: number;
   feedback: string;
