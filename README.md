@@ -1,4 +1,4 @@
-# 👑 ADAM ERP-POS & FINANCIAL CORE PLATFORM
+# 👑 MODULA — ENTERPRISE MODULAR ERP-POS & FINANCIAL CORE
 
 > **Enterprise Multi-Tenant Modular SaaS ERP-POS & Financial Core**  
 > *Arsitektur Pengganti Next-Gen untuk Odoo, Accurate, dan Jurnal.id.*
@@ -9,42 +9,35 @@
 - **Primary Creator & Software Architect:** [@parikesitad-pm](https://github.com/parikesitad-pm)
 - **Repository Collaborator / Owner:** [@aenzet04](https://github.com/aenzet04)
 - **GitHub Repository:** [https://github.com/aenzet04/adamproject.git](https://github.com/aenzet04/adamproject.git)
-- **Status Rilis:** `v1.4.0 Enterprise Production Ready`
+- **Status Rilis:** `v1.6.0 Enterprise Production Ready`
 
 ---
 
 ## 🌟 FITUR UTAMA SISTEM (ENTERPRISE GRADE)
 
-1. **🔐 Sistem Otentikasi Superaman & RBAC Session Management:**
-   - Multi-role Dashboards (*Super User, Owner/CEO, Brand & Branch Admin, Cashier*).
-   - Token JWT secure bearer session, perlindungan timing-attack, dan tombol **Logout** fungsional.
-   - Upload foto avatar profil pengguna dan dokumentasi SOP/FAQs (Do's & Don'ts) spesifik tiap peran.
+1. **🔤 Tipografi Presisi: Google Font Ubuntu & Ubuntu Mono:**
+   - Tipografi yang sangat nyaman dibaca, ramah di mata untuk kasir dan eksekutif dari semua umur.
 
-2. **🍳 Pemisahan Cetak: Tiket Dapur vs Struk Konsumen (58mm ESC/POS):**
-   - **Tiket Dapur / Barista:** Format ringkas nomor order, nomor meja, dan **Catatan Khusus tiap item menu** (e.g. *Less sugar, ekstra es batu, pedas sedang*).
-   - **Struk Konsumen Resmi:** Format lengkap harga, diskon, PPN 11%, QR Code e-Invoice dinamis, Barcode Code-128, dan pengiriman otomatis WhatsApp (Teks & Dokumen PDF).
+2. **👥 CRM Member, Loyalitas, Poin & Top Spender:**
+   - Master data member dengan auto-tiering (*Bronze, Silver, Gold, Platinum, VIP*).
+   - Akumulasi poin belanja dan pengiriman saldo poin langsung via WhatsApp.
+   - **Podium Top Spender (#1, #2, #3)** di Dashboard Owner dan Kasir.
+   - Integrasi pencarian member instan pada Kasir POS, Hold Bill / Open Table, dan Split Bill.
 
-3. **✂️ Split Bill POS Terlengkap (3 Mode Pisah Pembayaran):**
-   - **Mode 1:** Dibagi Rata ($N$ Konsumen) dengan settlement multi-payment mandiri per orang.
-   - **Mode 2:** Split per Nominal Bebas/Custom.
-   - **Mode 3:** Split per Item Menu (Itemized Allocation).
+3. **💎 Granular SaaS Add-on Licensing & Tier Subscription (Starter / Business / Enterprise):**
+   - Super User dapat mengaktifkan / mengunci modul secara individual per tenant (ala Accurate & Jurnal.id).
+   - **Tier Starter, Business, & Enterprise:** Pilihan paket fleksibel dengan indikator sisa masa aktif langganan.
+   - **Enterprise White-Labeling:** Fitur kustom footer struk yang menghilangkan seluruh watermark Modula menjadi brand/slogan tenant sendiri.
 
-4. **👑 Executive Owner Dashboard & AI Strategic Advisor:**
-   - Multi-Filter Penjualan (*Hari Ini, Minggu Ini, Bulan Ini, Custom Range, Filter Cabang*).
-   - **AI Matriks Produk:** Identifikasi produk **Bintang (Fast-Moving & High Margin)** vs **Deadstock (>60 hari inaktif)** untuk strategi likuidasi stok.
-   - **Portal Landing Page Review Konsumen (`/review`):** Konsumen dapat memberikan rating cabang, rating menu favorit, dan ulasan langsung tanpa login.
+4. **🚀 Page Transition Preloader & Hot Reloading:**
+   - Animasi micro-progress bar di bagian atas layar saat transisi antar menu untuk pengalaman pengguna yang sangat cepat (*snappy & seamless*).
 
-5. **🔒 Sistem Lisensi Modul Terkunci/Terbuka (Pay-Per-Module ala Accurate / Jurnal.id):**
-   - Panel Super User untuk mengunci atau membuka akses modul POS, Akuntansi GL, Inventory SCM, HR Payroll, Anti-Fraud, dan AI Insights per tenant.
+5. **🍳 Tiket Dapur vs Struk Konsumen (58mm ESC/POS):**
+   - Pemisahan cetak pesanan dapur (lengkap dengan catatan khusus per item) dan struk resmi konsumen (dengan QR Code e-Invoice & WA Dispatcher).
 
-6. **🚀 Modul Benchmark & Pengujian Optimasi:**
-   - React 19 Hydration & DOM Render Speed: **`0.74 ms`** (A+)
-   - Ruby Engine Double-Entry GL Throughput: **`87,420 tx/detik`**
-   - MySQL 8.0 / MariaDB InnoDB Query Latency: **`0.38 ms`**
-   - Core Production Bundle: **`20.23 kB Gzipped`** (Zero Render Blocking).
-
-7. **🎨 Palet Warna Clean Crimson Red / Ruby & Dark/Light Mode:**
-   - Skema warna merah modern yang elegan dan ergonomis untuk kasir dan eksekutif.
+6. **🎫 Pusat Tiketing Insiden & 3-Tier Soft-Delete Policy:**
+   - Laporan kendala operasional dengan notifikasi real-time ke Owner & Super User.
+   - Kebijakan *No Hard Delete* di lingkungan produksi.
 
 ---
 

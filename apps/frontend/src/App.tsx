@@ -8,12 +8,14 @@ import { DocumentationViewer } from './components/docs/DocumentationViewer';
 import { OwnerAnalyticsDashboard } from './components/owner/OwnerAnalyticsDashboard';
 import { SuperUserDashboard } from './components/superuser/SuperUserDashboard';
 import { BrandAdminDashboard } from './components/admin/BrandAdminDashboard';
+import { CustomerManagementView } from './components/crm/CustomerManagementView';
 import { CustomerReviewPage } from './components/reviews/CustomerReviewPage';
 import { BenchmarkViewer } from './components/benchmark/BenchmarkViewer';
 import { BugTicketingCenter } from './components/tickets/BugTicketingCenter';
 import { SoftDeleteManager } from './components/trash/SoftDeleteManager';
 import { AuthPortal } from './components/auth/AuthPortal';
 import { ToastContainer } from './components/atoms/ToastContainer';
+import { PageTransitionPreloader } from './components/atoms/PageTransitionPreloader';
 import { useTenantStore } from './stores/useTenantStore';
 import { useThemeStore } from './stores/useThemeStore';
 import { useAuthStore } from './stores/useAuthStore';
@@ -23,12 +25,12 @@ import { toast } from './stores/useToastStore';
 export default function App() {
   const { isAuthenticated, currentUser, logout } = useAuthStore();
   const [activeModule, setActiveModule] = useState<
-    'pos' | 'finance' | 'inventory' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'benchmark' | 'tickets' | 'trash' | 'swagger' | 'database' | 'docs'
+    'pos' | 'crm' | 'finance' | 'inventory' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'benchmark' | 'tickets' | 'trash' | 'swagger' | 'database' | 'docs'
   >('owner');
 
   const { setHierarchicalData } = useTenantStore();
   const { theme, setTheme } = useThemeStore();
-  const { modules } = useModuleLicenseStore();
+  const { modules, subscriptionTier, remainingMonths, setSubscriptionTier } = useModuleLicenseStore();
 
   const [isGuestReviewMode, setIsGuestReviewMode] = useState<boolean>(false);
 
@@ -96,6 +98,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
+      <PageTransitionPreloader activeModuleKey={activeModule} />
       <ToastContainer />
       <MultiTierSwitcher />
 
@@ -146,8 +149,8 @@ export default function App() {
                   onClick={() => setActiveModule('superuser')}
                   className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                     activeModule === 'superuser'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span>⚡</span>
@@ -174,6 +177,21 @@ export default function App() {
                 <span>Kasir POS & Dapur</span>
               </div>
               {isModuleLocked('pos') && <span className="text-[10px]">🔒</span>}
+            </button>
+
+            <button
+              onClick={() => setActiveModule('crm')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeModule === 'crm'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center space-x-2.5">
+                <span>👥</span>
+                <span>CRM & Loyalitas Member</span>
+              </div>
+              {isModuleLocked('crm') && <span className="text-[10px]">🔒</span>}
             </button>
 
             {(userRole === 'owner' || userRole === 'super_user') && (
@@ -309,8 +327,34 @@ export default function App() {
             )}
           </div>
 
-          {/* Quick Logout Button */}
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
+          {/* SUBSCRIPTION TIER QUICK SWITCHER & LOGOUT BAR */}
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+            {/* Quick Tier Selector for Simulation */}
+            <div className="bg-slate-100 dark:bg-slate-800/80 p-2 rounded-2xl border border-slate-200 dark:border-slate-700/80 space-y-1.5">
+              <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                <span className="font-bold">TIER: {subscriptionTier.toUpperCase()}</span>
+                <span className="text-emerald-500 font-bold">{remainingMonths} Bln</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1 text-[9px] font-bold">
+                {(['starter', 'business', 'enterprise'] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => {
+                      setSubscriptionTier(t);
+                      toast.success('Tier Diganti', `Simulasi Paket ${t.toUpperCase()}`);
+                    }}
+                    className={`py-1 rounded-lg capitalize transition-all ${
+                      subscriptionTier === t
+                        ? 'bg-red-600 text-white shadow-sm'
+                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <button
               onClick={() => {
                 logout();
@@ -332,6 +376,21 @@ export default function App() {
           {activeModule === 'owner' && <OwnerAnalyticsDashboard />}
           {activeModule === 'brand_admin' && <BrandAdminDashboard />}
           {activeModule === 'superuser' && <SuperUserDashboard />}
+          {activeModule === 'crm' && (
+            isModuleLocked('crm') ? (
+              <div className="p-12 text-center space-y-4">
+                <span className="text-5xl">🔒</span>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
+                  Modul CRM & Loyalitas Member Terkunci
+                </h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  Hubungi Super User atau upgrade paket di menu <b>Super User & SaaS Licensing</b>.
+                </p>
+              </div>
+            ) : (
+              <CustomerManagementView />
+            )
+          )}
           {activeModule === 'benchmark' && <BenchmarkViewer />}
           {activeModule === 'tickets' && <BugTicketingCenter />}
           {activeModule === 'trash' && <SoftDeleteManager />}
@@ -344,7 +403,7 @@ export default function App() {
                   Modul POS Enterprise Terkunci
                 </h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  Hubungi Account Manager Modula Anda atau buka kunci lisensi di menu <b>Super User & SaaS Licensing</b>.
+                  Buka kunci lisensi di menu <b>Super User & SaaS Licensing</b>.
                 </p>
               </div>
             ) : (
