@@ -9,6 +9,7 @@ import { OwnerAnalyticsDashboard } from './components/owner/OwnerAnalyticsDashbo
 import { SuperUserDashboard } from './components/superuser/SuperUserDashboard';
 import { BrandAdminDashboard } from './components/admin/BrandAdminDashboard';
 import { CustomerManagementView } from './components/crm/CustomerManagementView';
+import { InventoryManagementView } from './components/inventory/InventoryManagementView';
 import { CustomerReviewPage } from './components/reviews/CustomerReviewPage';
 import { BenchmarkViewer } from './components/benchmark/BenchmarkViewer';
 import { BugTicketingCenter } from './components/tickets/BugTicketingCenter';
@@ -194,6 +195,21 @@ export default function App() {
               {isModuleLocked('crm') && <span className="text-[10px]">🔒</span>}
             </button>
 
+            <button
+              onClick={() => setActiveModule('inventory')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeModule === 'inventory'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center space-x-2.5">
+                <span>📦</span>
+                <span>Gudang, Stok & Vendor</span>
+              </div>
+              {isModuleLocked('inventory') && <span className="text-[10px]">🔒</span>}
+            </button>
+
             {(userRole === 'owner' || userRole === 'super_user') && (
               <button
                 onClick={() => setActiveModule('finance')}
@@ -208,23 +224,6 @@ export default function App() {
                   <span>Akuntansi & GL (PSAK)</span>
                 </div>
                 {isModuleLocked('finance') && <span className="text-[10px]">🔒</span>}
-              </button>
-            )}
-
-            {userRole !== 'cashier' && (
-              <button
-                onClick={() => setActiveModule('inventory')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  activeModule === 'inventory'
-                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <div className="flex items-center space-x-2.5">
-                  <span>📦</span>
-                  <span>Gudang & Dead Stock</span>
-                </div>
-                {isModuleLocked('inventory') && <span className="text-[10px]">🔒</span>}
               </button>
             )}
 
@@ -329,7 +328,6 @@ export default function App() {
 
           {/* SUBSCRIPTION TIER QUICK SWITCHER & LOGOUT BAR */}
           <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
-            {/* Quick Tier Selector for Simulation */}
             <div className="bg-slate-100 dark:bg-slate-800/80 p-2 rounded-2xl border border-slate-200 dark:border-slate-700/80 space-y-1.5">
               <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 dark:text-slate-400">
                 <span className="font-bold">TIER: {subscriptionTier.toUpperCase()}</span>
@@ -391,6 +389,21 @@ export default function App() {
               <CustomerManagementView />
             )
           )}
+          {activeModule === 'inventory' && (
+            isModuleLocked('inventory') ? (
+              <div className="p-12 text-center space-y-4">
+                <span className="text-5xl">🔒</span>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
+                  Modul Gudang & SCM Terkunci
+                </h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  Buka kunci lisensi di menu <b>Super User & SaaS Licensing</b>.
+                </p>
+              </div>
+            ) : (
+              <InventoryManagementView />
+            )
+          )}
           {activeModule === 'benchmark' && <BenchmarkViewer />}
           {activeModule === 'tickets' && <BugTicketingCenter />}
           {activeModule === 'trash' && <SoftDeleteManager />}
@@ -428,15 +441,6 @@ export default function App() {
           {activeModule === 'docs' && <DocumentationViewer />}
           {activeModule === 'swagger' && <SwaggerApiViewer />}
           {activeModule === 'database' && <DatabaseManager />}
-          {activeModule === 'inventory' && (
-            <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-              <div className="text-4xl mb-3">📦</div>
-              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Modul SCM & Dead Stock Analyzer</h3>
-              <p className="text-xs max-w-md mx-auto mt-2 text-slate-500 dark:text-slate-400">
-                Layanan `InventoryEngine::DeadStockService` aktif menghitung persediaan tidak bergerak $N$ hari dan menyusun draft PO otomatis.
-              </p>
-            </div>
-          )}
         </main>
       </div>
     </div>
