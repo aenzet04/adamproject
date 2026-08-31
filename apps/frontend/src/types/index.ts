@@ -1,20 +1,26 @@
-// ============================================================================
-// 1. TENANCY & HIERARCHICAL ENTITIES
-// ============================================================================
+export type UserRole = 'super_user' | 'owner' | 'admin_brand' | 'cashier';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  roleTitle: string;
+  avatarUrl: string;
+  tenantId: string;
+  brandId?: string;
+  branchId?: string;
+  phoneNumber?: string;
+}
+
 export interface Tenant {
   id: string;
   name: string;
   subdomain: string;
-  taxId?: string;
-  legalEntityType: 'PT' | 'CV' | 'Perorangan';
+  legalEntityType: 'PT' | 'CV' | 'PERORANGAN';
+  taxIdentificationNumber?: string;
   status: 'active' | 'suspended' | 'trial';
-  featureFlags: {
-    pos: boolean;
-    inventory: boolean;
-    finance: boolean;
-    hr: boolean;
-    audit: boolean;
-  };
+  featureFlags: Record<string, boolean>;
 }
 
 export interface Brand {
@@ -22,8 +28,7 @@ export interface Brand {
   tenantId: string;
   name: string;
   code: string;
-  industryType: 'fnb' | 'retail' | 'services' | 'wholesale';
-  logoUrl?: string;
+  industryType: 'fnb' | 'retail' | 'services' | 'manufacturing';
   status: 'active' | 'inactive';
 }
 
@@ -33,11 +38,7 @@ export interface Branch {
   brandId: string;
   name: string;
   code: string;
-  branchType: 'store' | 'warehouse_only' | 'central_kitchen' | 'hq';
-  address?: string;
-  phone?: string;
-  latitude?: number;
-  longitude?: number;
+  branchType: 'store' | 'kiosk' | 'cloud_kitchen' | 'central_kitchen' | 'warehouse';
   geofenceRadiusMeters: number;
   isActive: boolean;
 }
@@ -49,49 +50,17 @@ export interface Warehouse {
   name: string;
   code: string;
   isPrimary: boolean;
-  costingMethod: 'moving_average' | 'fifo';
+  costingMethod: 'fifo' | 'moving_average';
 }
 
-// ============================================================================
-// 2. USERS, ROLES & AUTH
-// ============================================================================
-export type RoleCode =
-  | 'super_admin'
-  | 'brand_director'
-  | 'branch_manager'
-  | 'head_cashier'
-  | 'cashier'
-  | 'warehouse_officer'
-  | 'chief_accountant'
-  | 'hr_officer'
-  | 'internal_auditor';
-
-export interface User {
-  id: string;
-  tenantId: string;
-  name: string;
-  email: string;
-  status: 'active' | 'suspended';
-  currentRole?: {
-    code: RoleCode;
-    name: string;
-    scopeLevel: 'tenant' | 'brand' | 'branch';
-    permissions: Record<string, boolean>;
-  };
-}
-
-// ============================================================================
-// 3. PRODUCT & INVENTORY
-// ============================================================================
 export interface Product {
   id: string;
   tenantId: string;
   brandId: string;
-  categoryId?: string;
   name: string;
   sku: string;
   barcode?: string;
-  productType: 'inventory' | 'service' | 'bundle' | 'raw_material';
+  productType: 'inventory' | 'non_inventory' | 'service' | 'composite';
   uomBase: string;
   sellingPrice: number;
   standardCost: number;
@@ -101,104 +70,71 @@ export interface Product {
   averageCost?: number;
 }
 
-export interface StockLevel {
-  id: string;
-  warehouseId: string;
-  productId: string;
-  quantityOnHand: number;
-  quantityReserved: number;
-  averageCost: number;
-  safetyStock: number;
-  reorderPoint: number;
-}
-
-// ============================================================================
-// 4. POS ORDER & CART
-// ============================================================================
 export interface CartItem {
   productId: string;
   productName: string;
   sku: string;
-  unitPrice: number;
   quantity: number;
-  discountRate: number; // in percent e.g. 10 for 10%
+  unitPrice: number;
   discountAmount: number;
+  taxAmount: number;
   subtotal: number;
-  unitCogs?: number;
   notes?: string;
 }
 
 export interface PaymentAllocation {
   chartOfAccountId: string;
-  paymentMethod: 'cash' | 'qris' | 'edc_bca' | 'edc_mandiri' | 'transfer' | 'customer_credit';
+  paymentMethod: 'cash' | 'edc_bca' | 'edc_mandiri' | 'qris' | 'transfer_bank' | 'customer_credit';
   amount: number;
   changeGiven: number;
   referenceNumber?: string;
 }
 
-export interface PosOrderPayload {
-  customerName?: string;
-  tableNumber?: string;
-  items: CartItem[];
-  subtotalAmount: number;
-  discountAmount: number;
-  taxRate: number;
-  taxAmount: number;
-  serviceChargeAmount: number;
-  roundingAmount: number;
-  grandTotal: number;
-  payments: PaymentAllocation[];
-}
-
-// ============================================================================
-// 5. FINANCE & ACCOUNTING
-// ============================================================================
-export interface ChartOfAccount {
-  id: string;
-  tenantId: string;
-  accountCode: string;
-  accountName: string;
-  accountType: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
-  normalBalance: 'debit' | 'credit';
-  category: string;
-  isReconcilable: boolean;
-  isActive: boolean;
-}
-
-export interface JournalEntryLine {
-  id?: string;
-  chartOfAccountId: string;
-  accountCode: string;
-  accountName: string;
-  debit: number;
-  credit: number;
-  description?: string;
-}
-
-export interface JournalEntry {
-  id: string;
-  entryNumber: string;
-  entryDate: string;
-  sourceType: string;
-  sourceId: string;
-  narration: string;
-  totalDebit: number;
-  totalCredit: number;
-  status: 'draft' | 'posted' | 'reversed';
-  lines: JournalEntryLine[];
-}
-
 export interface ProfitLossReport {
   periodStart: string;
   periodEnd: string;
-  brandId?: string;
-  branchId?: string;
-  revenues: { code: string; name: string; amount: number }[];
+  revenues: Array<{ code: string; name: string; amount: number }>;
   totalRevenue: number;
-  cogs: { code: string; name: string; amount: number }[];
+  cogs: Array<{ code: string; name: string; amount: number }>;
   totalCogs: number;
   grossProfit: number;
-  operatingExpenses: { code: string; name: string; amount: number }[];
+  operatingExpenses: Array<{ code: string; name: string; amount: number }>;
   totalOperatingExpense: number;
   netIncome: number;
+}
+
+export interface CustomerReview {
+  id: string;
+  branchId: string;
+  branchName: string;
+  customerName: string;
+  rating: number; // 1 - 5
+  menuItemId?: string;
+  menuItemName?: string;
+  menuRating?: number;
+  comment: string;
+  createdAt: string;
+  sentiment: 'positive' | 'neutral' | 'negative';
+}
+
+export interface ModuleLicense {
+  id: string;
+  name: string;
+  code: 'pos' | 'finance' | 'inventory' | 'hr' | 'audit' | 'ai_insights';
+  icon: string;
+  description: string;
+  pricePerMonth: number;
+  isUnlocked: boolean;
+  expiresAt?: string;
+}
+
+export interface SplitBillPerson {
+  personId: string;
+  personName: string;
+  assignedItems: Array<{ productId: string; quantity: number; amount: number }>;
+  customAmount: number;
+  isPaid: boolean;
+  paymentMethod?: string;
+  paidAmount?: number;
+  changeGiven?: number;
 }
