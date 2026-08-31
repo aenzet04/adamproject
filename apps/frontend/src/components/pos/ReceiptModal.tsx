@@ -554,6 +554,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 🍳 TIKET DAPUR / BARISTA
               </h2>
               <div className="text-xs font-bold text-red-600 mt-1">
+                MEJA: {tableNumber ? `MEJA #${tableNumber}` : 'TAKE AWAY / BUNGKUS'}
                 MEJA: {tableNumber ? `MEJA #${tableNumber}` : 'TAKE AWAY / BUNGKUS'} • [{orderChannel.replace('_', ' ')}]
               </div>
               <div className="text-[10px] text-slate-600 font-mono">Order: {orderNumber}</div>

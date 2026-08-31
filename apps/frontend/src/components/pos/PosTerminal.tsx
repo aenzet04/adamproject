@@ -334,6 +334,7 @@ export const PosTerminal: React.FC = () => {
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isCartOptionsOpen, setIsCartOptionsOpen] = useState(false);
 
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris' | 'edc_bca' | 'customer_credit'>('cash');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris' | 'edc_bca' | 'customer_credit' | 'transfer_bank'>('cash');
   const [tenderAmount, setTenderAmount] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -1234,10 +1235,19 @@ export const PosTerminal: React.FC = () => {
                 </div>
               </div>
 
+              <div className="grid grid-cols-4 gap-2">
+                {(['cash', 'qris', 'edc_bca', 'customer_credit'] as const).map((m) => (
               {/* QUICK DUAL SPLIT PRESET BUTTONS */}
               {remaining > 0 && payments.length === 0 && (
                 <div className="flex space-x-2">
                   <button
+                    key={m}
+                    onClick={() => setPaymentMethod(m)}
+                    className={`py-2 px-2 rounded-2xl text-xs font-bold uppercase border transition-all ${
+                      paymentMethod === m
+                        ? 'bg-red-600 text-white border-red-500 shadow-md shadow-red-600/20'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    }`}
                     type="button"
                     onClick={() => {
                       const half = Math.round(grandTotal / 2);
@@ -1248,8 +1258,10 @@ export const PosTerminal: React.FC = () => {
                     }}
                     className="flex-1 py-1.5 px-2 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl text-[11px] font-bold text-red-700 dark:text-red-300 hover:bg-red-100"
                   >
+                    {m.replace('_', ' ')}
                     ⚡ Dual: 50% Tunai + 50% QRIS
                   </button>
+                ))}
 
                   <button
                     type="button"
