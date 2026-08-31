@@ -32,10 +32,15 @@ export const MultiTierSwitcher: React.FC = () => {
   return (
     <header className="h-14 border-b bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 px-4 flex items-center justify-between transition-colors shadow-sm z-30">
       <div className="flex items-center space-x-3">
+        {/* Brand Logo Symbol */}
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-red-600 to-rose-500 flex items-center justify-center font-black text-white shadow-md shadow-red-600/30 text-xs">
+          AD
+        </div>
+
         {/* Tier 1: Holding / Tenant */}
         <div className="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Holding:</span>
-          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+          <span className="text-xs font-bold text-red-600 dark:text-red-400">
             {currentTenant?.name || 'PT Multi Industri Nusantara'}
           </span>
         </div>
@@ -47,7 +52,7 @@ export const MultiTierSwitcher: React.FC = () => {
           <label htmlFor="brand-select" className="text-xs text-slate-500 dark:text-slate-400 font-medium">Brand:</label>
           <select
             id="brand-select"
-            className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+            className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-red-500 font-semibold"
             value={currentBrand?.id || ''}
             onChange={(e) => {
               const brand = availableBrands.find((b) => b.id === e.target.value);
@@ -69,7 +74,7 @@ export const MultiTierSwitcher: React.FC = () => {
           <label htmlFor="branch-select" className="text-xs text-slate-500 dark:text-slate-400 font-medium">Outlet:</label>
           <select
             id="branch-select"
-            className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+            className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-red-500 font-semibold"
             value={currentBranch?.id || ''}
             onChange={(e) => {
               const branch = filteredBranches.find((b) => b.id === e.target.value);
@@ -91,7 +96,7 @@ export const MultiTierSwitcher: React.FC = () => {
           <label htmlFor="warehouse-select" className="text-xs text-slate-500 dark:text-slate-400 font-medium">Gudang:</label>
           <select
             id="warehouse-select"
-            className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+            className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-xl border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-red-500 font-semibold"
             value={currentWarehouse?.id || ''}
             onChange={(e) => {
               const wh = filteredWarehouses.find((w) => w.id === e.target.value);
@@ -108,11 +113,11 @@ export const MultiTierSwitcher: React.FC = () => {
       </div>
 
       <div className="flex items-center space-x-2.5">
-        {/* Jira Sleek Density Toggle (Simple vs Detailed) */}
+        {/* Jira Sleek Density Toggle */}
         <button
           onClick={toggleViewMode}
           className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-sm active:scale-95"
-          title="Ganti Mode Tampilan (Sleek Simple vs Detailed Enterprise)"
+          title="Ganti Mode Tampilan"
         >
           <span>{viewMode === 'simple' ? '⚡' : '🔍'}</span>
           <span>{viewMode === 'simple' ? 'Simple Mode' : 'Detailed Mode'}</span>
@@ -135,16 +140,16 @@ export const MultiTierSwitcher: React.FC = () => {
           <img
             src={currentUser.avatarUrl}
             alt={currentUser.name}
-            className="w-8 h-8 rounded-xl object-cover border border-emerald-500 shadow-sm"
+            className="w-8 h-8 rounded-xl object-cover border border-red-500 shadow-sm"
           />
           <div>
             <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-1">
               <span>{currentUser.name.split(' ')[0]}</span>
-              <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded font-bold uppercase">
+              <span className="text-[9px] bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 px-1.5 py-0.2 rounded font-bold uppercase">
                 {currentUser.role.replace('_', ' ')}
               </span>
             </div>
-            <div className="text-[10px] text-slate-400">Klik untuk SOP & Profil</div>
+            <div className="text-[10px] text-slate-400">Profil & SOP</div>
           </div>
         </button>
       </div>

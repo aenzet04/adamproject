@@ -19,7 +19,7 @@ const PRESENTATION_SLIDES: Slide[] = [
     id: 1,
     tag: 'EXECUTIVE OVERVIEW',
     title: 'Enterprise Multi-Tenant SaaS ERP-POS & Financial Core',
-    subtitle: 'Arsitektur Pengganti Next-Gen untuk Odoo, Accurate, dan Jurnal.id',
+    subtitle: 'Arsitektur Next-Gen Pengganti Odoo, Accurate, dan Jurnal.id',
     points: [
       {
         icon: '🏛️',
@@ -34,10 +34,10 @@ const PRESENTATION_SLIDES: Slide[] = [
       {
         icon: '📱',
         title: 'Offline-First POS & Peripherals',
-        desc: 'Dukungan Bluetooth Thermal 58mm ESC/POS, Optical Barcode, & E-Struk WhatsApp.',
+        desc: 'Dukungan Bluetooth Thermal 58mm ESC/POS, Tiket Dapur, & E-Struk WhatsApp.',
       },
     ],
-    footerNote: 'Dokumentasi Sistem Resmi PT Multi Industri Nusantara - 2026',
+    footerNote: 'Dokumentasi Sistem Resmi - Created by parikesitad-pm x aenzet04',
   },
   {
     id: 2,
@@ -97,24 +97,24 @@ Exception: UnbalancedJournalError`,
   },
   {
     id: 4,
-    tag: 'POS & PERIPHERALS',
-    title: 'High-Speed POS, Bluetooth 58mm & Smart WhatsApp',
+    tag: 'POS & KITCHEN PERIPHERALS',
+    title: 'High-Speed POS, Split Bill, Tiket Dapur & WhatsApp',
     subtitle: 'Pengalaman Kasir Zero-Lag dengan Fitur Omnichannel Terintegrasi',
     points: [
       {
-        icon: '🖨️',
-        title: 'Direct Web Bluetooth 58mm',
-        desc: 'Koneksi langsung GATT tanpa memindai WiFi/IP, auto-print struk thermal saat checkout.',
+        icon: '🍳',
+        title: 'Tiket Dapur & Struk Konsumen Terpisah',
+        desc: 'Mencetak catatan pesanan kustom (e.g. less sugar, tanpa cabai) ke dapur dan struk resmi ke konsumen.',
       },
       {
-        icon: '📷',
-        title: 'Optical Barcode & QR Scanner',
-        desc: 'Sensor kamera optik live untuk scan barcode produk instan.',
+        icon: '✂️',
+        title: 'Split Bill 3 Mode',
+        desc: 'Dibagi rata N orang, split nominal bebas, atau split per item menu terpisah.',
       },
       {
         icon: '💬',
         title: 'Smart WhatsApp E-Struk',
-        desc: 'Input otomatis format lokal (081xxx) tanpa +62 dengan pesan rincian nota yang informatif.',
+        desc: 'Kirim struk teks dan lampiran dokumen PDF langsung via format nomor lokal 081xxxx.',
       },
     ],
     footerNote: 'Slide 4 dari 6 - Modul POS & Periferal',
@@ -169,12 +169,31 @@ Exception: UnbalancedJournalError`,
         title: 'v1.3.0 - MySQL & PDF/Slide',
         desc: 'Migrasi MySQL/MariaDB, Swagger console, ekspor TXT/PDF struk, & slide viewer.',
       },
+      {
+        icon: '👑',
+        title: 'v1.4.0 - Auth, Red Theme & Benchmark',
+        desc: 'Auth session, tiketing dapur, split bill 3 mode, owner AI matrix, & benchmark test suite.',
+      },
     ],
     footerNote: 'Slide 6 dari 6 - Riwayat Pembaruan',
   },
 ];
 
 const CHANGELOG_DATA = [
+  {
+    version: 'v1.4.0',
+    date: '01 September 2026',
+    title: 'Auth Portal, Kitchen Ticket vs Customer Receipt, Benchmark Suite, & Crimson Red Palette',
+    items: [
+      'Metadata Pembuat: Dikembangkan oleh parikesitad-pm berkolaborasi dengan repository aenzet04.',
+      'Sistem Otentikasi Superaman: SignIn, SignUp, proteksi sesi aktif, dan tombol Logout fungsional.',
+      'Pemisahan Cetak Struk: Tiket Dapur / Barista (dengan Catatan Menu) vs Struk Konsumen Resmi.',
+      'Modul Split Bill 3 Mode: Dibagi rata N orang, split nominal bebas, dan split per item menu.',
+      'Owner Executive Dashboard dengan AI Strategic Advisor (Stars vs Deadstock) & Portal Ulasan Konsumen (/review).',
+      'Modul Pengujian Benchmark & Optimasi: Laporan real-time latensi React, throughput Ruby GL, dan MySQL InnoDB.',
+      'Perombakan Palet Warna: Crimson Red & Sleek Dark/Light Clean Palette modern.',
+    ],
+  },
   {
     version: 'v1.3.0',
     date: '01 September 2026',
@@ -244,7 +263,6 @@ export const DocumentationViewer: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [viewMode]);
 
-  // Export Docs to PDF
   const handleExportDocsPdf = async () => {
     if (!docsRef.current) return;
     setIsExportingPdf(true);
@@ -268,7 +286,6 @@ export const DocumentationViewer: React.FC = () => {
     }
   };
 
-  // Export Current Slide to PDF
   const handleExportSlidePdf = async () => {
     if (!slideRef.current) return;
     setIsExportingPdf(true);
@@ -302,18 +319,17 @@ export const DocumentationViewer: React.FC = () => {
             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
               Dokumentasi Teknis & Log Pembaruan
             </h2>
-            <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
-              v1.3.0 Release
+            <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800 text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold">
+              v1.4.0 Release
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Panduan lengkap arsitektur sistem, aturan pembukuan, panduan developer junior, dan riwayat changelog.
+            Created & Maintained by <a href="https://github.com/parikesitad-pm" target="_blank" rel="noreferrer" className="text-red-600 dark:text-red-400 font-bold hover:underline">parikesitad-pm</a> • Repo: <a href="https://github.com/aenzet04/adamproject.git" target="_blank" rel="noreferrer" className="text-slate-600 dark:text-slate-300 font-bold hover:underline">aenzet04/adamproject</a>
           </p>
         </div>
 
         {/* View Mode & Export Actions */}
         <div className="flex items-center space-x-2">
-          {/* Mode Switcher */}
           <div className="bg-slate-200 dark:bg-slate-900 p-1 rounded-2xl border border-slate-300 dark:border-slate-800 flex space-x-1">
             <button
               onClick={() => setViewMode('docs')}
@@ -337,12 +353,11 @@ export const DocumentationViewer: React.FC = () => {
             </button>
           </div>
 
-          {/* Export PDF Buttons */}
           {viewMode === 'docs' ? (
             <button
               onClick={handleExportDocsPdf}
               disabled={isExportingPdf}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3.5 py-2 rounded-xl text-xs flex items-center space-x-1.5 shadow-md transition-all active:scale-95"
+              className="bg-red-600 hover:bg-red-500 text-white font-extrabold px-3.5 py-2 rounded-xl text-xs flex items-center space-x-1.5 shadow-md shadow-red-600/20 transition-all active:scale-95"
             >
               <span>📕</span>
               <span>{isExportingPdf ? 'Mengonversi...' : 'Convert Dokumen ke PDF'}</span>
@@ -351,7 +366,7 @@ export const DocumentationViewer: React.FC = () => {
             <button
               onClick={handleExportSlidePdf}
               disabled={isExportingPdf}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold px-3.5 py-2 rounded-xl text-xs flex items-center space-x-1.5 shadow-md transition-all active:scale-95"
+              className="bg-red-600 hover:bg-red-500 text-white font-extrabold px-3.5 py-2 rounded-xl text-xs flex items-center space-x-1.5 shadow-md shadow-red-600/20 transition-all active:scale-95"
             >
               <span>📑</span>
               <span>{isExportingPdf ? 'Mengonversi...' : 'Convert Slide ke PDF'}</span>
@@ -363,6 +378,26 @@ export const DocumentationViewer: React.FC = () => {
       {/* VIEW 1: FULL DOCUMENTATION & CHANGELOG */}
       {viewMode === 'docs' && (
         <div ref={docsRef} className="space-y-6 max-w-5xl">
+          {/* Metadata Card */}
+          <div className="bg-gradient-to-r from-red-950/40 to-slate-900 border border-red-900/40 rounded-3xl p-5 shadow-sm flex justify-between items-center">
+            <div>
+              <span className="text-[10px] font-mono uppercase text-red-400 font-bold tracking-wider">
+                System Author & Collaboration Metadata
+              </span>
+              <h3 className="text-sm font-bold text-slate-100 mt-0.5">
+                Dikembangkan & Diarsiteki oleh: <a href="https://github.com/parikesitad-pm" target="_blank" rel="noreferrer" className="text-red-400 underline font-mono">parikesitad-pm</a>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Kolaborasi Pemilik Repositori: <a href="https://github.com/aenzet04/adamproject.git" target="_blank" rel="noreferrer" className="text-slate-300 underline font-mono">aenzet04</a> • Lisensi: Enterprise Closed-Source
+              </p>
+            </div>
+            <div className="text-right font-mono text-xs text-slate-400">
+              <span className="bg-red-900/60 border border-red-700/60 text-red-300 px-2.5 py-1 rounded-xl font-bold text-[10px]">
+                Build: v1.4.0 Production Verified
+              </span>
+            </div>
+          </div>
+
           {/* Section 1: Architecture & Tenancy */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
             <div className="flex items-center space-x-2 mb-3">
@@ -376,7 +411,7 @@ export const DocumentationViewer: React.FC = () => {
             </p>
             <div className="grid grid-cols-3 gap-3 text-xs mb-4">
               <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800">
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">Tier 1: Tenant / Holding</span>
+                <span className="font-bold text-red-600 dark:text-red-400">Tier 1: Tenant / Holding</span>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                   Entitas legal induk (e.g. PT Multi Industri Nusantara), pemilik langganan dan master Chart of Accounts.
                 </p>
@@ -405,7 +440,7 @@ export const DocumentationViewer: React.FC = () => {
               </h3>
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-3">
-              Setiap transaksi POS checkout di backend memicu <code className="text-emerald-600 dark:text-emerald-400 font-bold">FinanceEngine::AutoPostingService</code> yang melakukan pembukuan Debit & Kredit berimbang:
+              Setiap transaksi POS checkout di backend memicu <code className="text-red-600 dark:text-red-400 font-bold">FinanceEngine::AutoPostingService</code> yang melakukan pembukuan Debit & Kredit berimbang:
             </p>
             <div className="bg-slate-950 text-slate-200 p-4 rounded-2xl font-mono text-xs overflow-x-auto space-y-1">
               <div className="text-slate-500">// 1. Penerimaan Kas/Bank/QRIS</div>
@@ -419,70 +454,22 @@ export const DocumentationViewer: React.FC = () => {
             </div>
           </div>
 
-          {/* Section 3: Junior Developer Onboarding Guide */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
-            <div className="flex items-center space-x-2 mb-3">
-              <span className="text-xl">👨‍💻</span>
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
-                3. Panduan Onboarding Developer Junior & Pemakai Selanjutnya
-              </h3>
-            </div>
-            <div className="space-y-3 text-xs">
-              <div className="flex space-x-3 items-start">
-                <span className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-bold flex items-center justify-center text-xs flex-shrink-0">
-                  1
-                </span>
-                <div>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">Prasyarat Lingkungan:</span>
-                  <p className="text-slate-500 dark:text-slate-400 mt-0.5">
-                    Node.js v20+ / v26+, Ruby 2.6+ / 3.0+, dan MySQL 8.0 / MariaDB.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex space-x-3 items-start">
-                <span className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-bold flex items-center justify-center text-xs flex-shrink-0">
-                  2
-                </span>
-                <div>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">Menjalankan Server Frontend:</span>
-                  <pre className="bg-slate-100 dark:bg-slate-950 p-2 rounded-xl mt-1 font-mono text-[11px] text-emerald-600 dark:text-emerald-400">
-                    cd apps/frontend && npm install && npm run dev
-                  </pre>
-                </div>
-              </div>
-
-              <div className="flex space-x-3 items-start">
-                <span className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-bold flex items-center justify-center text-xs flex-shrink-0">
-                  3
-                </span>
-                <div>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">Menjalankan Server Backend Ruby Live:</span>
-                  <pre className="bg-slate-100 dark:bg-slate-950 p-2 rounded-xl mt-1 font-mono text-[11px] text-blue-600 dark:text-blue-400">
-                    cd apps/backend && ruby server.rb
-                  </pre>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: Changelog History with Direct Slide Deck Download */}
+          {/* Section 3: Changelog History */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center space-x-2">
                 <span className="text-xl">📜</span>
                 <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
-                  4. Log Riwayat Pembaruan Sistem (Changelog)
+                  3. Log Riwayat Pembaruan Sistem (Changelog)
                 </h3>
               </div>
 
-              {/* Direct Slide Deck Download Button inside Changelog */}
               <button
                 onClick={() => setViewMode('slides')}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl flex items-center space-x-1.5 shadow-sm transition-all"
+                className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl flex items-center space-x-1.5 shadow-sm transition-all"
               >
                 <span>📽️</span>
-                <span>Buka & Unduh Slide Presentasi</span>
+                <span>Buka Slide Presentasi</span>
               </button>
             </div>
 
@@ -494,7 +481,7 @@ export const DocumentationViewer: React.FC = () => {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center space-x-2">
-                      <span className="bg-emerald-600 text-white font-mono text-[10px] font-bold px-2 py-0.5 rounded-lg">
+                      <span className="bg-red-600 text-white font-mono text-[10px] font-bold px-2 py-0.5 rounded-lg">
                         {log.version}
                       </span>
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{log.title}</span>
@@ -516,19 +503,16 @@ export const DocumentationViewer: React.FC = () => {
       {/* VIEW 2: INTERACTIVE PRESENTATION SLIDE MODE */}
       {viewMode === 'slides' && (
         <div className="max-w-5xl mx-auto space-y-4">
-          {/* Slide Presentation Card */}
           <div
             ref={slideRef}
             className="bg-slate-900 text-slate-100 border border-slate-800 rounded-3xl p-8 min-h-[500px] flex flex-col justify-between shadow-2xl relative overflow-hidden"
           >
-            {/* Background Aesthetic Gradient */}
-            <div className="absolute -right-20 -top-20 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -right-20 -top-20 w-80 h-80 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-rose-600/10 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Slide Header */}
             <div>
               <div className="flex justify-between items-center mb-3">
-                <span className="text-[11px] font-mono font-bold tracking-widest text-emerald-400 uppercase bg-emerald-950/80 border border-emerald-800/60 px-3 py-1 rounded-full">
+                <span className="text-[11px] font-mono font-bold tracking-widest text-red-400 uppercase bg-red-950/80 border border-red-800/60 px-3 py-1 rounded-full">
                   {currentSlide.tag}
                 </span>
                 <span className="text-xs font-mono font-bold text-slate-400">
@@ -539,7 +523,6 @@ export const DocumentationViewer: React.FC = () => {
               <p className="text-xs text-slate-400 mt-1 font-medium">{currentSlide.subtitle}</p>
             </div>
 
-            {/* Slide Body: Points & Code */}
             <div className="grid grid-cols-12 gap-6 my-6">
               <div className={`${currentSlide.codeSnippet ? 'col-span-7' : 'col-span-12'} space-y-3`}>
                 {currentSlide.points.map((p, i) => (
@@ -554,20 +537,18 @@ export const DocumentationViewer: React.FC = () => {
               </div>
 
               {currentSlide.codeSnippet && (
-                <div className="col-span-5 bg-slate-950 border border-slate-800 rounded-2xl p-4 font-mono text-[11px] text-emerald-300 flex items-center justify-center">
+                <div className="col-span-5 bg-slate-950 border border-slate-800 rounded-2xl p-4 font-mono text-[11px] text-red-300 flex items-center justify-center">
                   <pre className="overflow-x-auto w-full leading-relaxed">{currentSlide.codeSnippet}</pre>
                 </div>
               )}
             </div>
 
-            {/* Slide Footer */}
             <div className="pt-4 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500 font-mono">
               <span>{currentSlide.footerNote}</span>
               <span>Gunakan Tombol Panah Keyboard ⬅️ / ➡️ untuk berpindah slide</span>
             </div>
           </div>
 
-          {/* Slide Navigation Controls */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex justify-between items-center shadow-sm">
             <button
               onClick={() => setCurrentSlideIndex((prev) => (prev > 0 ? prev - 1 : prev))}
@@ -578,7 +559,6 @@ export const DocumentationViewer: React.FC = () => {
               <span>Slide Sebelumnya</span>
             </button>
 
-            {/* Slide Dots Indicator */}
             <div className="flex space-x-2">
               {PRESENTATION_SLIDES.map((s, idx) => (
                 <button
@@ -586,7 +566,7 @@ export const DocumentationViewer: React.FC = () => {
                   onClick={() => setCurrentSlideIndex(idx)}
                   className={`w-3 h-3 rounded-full transition-all ${
                     currentSlideIndex === idx
-                      ? 'bg-emerald-500 scale-125 shadow-md shadow-emerald-500/30'
+                      ? 'bg-red-600 scale-125 shadow-md shadow-red-600/30'
                       : 'bg-slate-300 dark:bg-slate-700 hover:bg-slate-400'
                   }`}
                   title={`Lompat ke Slide ${s.id}`}
@@ -599,7 +579,7 @@ export const DocumentationViewer: React.FC = () => {
                 setCurrentSlideIndex((prev) => (prev < PRESENTATION_SLIDES.length - 1 ? prev + 1 : prev))
               }
               disabled={currentSlideIndex === PRESENTATION_SLIDES.length - 1}
-              className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold px-5 py-2 rounded-xl text-xs flex items-center space-x-1.5 shadow-md transition-all"
+              className="bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-bold px-5 py-2 rounded-xl text-xs flex items-center space-x-1.5 shadow-md transition-all"
             >
               <span>Slide Berikutnya</span>
               <span>➡️</span>
