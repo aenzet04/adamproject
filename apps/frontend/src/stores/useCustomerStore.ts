@@ -8,6 +8,7 @@ export interface CustomerMember {
   email?: string;
   branchId: string;
   branchName: string;
+  brandId?: string;
   tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'VIP';
   points: number;
   lifetimeSpend: number;
@@ -27,8 +28,15 @@ interface CustomerStoreState {
   addCustomer: (data: Partial<CustomerMember> & { name: string; phone: string }) => CustomerMember;
   recordPurchase: (customerId: string, amount: number, pointsEarned?: number) => void;
   updateCustomerTier: (customerId: string, tier: CustomerMember['tier']) => void;
-  getTopSpenders: (limit?: number) => CustomerMember[];
-  searchCustomers: (query: string) => CustomerMember[];
+  getTopSpenders: (limit?: number, branchOrBrandId?: string) => CustomerMember[];
+  searchCustomers: (query: string, branchOrBrandId?: string) => CustomerMember[];
+  getBranchReport: (branchId?: string) => Array<{
+    branchId: string;
+    branchName: string;
+    memberCount: number;
+    totalSpend: number;
+    avgSpend: number;
+  }>;
 }
 
 const INITIAL_CUSTOMERS: CustomerMember[] = [
@@ -39,6 +47,7 @@ const INITIAL_CUSTOMERS: CustomerMember[] = [
     email: 'irwan.hidayat@holdingcorp.id',
     branchId: 'br-01',
     branchName: 'Outlet Grand Indonesia',
+    brandId: 'b-01',
     tier: 'VIP',
     points: 4850,
     loyaltyPoints: 4850,
@@ -55,6 +64,7 @@ const INITIAL_CUSTOMERS: CustomerMember[] = [
     email: 'dian.permata@gmail.com',
     branchId: 'br-01',
     branchName: 'Outlet Grand Indonesia',
+    brandId: 'b-01',
     tier: 'Platinum',
     points: 3200,
     loyaltyPoints: 3200,
@@ -71,6 +81,7 @@ const INITIAL_CUSTOMERS: CustomerMember[] = [
     email: 'kevin.sanjaya@techstart.id',
     branchId: 'br-02',
     branchName: 'Outlet Senopati',
+    brandId: 'b-01',
     tier: 'Gold',
     points: 1950,
     loyaltyPoints: 1950,
@@ -87,6 +98,7 @@ const INITIAL_CUSTOMERS: CustomerMember[] = [
     email: 'rian.k@startup.id',
     branchId: 'br-03',
     branchName: 'Store Kelapa Gading',
+    brandId: 'b-02',
     tier: 'Silver',
     points: 850,
     loyaltyPoints: 850,
@@ -110,6 +122,7 @@ export const useCustomerStore = create<CustomerStoreState>()(
           email: data.email,
           branchId: data.branchId || 'br-01',
           branchName: data.branchName || 'Outlet Grand Indonesia',
+          brandId: data.brandId || 'b-01',
           tier: data.tier || 'Silver',
           points: data.points || data.loyaltyPoints || 10,
           loyaltyPoints: data.loyaltyPoints || data.points || 10,
@@ -158,20 +171,57 @@ export const useCustomerStore = create<CustomerStoreState>()(
         });
       },
 
-      getTopSpenders: (limit = 10) => {
-        return [...get().customers]
+      getTopSpenders: (limit = 10, branchOrBrandId?: string) => {
+        let list = [...get().customers];
+        if (branchOrBrandId) {
+          list = list.filter(
+            (c) => c.branchId === branchOrBrandId || c.brandId === branchOrBrandId
+          );
+        }
+        return list
           .sort((a, b) => (b.lifetimeSpend || b.totalSpend || 0) - (a.lifetimeSpend || a.totalSpend || 0))
           .slice(0, limit);
       },
 
-      searchCustomers: (query) => {
+      searchCustomers: (query, branchOrBrandId?: string) => {
         const q = query.toLowerCase();
-        return get().customers.filter(
+        let list = get().customers;
+        if (branchOrBrandId) {
+          list = list.filter(
+            (c) => c.branchId === branchOrBrandId || c.brandId === branchOrBrandId
+          );
+        }
+        return list.filter(
           (c) =>
             c.name.toLowerCase().includes(q) ||
             c.phone.includes(q) ||
             (c.email && c.email.toLowerCase().includes(q))
         );
+      },
+
+      getBranchReport: () => {
+        const branchesMap: Record<string, { branchName: string; members: CustomerMember[] }> = {};
+
+        get().customers.forEach((c) => {
+          if (!branchesMap[c.branchId]) {
+            branchesMap[c.branchId] = { branchName: c.branchName, members: [] };
+          }
+          branchesMap[c.branchId].members.push(c);
+        });
+
+        return Object.entries(branchesMap).map(([branchId, { branchName, members }]) => {
+          const totalSpend = members.reduce(
+            (acc, m) => acc + (m.lifetimeSpend || m.totalSpend || 0),
+            0
+          );
+          return {
+            branchId,
+            branchName,
+            memberCount: members.length,
+            totalSpend,
+            avgSpend: members.length > 0 ? Math.round(totalSpend / members.length) : 0,
+          };
+        });
       },
     }),
     {
