@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { toast } from './useToastStore';
 
+export interface ChatReaction {
+  emoji: string;
+  count: number;
+  userIds: string[];
+}
+
 export interface ChatPollOption {
   id: string;
   text: string;
@@ -20,7 +26,8 @@ export interface ChatMessage {
   id: string;
   brandId: string; // multi-tenant brand isolation
   branchId?: string; // optional: if branch-scoped
-  scope: 'brand' | 'branch';
+  recipientId?: string; // optional: if direct personal chat
+  scope: 'brand' | 'branch' | 'direct';
   senderId: string;
   senderName: string;
   senderUsername: string;
@@ -32,6 +39,7 @@ export interface ChatMessage {
   fileName?: string;
   isPinned?: boolean;
   poll?: ChatPoll;
+  reactions?: ChatReaction[];
   mentions?: string[];
   ticketId?: string;
   timestamp: string;
@@ -48,6 +56,13 @@ export interface TicketInspectionSession {
   isActive: boolean;
 }
 
+export interface HappeningNowStatus {
+  brandId: string;
+  text: string;
+  updatedAt: string;
+  updatedBy: string;
+}
+
 const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: 'msg-01',
@@ -60,6 +75,11 @@ const INITIAL_MESSAGES: ChatMessage[] = [
     senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
     text: '📌 PENGUMUMAN PENTING: Seluruh cabang diwajibkan menggunakan fitur Stok Opname fisik setiap hari Minggu sore.',
     isPinned: true,
+    reactions: [
+      { emoji: '🔥', count: 4, userIds: ['usr-cashier-01', 'usr-barista-01', 'usr-gm-01'] },
+      { emoji: '🙏', count: 3, userIds: ['usr-cashier-01', 'usr-owner-01'] },
+      { emoji: '🐷', count: 2, userIds: ['usr-barista-01'] },
+    ],
     timestamp: '2026-08-31T08:00:00Z',
   },
   {
@@ -74,6 +94,7 @@ const INITIAL_MESSAGES: ChatMessage[] = [
     senderAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
     text: 'Halo tim Barista GI @andi.barista, stok Fresh Milk Greenfield sisa 4 kotak, tolong restock dari gudang ya!',
     mentions: ['@andi.barista'],
+    reactions: [{ emoji: '☕', count: 2, userIds: ['usr-barista-01'] }],
     timestamp: '2026-08-31T09:15:00Z',
   },
   {
@@ -91,6 +112,7 @@ const INITIAL_MESSAGES: ChatMessage[] = [
     mediaType: 'image',
     fileName: 'bukti_ambil_susu.jpg',
     mentions: ['@siti.cashier'],
+    reactions: [{ emoji: '✨', count: 3, userIds: ['usr-cashier-01', 'usr-owner-01'] }],
     timestamp: '2026-08-31T09:18:00Z',
   },
   {
@@ -114,18 +136,34 @@ const INITIAL_MESSAGES: ChatMessage[] = [
       createdBy: 'Bambang Supriyadi (GM)',
       totalVotes: 3,
     },
+    reactions: [{ emoji: '🚀', count: 5, userIds: ['usr-owner-01', 'usr-cashier-01'] }],
     timestamp: '2026-08-31T10:30:00Z',
+  },
+  {
+    id: 'msg-05',
+    brandId: 'b-01',
+    recipientId: 'usr-cashier-01',
+    scope: 'direct',
+    senderId: 'usr-owner-01',
+    senderName: 'Parikesit (Owner)',
+    senderUsername: '@parikesit.owner',
+    senderRole: 'owner',
+    senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
+    text: 'Halo Siti, performa kasir kamu minggu ini tertinggi se-brand! Pertahankan ya, nanti ada bonus insentif dari manajemen.',
+    timestamp: '2026-08-31T11:00:00Z',
   },
 ];
 
 interface InternalChatState {
   messages: ChatMessage[];
   inspectionSessions: TicketInspectionSession[];
+  happeningNowStatuses: Record<string, HappeningNowStatus>;
 
   sendMessage: (params: {
     brandId: string;
     branchId?: string;
-    scope?: 'brand' | 'branch';
+    recipientId?: string;
+    scope?: 'brand' | 'branch' | 'direct';
     senderId: string;
     senderName: string;
     senderUsername?: string;
@@ -154,6 +192,8 @@ interface InternalChatState {
 
   votePoll: (messageId: string, optionId: string, userId: string) => void;
   togglePinMessage: (messageId: string) => void;
+  addReaction: (messageId: string, emoji: string, userId: string) => void;
+  setHappeningNow: (brandId: string, text: string, updatedBy: string) => void;
   authorizeSuperUserTicket: (params: {
     ticketId: string;
     brandId: string;
@@ -181,12 +221,21 @@ export const useInternalChatStore = create<InternalChatState>()(
           isActive: true,
         },
       ],
+      happeningNowStatuses: {
+        'b-01': {
+          brandId: 'b-01',
+          text: '🔥 HAPPENING NOW: Grand Opening Promo Beli 1 Gratis 1 di Seluruh Cabang s/d Pukul 22:00 WIB!',
+          updatedAt: '2026-08-31T08:00:00Z',
+          updatedBy: 'Parikesit (Owner)',
+        },
+      },
 
       sendMessage: (params) => {
         const newMsg: ChatMessage = {
           id: `msg-${Date.now().toString().slice(-6)}`,
           brandId: params.brandId,
           branchId: params.branchId,
+          recipientId: params.recipientId,
           scope: params.scope || 'brand',
           senderId: params.senderId,
           senderName: params.senderName,
@@ -199,6 +248,7 @@ export const useInternalChatStore = create<InternalChatState>()(
           fileName: params.fileName,
           mentions: params.mentions,
           ticketId: params.ticketId,
+          reactions: [],
           timestamp: new Date().toISOString(),
         };
 
@@ -233,6 +283,7 @@ export const useInternalChatStore = create<InternalChatState>()(
           senderAvatar: params.senderAvatar,
           text: `📊 Polling: ${params.question}`,
           poll,
+          reactions: [],
           timestamp: new Date().toISOString(),
         };
 
@@ -245,13 +296,11 @@ export const useInternalChatStore = create<InternalChatState>()(
         const updated = get().messages.map((m) => {
           if (m.id !== messageId || !m.poll) return m;
 
-          // Remove user previous vote from all options
           const cleanOptions = m.poll.options.map((opt) => ({
             ...opt,
             votes: opt.votes.filter((uid) => uid !== userId),
           }));
 
-          // Add user vote to selected option
           const targetOpt = cleanOptions.find((opt) => opt.id === optionId);
           if (targetOpt) {
             targetOpt.votes.push(userId);
@@ -279,6 +328,49 @@ export const useInternalChatStore = create<InternalChatState>()(
         );
         set({ messages: updated });
         toast.info('Status Pin Berubah', 'Pesan disematkan / dilepas.');
+      },
+
+      addReaction: (messageId, emoji, userId) => {
+        const updated = get().messages.map((m) => {
+          if (m.id !== messageId) return m;
+          const currentReactions = m.reactions ? [...m.reactions] : [];
+          const existing = currentReactions.find((r) => r.emoji === emoji);
+
+          if (existing) {
+            if (existing.userIds.includes(userId)) {
+              existing.userIds = existing.userIds.filter((uid) => uid !== userId);
+              existing.count = existing.userIds.length;
+            } else {
+              existing.userIds.push(userId);
+              existing.count = existing.userIds.length;
+            }
+          } else {
+            currentReactions.push({
+              emoji,
+              count: 1,
+              userIds: [userId],
+            });
+          }
+
+          return {
+            ...m,
+            reactions: currentReactions.filter((r) => r.count > 0),
+          };
+        });
+
+        set({ messages: updated });
+      },
+
+      setHappeningNow: (brandId, text, updatedBy) => {
+        const current = { ...get().happeningNowStatuses };
+        current[brandId] = {
+          brandId,
+          text,
+          updatedAt: new Date().toISOString(),
+          updatedBy,
+        };
+        set({ happeningNowStatuses: current });
+        toast.success('Status Happening Now Diperbarui', text);
       },
 
       authorizeSuperUserTicket: ({ ticketId, brandId, brandName, superUserId, ownerId, reason }) => {
