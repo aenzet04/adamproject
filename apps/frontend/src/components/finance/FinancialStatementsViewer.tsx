@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import type { ProfitLossReport } from '../../types';
 import { InvestorPitchDeckModal } from '../presentation/InvestorPitchDeckModal';
-import { exportToExcelCsv, triggerPrintPdf } from '../../lib/exportUtils';
+import { exportToExcelCsv, triggerPrintPdf, exportToPptxPresentation } from '../../lib/exportUtils';
 import { toast } from '../../stores/useToastStore';
 
 const SAMPLE_PL_DATA: ProfitLossReport = {
@@ -52,6 +52,37 @@ export const FinancialStatementsViewer: React.FC = () => {
     toast.success('Ekspor Excel Berhasil', 'Laporan laba rugi PSAK telah diunduh.');
   };
 
+  const handleExportPptx = () => {
+    exportToPptxPresentation('Presentasi_Laporan_Keuangan_Modula_2026', [
+      {
+        title: 'Executive Financial Summary',
+        subtitle: 'Laporan Konsolidasi Periode Agustus 2026 (PSAK Compliance)',
+        bulletPoints: [
+          `Total Revenue: Rp ${data.totalRevenue.toLocaleString('id-ID')} (+18.5% MoM Growth)`,
+          `Gross Profit Margin: Rp ${data.grossProfit.toLocaleString('id-ID')} (${Math.round((data.grossProfit / data.totalRevenue) * 100)}% GPM)`,
+          `Operating Expenses: Rp ${data.totalOperatingExpense.toLocaleString('id-ID')}`,
+          `Net Profit / EBITDA: Rp ${data.netIncome.toLocaleString('id-ID')} (${Math.round((data.netIncome / data.totalRevenue) * 100)}% Net Margin)`,
+        ],
+        metrics: [
+          { label: 'Total Revenue', value: `Rp ${(data.totalRevenue / 1000000).toFixed(1)} Jt` },
+          { label: 'Laba Bersih', value: `Rp ${(data.netIncome / 1000000).toFixed(1)} Jt` },
+          { label: 'Net Profit Margin', value: `${Math.round((data.netIncome / data.totalRevenue) * 100)}%` },
+        ],
+      },
+      {
+        title: 'Rincian Beban Pokok & Beban Operasional',
+        subtitle: 'Optimalisasi Efisiensi Biaya Bahan Baku & Payroll',
+        bulletPoints: [
+          `HPP Bahan Baku F&B: Rp ${data.cogs[0].amount.toLocaleString('id-ID')}`,
+          `Beban Gaji & Upah Staf: Rp ${data.operatingExpenses[0].amount.toLocaleString('id-ID')}`,
+          `Beban Sewa Outlet: Rp ${data.operatingExpenses[1].amount.toLocaleString('id-ID')}`,
+          'Target Efisiensi SCM: Pengurangan pemborosan deadstock hingga 4.2%',
+        ],
+      },
+    ]);
+    toast.success('Ekspor PPTX Berhasil', 'File presentasi PowerPoint telah diunduh.');
+  };
+
   return (
     <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen transition-colors space-y-6">
       {/* Header */}
@@ -71,7 +102,7 @@ export const FinancialStatementsViewer: React.FC = () => {
           </p>
         </div>
 
-        {/* Action Buttons: Slide Deck, Export Excel & Export PDF */}
+        {/* Action Buttons: Slide Deck, Export Excel, Export PPTX & Export PDF */}
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -80,6 +111,16 @@ export const FinancialStatementsViewer: React.FC = () => {
           >
             <span>🖥️</span>
             <span>Slide Presentasi Investor</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportPptx}
+            className="bg-purple-600 hover:bg-purple-500 text-white px-3.5 py-2 rounded-2xl text-xs font-bold shadow-sm flex items-center space-x-1.5 active:scale-95"
+            title="Download Slide PowerPoint (.pptx)"
+          >
+            <span>📑</span>
+            <span>Export PPTX</span>
           </button>
 
           <button
