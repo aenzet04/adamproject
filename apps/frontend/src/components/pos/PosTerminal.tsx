@@ -15,6 +15,10 @@ import { SplitBillModal } from './SplitBillModal';
 import { ShiftManagementModal } from '../shifts/ShiftManagementModal';
 import { TableManagementModal } from './TableManagementModal';
 import { CartDisplayOptionsModal } from './CartDisplayOptionsModal';
+import { PosCustomerSearchModal } from './PosCustomerSearchModal';
+import { CashierPinChangeModal } from '../auth/CashierPinChangeModal';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { useStaffStore } from '../../stores/useStaffStore';
 import type { Product, PaymentAllocation } from '../../types';
 
 interface CategorizedProduct extends Product {
@@ -329,20 +333,26 @@ export const PosTerminal: React.FC = () => {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isSplitBillOpen, setIsSplitBillOpen] = useState(false);
-  const [isQuickAddCustomerOpen, setIsQuickAddCustomerOpen] = useState(false);
+  const [isCustomerSearchModalOpen, setIsCustomerSearchModalOpen] = useState(false);
+  const [isPinChangeModalOpen, setIsPinChangeModalOpen] = useState(false);
   const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isCartOptionsOpen, setIsCartOptionsOpen] = useState(false);
+
+  const { currentUser } = useAuthStore();
+  const { employees } = useStaffStore();
+  const currentEmployee = employees.find((e) => e.id === currentUser.id || e.email === currentUser.email);
+
+  useEffect(() => {
+    if (currentUser.role === 'cashier' && currentEmployee?.isDefaultPin) {
+      setIsPinChangeModalOpen(true);
+    }
+  }, [currentUser, currentEmployee]);
 
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris' | 'edc_bca' | 'customer_credit' | 'transfer_bank'>('cash');
   const [tenderAmount, setTenderAmount] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
-  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
-
-  // Quick Customer Form
-  const [quickCustName, setQuickCustName] = useState('');
-  const [quickCustPhone, setQuickCustPhone] = useState('');
 
   const [lastCompletedOrder, setLastCompletedOrder] = useState<{
     orderNumber: string;
@@ -361,7 +371,7 @@ export const PosTerminal: React.FC = () => {
 
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
-  // Keyboard Shortcuts: F2 for Barcode, F3 for Customer, F4 for Shift, F8 for Table Hold, F9 for Payment
+  // Keyboard Shortcuts: F2 for Barcode, F3 for Customer CRM, F4 for Shift, F8 for Table Hold, F9 for Payment
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F2') {
@@ -369,7 +379,7 @@ export const PosTerminal: React.FC = () => {
         barcodeInputRef.current?.focus();
       } else if (e.key === 'F3') {
         e.preventDefault();
-        setIsQuickAddCustomerOpen(true);
+        setIsCustomerSearchModalOpen(true);
       } else if (e.key === 'F4') {
         e.preventDefault();
         setIsShiftModalOpen(true);
