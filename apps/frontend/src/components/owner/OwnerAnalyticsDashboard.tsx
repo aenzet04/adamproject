@@ -33,9 +33,26 @@ const FINANCIAL_LINE_DATA: DailyRevenuePoint[] = [
   { date: '2026-09-01', label: '01 Sep', revenue: 10800, transactions: 280 },
 ];
 
+const SALES_CHANNEL_SHARE = [
+  { channel: 'Dine-In (Makan di Tempat)', percent: 45, amount: 48600000, color: '#e11d48', icon: '🍽️' },
+  { channel: 'Take Away (Bungkus)', percent: 20, amount: 21600000, color: '#f59e0b', icon: '🛍️' },
+  { channel: 'GoFood', percent: 15, amount: 16200000, color: '#10b981', icon: '🛵' },
+  { channel: 'GrabFood', percent: 12, amount: 12960000, color: '#06b6d4', icon: '🟢' },
+  { channel: 'ShopeeFood', percent: 6, amount: 6480000, color: '#f97316', icon: '🟠' },
+  { channel: 'Maxim Food', percent: 2, amount: 2160000, color: '#eab308', icon: '🟡' },
+];
+
+const CATEGORY_SHARE = [
+  { category: 'Signature Artisanal Coffee', percent: 42, amount: 45360000, color: '#e11d48' },
+  { category: 'Main Courses & Rice Bowls', percent: 24, amount: 25920000, color: '#3b82f6' },
+  { category: 'Non-Coffee & Artisan Tea', percent: 22, amount: 23760000, color: '#10b981' },
+  { category: 'Pastry, Bakery & Snacks', percent: 12, amount: 12960000, color: '#a855f7' },
+];
+
 export const OwnerAnalyticsDashboard: React.FC = () => {
   const [periodFilter, setPeriodFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('all');
+  const [chartType, setChartType] = useState<'line' | 'bar' | 'pie' | 'donut' | 'table'>('line');
   const [hoveredPoint, setHoveredPoint] = useState<DailyRevenuePoint | null>(null);
   const [isInvestorDeckOpen, setIsInvestorDeckOpen] = useState(false);
 
@@ -51,7 +68,7 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
   const totalRevenueSum = FINANCIAL_LINE_DATA.reduce((sum, d) => sum + d.revenue * 1000, 0);
   const avgDailyRevenue = Math.round(totalRevenueSum / FINANCIAL_LINE_DATA.length);
 
-  // Generate SVG Points for Line and Gradient Area
+  // SVG Geometry for Line & Area
   const svgWidth = 800;
   const svgHeight = 220;
   const paddingX = 40;
@@ -86,7 +103,7 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Grafik garis standar laporan keuangan, real-time alert keterlambatan shift, dan AI matrix persediaan.
+            Visualisasi tren pendapatan multi-chart (Line, Bar, Pie, Donut), alert real-time, dan ranking top spender.
           </p>
         </div>
 
@@ -98,35 +115,30 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
             className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold px-4 py-2 rounded-2xl text-xs flex items-center space-x-2 shadow-lg shadow-red-600/30 active:scale-95 transition-all"
           >
             <span>🖥️</span>
-            <span>Buka Investor Pitch Deck</span>
-            <span className="bg-white/20 text-white text-[9px] font-mono px-1.5 py-0.2 rounded font-bold">
-              PITCH
-            </span>
+            <span>Buka Investor Pitch Deck (PPTX)</span>
           </button>
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-2xl flex items-center space-x-3 shadow-sm">
-            <span className="text-amber-500 text-lg">💎</span>
-            <div className="text-xs">
-              <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-1.5">
-                <span>Paket {subscriptionTier.toUpperCase()}</span>
-                <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded-full font-bold font-mono">
-                  Sisa {remainingMonths} Bulan
-                </span>
-              </div>
-              <div className="text-[10px] text-slate-400 font-mono">Masa Aktif s/d {expiryDate}</div>
-            </div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3.5 py-1.5 rounded-2xl flex items-center space-x-2 text-xs shadow-sm">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 font-mono">
+              {subscriptionTier}
+            </span>
+            <span className="text-slate-400 font-mono">({remainingMonths} Bln Sisa)</span>
           </div>
         </div>
       </div>
 
       {isInvestorDeckOpen && <InvestorPitchDeckModal onClose={() => setIsInvestorDeckOpen(false)} />}
 
-      {/* 2. REALTIME LIVE NOTIFICATIONS FEED */}
+      {/* 2. REAL-TIME ALERT NOTIFICATION FEED */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 md:p-5 shadow-sm space-y-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 font-mono">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+            </span>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 font-mono">
               🔔 Real-Time Live Feed Notifikasi Operasional Owner ({alerts.length})
             </h3>
           </div>
@@ -230,33 +242,56 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. CLEAN PROFESSIONAL FINANCIAL LINE CHART */}
+      {/* 4. MULTI-CHART INTERACTIVE REVENUE SUITE */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
         {/* Top Controls */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-lg">📈</span>
+              <span className="text-lg">📊</span>
               <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                Tren Pendapatan & Omzet Penjualan
+                Visualisasi Tren Pendapatan & Distribusi Channel
               </h3>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Grafik garis standar laporan keuangan periodik. Arahkan kursor ke titik garis untuk melihat omzet harian.
+              Pilih format visualisasi (Line Chart, Bar Chart, Channel Pie, Kategori Donut, atau Tabular).
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            {/* Chart Type Selector Switcher */}
+            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 text-xs font-semibold">
+              {[
+                { type: 'line', label: '📈 Line Trend' },
+                { type: 'bar', label: '📊 Bar Chart' },
+                { type: 'pie', label: '🥧 Channel Pie' },
+                { type: 'donut', label: '🍩 Kategori' },
+                { type: 'table', label: '📋 Tabel' },
+              ].map((c) => (
+                <button
+                  key={c.type}
+                  onClick={() => setChartType(c.type as any)}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                    chartType === c.type
+                      ? 'bg-red-600 text-white shadow-sm font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+
             {/* Period Filters */}
             <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 text-xs font-semibold">
               {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((p) => (
                 <button
                   key={p}
                   onClick={() => setPeriodFilter(p)}
-                  className={`px-3 py-1.5 rounded-lg capitalize transition-all ${
+                  className={`px-2.5 py-1.5 rounded-lg capitalize transition-all ${
                     periodFilter === p
-                      ? 'bg-red-600 text-white shadow-sm font-bold'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      ? 'bg-slate-900 dark:bg-slate-700 text-white shadow-sm font-bold'
+                      : 'text-slate-600 dark:text-slate-400'
                   }`}
                 >
                   {p === 'daily' ? 'Harian' : p === 'weekly' ? 'Mingguan' : p === 'monthly' ? 'Bulanan' : 'Tahunan'}
@@ -278,124 +313,266 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Hover Info Tooltip Banner */}
-        <div className="h-9 flex items-center justify-between px-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
-          {hoveredPoint ? (
-            <>
-              <div className="flex items-center space-x-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block" />
-                <span className="font-bold text-slate-800 dark:text-slate-100">
-                  Tanggal: {hoveredPoint.label} ({hoveredPoint.date})
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-400">Omzet: </span>
-                <span className="font-black text-red-600 dark:text-red-400 text-sm">
-                  Rp {(hoveredPoint.revenue * 1000).toLocaleString('id-ID')}
-                </span>
-                <span className="text-slate-400 ml-2">({hoveredPoint.transactions} Transaksi)</span>
-              </div>
-            </>
-          ) : (
-            <div className="text-slate-400 text-[11px]">
-              Arahkan kursor ke titik grafik di bawah untuk melihat rincian omzet harian.
+        {/* 1. LINE CHART VIEW */}
+        {chartType === 'line' && (
+          <div className="space-y-3">
+            <div className="h-9 flex items-center justify-between px-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
+              {hoveredPoint ? (
+                <>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block" />
+                    <span className="font-bold text-slate-800 dark:text-slate-100">
+                      Tanggal: {hoveredPoint.label} ({hoveredPoint.date})
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Omzet: </span>
+                    <span className="font-black text-red-600 dark:text-red-400 text-sm">
+                      Rp {(hoveredPoint.revenue * 1000).toLocaleString('id-ID')}
+                    </span>
+                    <span className="text-slate-400 ml-2">({hoveredPoint.transactions} Transaksi)</span>
+                  </div>
+                </>
+              ) : (
+                <div className="text-slate-400 text-[11px]">
+                  Arahkan kursor ke titik grafik garis di bawah untuk melihat rincian omzet harian.
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Clean SVG Line Chart */}
-        <div className="relative w-full overflow-hidden select-none">
-          <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-56 md:h-64">
-            <defs>
-              <linearGradient id="financialGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#e11d48" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#e11d48" stopOpacity="0.0" />
-              </linearGradient>
-            </defs>
+            <div className="relative w-full overflow-hidden select-none">
+              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-56 md:h-64">
+                <defs>
+                  <linearGradient id="financialGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#e11d48" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="#e11d48" stopOpacity="0.0" />
+                  </linearGradient>
+                </defs>
 
-            {/* Horizontal Grid Guidelines */}
-            {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
-              const y = paddingY + chartH * pct;
-              const val = Math.round(maxRevenue - (maxRevenue - minRevenue) * pct);
-              return (
-                <g key={i}>
-                  <line
-                    x1={paddingX}
-                    y1={y}
-                    x2={svgWidth - paddingX}
-                    y2={y}
-                    stroke="currentColor"
-                    className="text-slate-200 dark:text-slate-800/80"
-                    strokeDasharray="4 4"
-                    strokeWidth="1"
-                  />
-                  <text
-                    x={paddingX - 6}
-                    y={y + 3}
-                    textAnchor="end"
-                    className="fill-slate-400 text-[9px] font-mono"
-                  >
-                    {val >= 1000 ? `${(val / 1000).toFixed(1)}M` : `${val}k`}
-                  </text>
-                </g>
-              );
-            })}
+                {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
+                  const y = paddingY + chartH * pct;
+                  const val = Math.round(maxRevenue - (maxRevenue - minRevenue) * pct);
+                  return (
+                    <g key={i}>
+                      <line
+                        x1={paddingX}
+                        y1={y}
+                        x2={svgWidth - paddingX}
+                        y2={y}
+                        stroke="currentColor"
+                        className="text-slate-200 dark:text-slate-800/80"
+                        strokeDasharray="4 4"
+                        strokeWidth="1"
+                      />
+                      <text
+                        x={paddingX - 6}
+                        y={y + 3}
+                        textAnchor="end"
+                        className="fill-slate-400 text-[9px] font-mono"
+                      >
+                        {val >= 1000 ? `${(val / 1000).toFixed(1)}M` : `${val}k`}
+                      </text>
+                    </g>
+                  );
+                })}
 
-            {/* Gradient Area under the line */}
-            <path d={areaD} fill="url(#financialGradient)" />
+                <path d={areaD} fill="url(#financialGradient)" />
+                <path
+                  d={pathD}
+                  fill="none"
+                  stroke="#e11d48"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
 
-            {/* The Main Red Financial Trend Line */}
-            <path
-              d={pathD}
-              fill="none"
-              stroke="#e11d48"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-
-            {/* Interactive Data Points (Circles) */}
-            {points.map((p, idx) => {
-              const isHovered = hoveredPoint?.date === p.data.date;
-              return (
-                <g key={idx}>
-                  <circle
-                    cx={p.x}
-                    cy={p.y}
-                    r={isHovered ? 6 : 4}
-                    className={`transition-all cursor-pointer ${
-                      isHovered
-                        ? 'fill-red-600 stroke-white stroke-2'
-                        : 'fill-white dark:fill-slate-900 stroke-red-600 stroke-2 hover:r-6'
-                    }`}
-                    onMouseEnter={() => setHoveredPoint(p.data)}
-                    onMouseLeave={() => setHoveredPoint(null)}
-                  />
-                  {/* Date labels at the bottom */}
-                  {(idx % 2 === 0 || idx === points.length - 1) && (
-                    <text
-                      x={p.x}
-                      y={paddingY + chartH + 16}
-                      textAnchor="middle"
-                      className="fill-slate-400 text-[9px] font-mono"
+                {points.map((p, idx) => {
+                  const isHovered = hoveredPoint?.date === p.data.date;
+                  return (
+                    <g
+                      key={idx}
+                      className="cursor-pointer group"
+                      onMouseEnter={() => setHoveredPoint(p.data)}
+                      onMouseLeave={() => setHoveredPoint(null)}
                     >
-                      {p.data.label}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-          </svg>
-        </div>
+                      <circle
+                        cx={p.x}
+                        cy={p.y}
+                        r={isHovered ? 6 : 3.5}
+                        className={`transition-all duration-150 ${
+                          isHovered
+                            ? 'fill-red-600 stroke-white dark:stroke-slate-900 stroke-[2.5px]'
+                            : 'fill-red-500 dark:fill-red-400 group-hover:scale-125'
+                        }`}
+                      />
+                      <text
+                        x={p.x}
+                        y={paddingY + chartH + 16}
+                        textAnchor="middle"
+                        className={`text-[9px] font-mono transition-colors ${
+                          isHovered
+                            ? 'fill-red-600 dark:fill-red-400 font-bold'
+                            : 'fill-slate-400 dark:fill-slate-500'
+                        }`}
+                      >
+                        {p.data.label}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+          </div>
+        )}
+
+        {/* 2. BAR CHART VIEW */}
+        {chartType === 'bar' && (
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-15 gap-2 items-end h-60 pt-6">
+              {FINANCIAL_LINE_DATA.map((d, idx) => {
+                const heightPct = Math.round((d.revenue / maxRevenue) * 100);
+                return (
+                  <div
+                    key={idx}
+                    onMouseEnter={() => setHoveredPoint(d)}
+                    onMouseLeave={() => setHoveredPoint(null)}
+                    className="flex-1 flex flex-col items-center justify-end h-full group cursor-pointer"
+                  >
+                    <div className="text-[8px] font-mono text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap mb-1">
+                      Rp {(d.revenue / 1000).toFixed(1)}Jt
+                    </div>
+                    <div
+                      style={{ height: `${heightPct}%` }}
+                      className="w-full max-w-[28px] bg-gradient-to-t from-red-600 to-rose-400 rounded-t-xl group-hover:from-red-500 group-hover:to-amber-400 transition-all shadow-md group-hover:scale-105"
+                    />
+                    <span className="text-[9px] font-mono text-slate-400 mt-1.5 truncate">
+                      {d.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 3. CHANNEL PIE / DONUT BREAKDOWN VIEW */}
+        {(chartType === 'pie' || chartType === 'donut') && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center p-4">
+            {/* SVG Pie Representation */}
+            <div className="flex justify-center">
+              <div className="relative w-56 h-56 flex items-center justify-center">
+                <svg viewBox="0 0 36 36" className="w-52 h-52 -rotate-90 transform">
+                  {SALES_CHANNEL_SHARE.reduce(
+                    (acc, ch, i) => {
+                      const strokeDasharray = `${ch.percent} ${100 - ch.percent}`;
+                      const strokeDashoffset = acc.offset;
+                      acc.elements.push(
+                        <circle
+                          key={i}
+                          cx="18"
+                          cy="18"
+                          r={chartType === 'donut' ? '15.915' : '12'}
+                          fill="transparent"
+                          stroke={ch.color}
+                          strokeWidth={chartType === 'donut' ? '4.5' : '10'}
+                          strokeDasharray={strokeDasharray}
+                          strokeDashoffset={strokeDashoffset}
+                          className="transition-all duration-300 hover:opacity-80 cursor-pointer"
+                        />
+                      );
+                      acc.offset -= ch.percent;
+                      return acc;
+                    },
+                    { elements: [] as React.ReactNode[], offset: 25 }
+                  ).elements}
+                </svg>
+
+                {chartType === 'donut' && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase">Total Sales</span>
+                    <span className="text-sm font-black font-mono text-slate-800 dark:text-slate-100">
+                      100%
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Channel Metrics Legend */}
+            <div className="space-y-2">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-400 font-mono">
+                Kontribusi Kanal Penjualan (Sales Channel Share):
+              </h4>
+              <div className="space-y-2">
+                {SALES_CHANNEL_SHARE.map((ch) => (
+                  <div
+                    key={ch.channel}
+                    className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span
+                        style={{ backgroundColor: ch.color }}
+                        className="w-3 h-3 rounded-full shrink-0"
+                      />
+                      <span className="font-bold text-slate-700 dark:text-slate-300">
+                        {ch.icon} {ch.channel}
+                      </span>
+                    </div>
+                    <div className="text-right font-mono">
+                      <span className="font-bold text-slate-800 dark:text-slate-100 mr-2">
+                        {ch.percent}%
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        Rp {ch.amount.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 4. TABULAR DATA SUMMARY */}
+        {chartType === 'table' && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 text-[10px] uppercase">
+                  <th className="pb-2">Tanggal</th>
+                  <th className="pb-2">Keterangan Hari</th>
+                  <th className="pb-2 text-right">Volume Transaksi</th>
+                  <th className="pb-2 text-right">Total Omzet</th>
+                  <th className="pb-2 text-right">Rata-Rata / Transaksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                {FINANCIAL_LINE_DATA.map((d) => (
+                  <tr key={d.date} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <td className="py-2.5 font-bold text-slate-800 dark:text-slate-200">{d.date}</td>
+                    <td className="py-2.5 text-slate-500 font-sans">{d.label}</td>
+                    <td className="py-2.5 text-right text-slate-700 dark:text-slate-300">{d.transactions} Struk</td>
+                    <td className="py-2.5 text-right font-bold text-red-600 dark:text-red-400">
+                      Rp {(d.revenue * 1000).toLocaleString('id-ID')}
+                    </td>
+                    <td className="py-2.5 text-right text-slate-500">
+                      Rp {Math.round((d.revenue * 1000) / d.transactions).toLocaleString('id-ID')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* 5. TOP SPENDER LEADERBOARD & AI ADVISOR GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* TOP SPENDER LEADERBOARD */}
-        <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
-          <div className="flex justify-between items-center">
+      {/* 5. TOP SPENDERS & AI DEAD STOCK MATRIX */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top Spender Leaderboard */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
+          <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
             <div className="flex items-center space-x-2">
-              <span className="text-lg">🏆</span>
+              <span className="text-xl">🏆</span>
               <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
                 Top Spender Member Leaderboard
               </h3>
@@ -423,8 +600,8 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
                   <div className="text-xs font-bold font-mono text-red-600 dark:text-red-400">
                     Rp {c.lifetimeSpend.toLocaleString('id-ID')}
                   </div>
-                  <span className="text-[9px] bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 px-1.5 py-0.2 rounded font-mono font-bold">
-                    {c.tier} ({c.points} Pts)
+                  <span className="text-[9px] bg-red-100 dark:bg-red-950 text-red-600 font-mono px-1.5 rounded">
+                    {c.tier} • {c.points} Pts
                   </span>
                 </div>
               </div>
@@ -432,47 +609,39 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* AI STRATEGIC ADVISOR MATRIX */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
-          <div className="flex justify-between items-center">
+        {/* AI Dead Stock & Slow Moving Advisor */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
+          <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
             <div className="flex items-center space-x-2">
-              <span className="text-lg">🤖</span>
+              <span className="text-xl">🤖</span>
               <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                AI Strategic Advisor (Stars vs Deadstock Matrix)
+                AI Inventory Restock & Dead Stock Advisor
               </h3>
             </div>
-            <span className="bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-[10px] font-mono px-2 py-0.5 rounded-full font-bold">
-              AI Recommendation
+            <span className="text-[10px] bg-purple-100 dark:bg-purple-950 text-purple-600 font-bold font-mono px-2 py-0.5 rounded-full">
+              SCM Intelligence
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            <div className="bg-emerald-50 dark:bg-emerald-950/30 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/40 space-y-2">
-              <div className="flex items-center space-x-1.5 font-bold text-emerald-800 dark:text-emerald-300">
-                <span>⭐</span>
-                <span>Produk Bintang (Fast-Moving & High Margin)</span>
+          <div className="space-y-3 text-xs">
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/40 rounded-2xl space-y-1">
+              <div className="flex justify-between font-bold text-rose-800 dark:text-rose-200">
+                <span>⚠️ Sirup Hazelnut 750ml (Dead Stock &gt; 45 Hari)</span>
+                <span className="font-mono">Sisa: 24 Btl</span>
               </div>
-              <ul className="list-disc list-inside text-[11px] text-emerald-700 dark:text-emerald-400 space-y-1">
-                <li><b>Kopi Aren Nusantara Latte:</b> 840 cup/bulan (Margin 68%).</li>
-                <li><b>Croissant Butter Paris:</b> 420 pcs/bulan (Margin 62%).</li>
-              </ul>
-              <div className="text-[10px] bg-white dark:bg-slate-900 p-2 rounded-xl border border-emerald-300 dark:border-emerald-800 text-slate-700 dark:text-slate-300 mt-2">
-                💡 <b>Saran AI:</b> Pertahankan stok harian di atas 100 cup dan jadikan paket combo sarapan pagi.
-              </div>
+              <p className="text-[11px] text-rose-600 dark:text-rose-300">
+                Rekomendasi AI: Buat bundle promo <i>"Hazelnut Latte Special Combo"</i> dengan diskon 15% untuk melikuidasi persediaan sebelum kedaluwarsa.
+              </p>
             </div>
 
-            <div className="bg-rose-50 dark:bg-rose-950/30 p-4 rounded-2xl border border-rose-200 dark:border-rose-800/40 space-y-2">
-              <div className="flex items-center space-x-1.5 font-bold text-rose-800 dark:text-rose-300">
-                <span>⚠️</span>
-                <span>Deadstock & Produk Lambat Bergerak</span>
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl space-y-1">
+              <div className="flex justify-between font-bold text-emerald-800 dark:text-emerald-200">
+                <span>🔥 Fast-Moving: Susu Fresh Milk Diamond 1L</span>
+                <span className="font-mono text-emerald-600">Velocity: 45 Kotak/Hari</span>
               </div>
-              <ul className="list-disc list-inside text-[11px] text-rose-700 dark:text-rose-400 space-y-1">
-                <li><b>Stainless Tumbler 500ml:</b> 2 pcs/bulan (Stok mengendap 75 hari).</li>
-                <li><b>Cold Brew Bottle:</b> Turnaround 14 hari.</li>
-              </ul>
-              <div className="text-[10px] bg-white dark:bg-slate-900 p-2 rounded-xl border border-rose-300 dark:border-rose-800 text-slate-700 dark:text-slate-300 mt-2">
-                💡 <b>Saran AI:</b> Buat program *bundling* tumbler berhadiah free refill kopi 3x untuk melikuidasi persediaan.
-              </div>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-300">
+                Rekomendasi AI: Restock 120 Kotak sebelum hari Jumat untuk mencegah stockout saat weekend rush.
+              </p>
             </div>
           </div>
         </div>
