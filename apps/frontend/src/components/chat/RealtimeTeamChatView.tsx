@@ -422,12 +422,10 @@ export const RealtimeTeamChatView: React.FC = () => {
 
         {/* PINNED MESSAGE BANNER */}
         {pinnedMessage && (
-          <div className="bg-red-50 dark:bg-red-950/60 border-b border-red-200 dark:border-red-900/60 px-6 py-2 flex items-center justify-between text-xs text-red-900 dark:text-red-200 font-medium">
+          <div className="bg-red-50 dark:bg-red-950/40 border-b border-red-200 dark:border-red-800 px-6 py-2 flex items-center justify-between text-xs text-red-800 dark:text-red-300">
             <div className="flex items-center space-x-2 truncate">
-              <span className="text-base flex-shrink-0">📌</span>
-              <span className="font-bold font-mono text-[10px] bg-red-200 dark:bg-red-900 px-1.5 py-0.2 rounded">
-                PINNED
-              </span>
+              <span>📌</span>
+              <span className="font-bold font-mono text-[10px]">PESAN TERSEMAT:</span>
               <span className="truncate">{pinnedMessage.text}</span>
             </div>
             <button
@@ -441,24 +439,6 @@ export const RealtimeTeamChatView: React.FC = () => {
           </div>
         )}
 
-        {/* 3. MESSAGE STREAM VIEW */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-          {channelMessages.length === 0 && (
-            <div className="text-center p-12 space-y-3">
-              <span className="text-4xl">💬</span>
-              <h4 className="font-bold text-sm text-slate-700 dark:text-slate-300">
-                Belum ada pesan di percakapan ini
-              </h4>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                Kirim pesan pertama, bagikan foto dokumen, polling suara, atau mention rekan kerja Anda.
-              </p>
-            </div>
-          )}
-
-          {channelMessages.map((msg) => {
-            const isMe = msg.senderId === currentUser.id;
-
-            return (
               <div
                 key={msg.id}
                 className={`flex items-start space-x-3 ${isMe ? 'flex-row-reverse space-x-reverse' : ''}`}
