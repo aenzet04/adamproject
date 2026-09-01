@@ -205,7 +205,7 @@ export const FinancialStatementsViewer: React.FC = () => {
               1. Pendapatan Usaha (Revenues)
             </span>
             <div className="space-y-1.5">
-              {data.revenues.map((rev) => (
+              {data.revenues.map((rev: { code: string; name: string; amount: number }) => (
                 <div
                   key={rev.code}
                   className="flex justify-between items-center text-xs p-2 bg-slate-50 dark:bg-slate-950 rounded-xl"
@@ -234,7 +234,7 @@ export const FinancialStatementsViewer: React.FC = () => {
               2. Beban Pokok Penjualan (HPP / COGS)
             </span>
             <div className="space-y-1.5">
-              {data.cogs.map((c) => (
+              {data.cogs.map((c: { code: string; name: string; amount: number }) => (
                 <div
                   key={c.code}
                   className="flex justify-between items-center text-xs p-2 bg-slate-50 dark:bg-slate-950 rounded-xl"
@@ -271,7 +271,7 @@ export const FinancialStatementsViewer: React.FC = () => {
               3. Beban Operasional & Umum (OpEx)
             </span>
             <div className="space-y-1.5">
-              {data.operatingExpenses.map((exp) => (
+              {data.operatingExpenses.map((exp: { code: string; name: string; amount: number }) => (
                 <div
                   key={exp.code}
                   className="flex justify-between items-center text-xs p-2 bg-slate-50 dark:bg-slate-950 rounded-xl"
