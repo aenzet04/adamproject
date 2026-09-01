@@ -288,7 +288,36 @@ export const InventoryManagementView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center space-x-2 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <button
+            type="button"
+            onClick={() => {
+              setIsWarehouseTrialMode(!isWarehouseTrialMode);
+              if (!isWarehouseTrialMode) {
+                toast.info('Mode Trial Gudang Diaktifkan', 'Simulasi 14 hari aktif. Eksplorasi multi-gudang tanpa merusak stok riil.');
+              } else {
+                toast.info('Mode Trial Gudang Dinonaktifkan', 'Kembali ke mode operasional live gudang.');
+              }
+            }}
+            className={`px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center space-x-1.5 border shadow-sm ${
+              isWarehouseTrialMode
+                ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50 shadow-cyan-500/20 ring-1 ring-cyan-500'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800'
+            }`}
+          >
+            <span>🧪</span>
+            <span>Trial Gudang: {isWarehouseTrialMode ? 'ON' : 'OFF'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsAddWarehouseModalOpen(true)}
+            className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3.5 py-2.5 rounded-2xl text-xs shadow-sm flex items-center space-x-1.5"
+          >
+            <span>🏭</span>
+            <span>+ Gudang Baru</span>
+          </button>
+
           <button
             onClick={() => {
               setActiveTab('restock');
@@ -301,6 +330,33 @@ export const InventoryManagementView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* WAREHOUSE TRIAL BANNER */}
+      {isWarehouseTrialMode && (
+        <div className="p-3.5 bg-gradient-to-r from-cyan-950/60 to-slate-900 border border-cyan-500/40 rounded-2xl flex items-center justify-between text-xs text-cyan-300 shadow-md">
+          <div className="flex items-center space-x-2.5">
+            <span className="text-xl">🧪</span>
+            <div>
+              <div className="font-bold flex items-center space-x-1.5">
+                <span>Mode Trial Gudang & Multi-Warehouse Sandbox (14 Hari Bebas Akses)</span>
+                <span className="bg-cyan-400/20 text-cyan-300 text-[9px] font-mono px-2 py-0.5 rounded-full font-bold">
+                  SIMULASI AKTIF
+                </span>
+              </div>
+              <p className="text-[11px] text-cyan-400/80 mt-0.5">
+                Anda dapat menambahkan gudang konsinyasi, melakukan restock dummy, transfer tukar guling, dan audit stok opname tanpa mempengaruhi saldo fisik outlet riil.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsWarehouseTrialMode(false)}
+            className="text-cyan-400 hover:text-cyan-200 font-bold text-xs underline whitespace-nowrap ml-4"
+          >
+            Tutup Trial
+          </button>
+        </div>
+      )}
 
       {/* 2. TABS SWITCHER */}
       <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto scrollbar-none">
