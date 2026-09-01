@@ -83,7 +83,7 @@ export const BugTicketingCenter: React.FC = () => {
       category,
       severity,
       status: 'escalated_to_superuser',
-      reporterRole: currentUser.roleTitle,
+      reporterRole: currentUser.roleTitle || currentUser.role,
       reporterName: currentUser.name,
       branchName: 'Outlet Grand Indonesia',
       brandName: 'Kopi Nusantara Roastery',

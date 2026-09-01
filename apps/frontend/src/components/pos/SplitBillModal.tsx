@@ -494,7 +494,7 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
                   Tidak ditemukan konsumen dengan kata kunci tersebut.
                 </div>
               ) : (
-                filteredCrmSearch.map((c) => (
+                filteredCrmSearch.map((c: any) => (
                   <div
                     key={c.id}
                     onClick={() => handleSelectCrmCustomer(c)}
