@@ -406,7 +406,7 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
           </div>
 
           <div className="space-y-2.5">
-            {topSpenders.map((c, idx) => (
+            {topSpenders.map((c: any, idx: number) => (
               <div
                 key={c.id}
                 className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex justify-between items-center"
