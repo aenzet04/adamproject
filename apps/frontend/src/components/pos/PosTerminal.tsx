@@ -724,30 +724,22 @@ export const PosTerminal: React.FC = () => {
         {/* Customer, Table Number & Cart Display Layout Options Button */}
         <div className="p-3 border-b border-slate-200 dark:border-slate-800 space-y-2 bg-slate-50/70 dark:bg-slate-900">
           <div className="flex items-center space-x-2">
-            <div className="flex-1 relative">
-              <select
-                value={selectedMemberId}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  setSelectedMemberId(id);
-                  const member = customers.find((c) => c.id === id);
-                  if (member) {
-                    setCustomerInfo(member.name, tableNumber, member.id, member.tier);
-                    toast.info('Member Terpilih', `${member.name} (${member.tier})`);
-                  } else {
-                    setCustomerInfo('', tableNumber);
-                  }
-                }}
-                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2.5 py-1.5 text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-red-500 focus:outline-none"
-              >
-                <option value="">👤 Cari Member [F3]...</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.tier} - {c.points} Pts) - {c.phone}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsCustomerSearchModalOpen(true)}
+              className="flex-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-red-500 rounded-2xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 font-semibold flex items-center justify-between text-left shadow-sm group transition-all"
+              title="Cari atau Daftarkan Konsumen CRM (Shortcut F3)"
+            >
+              <div className="flex items-center space-x-1.5 truncate">
+                <span className="text-base">👤</span>
+                <span className="font-bold text-xs truncate">
+                  {customerName || 'Pilih Member CRM / Tamu [F3]'}
+                </span>
+              </div>
+              <span className="text-[10px] text-red-600 dark:text-red-400 font-mono font-bold group-hover:underline">
+                Cari ➔
+              </span>
+            </button>
 
             <input
               type="text"
