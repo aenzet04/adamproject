@@ -311,12 +311,6 @@ export const SuperUserDashboard: React.FC = () => {
                         </span>
                       )}
                     </td>
-                    <td className="py-3.5 text-right space-x-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleExtendSubscription(own.id, 12)}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-1 rounded-xl text-[10px]"
-                        title="Tambah 12 Bulan"
                     <td className="py-3.5 text-right space-x-1">
                       <select
                         onChange={(e) => {
@@ -330,8 +324,6 @@ export const SuperUserDashboard: React.FC = () => {
                         className="bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-bold px-2 py-1 rounded-xl text-[10px] focus:outline-none cursor-pointer"
                         title="Pilih Perpanjangan Langganan"
                       >
-                        +12 Bln
-                      </button>
                         <option value="" disabled>+ Perpanjang</option>
                         <option value="1">+1 Bulan (Bulanan)</option>
                         <option value="3">+3 Bulan (Triwulan)</option>

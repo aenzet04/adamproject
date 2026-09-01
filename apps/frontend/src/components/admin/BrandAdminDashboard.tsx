@@ -477,12 +477,10 @@ export const BrandAdminDashboard: React.FC = () => {
                 <div className="pt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-2 text-[10px]">
                   <div>
                     <span className="text-slate-400">Total Belanja:</span>
-                    <div className="font-bold font-mono text-red-600 dark:text-red-400">Rp {c.totalSpend.toLocaleString('id-ID')}</div>
                     <div className="font-bold font-mono text-red-600 dark:text-red-400">Rp {(c.totalSpend || c.lifetimeSpend || 0).toLocaleString('id-ID')}</div>
                   </div>
                   <div>
                     <span className="text-slate-400">Poin Loyalty:</span>
-                    <div className="font-bold font-mono text-emerald-600 dark:text-emerald-400">{c.loyaltyPoints} Poin</div>
                     <div className="font-bold font-mono text-emerald-600 dark:text-emerald-400">{(c.loyaltyPoints || c.points || 0)} Poin</div>
                   </div>
                 </div>

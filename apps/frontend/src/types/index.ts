@@ -172,7 +172,6 @@ export interface Product {
 export interface CartItem {
   productId: string;
   productName: string;
-  sku: string;
   sku?: string;
   quantity: number;
   unitPrice: number;
@@ -222,10 +221,8 @@ export interface ProfitLossReport {
 export interface CustomerReview {
   id: string;
   customerName: string;
-  orderNumber: string;
   orderNumber?: string;
   rating: number;
-  comments: string;
   comments?: string;
   comment?: string;
   createdAt: string;
