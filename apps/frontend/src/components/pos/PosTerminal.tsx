@@ -1401,6 +1401,20 @@ export const PosTerminal: React.FC = () => {
           onClose={() => setIsReceiptOpen(false)}
         />
       )}
+
+      {isCustomerSearchModalOpen && (
+        <PosCustomerSearchModal
+          onSelectCustomer={(cName, cPhone) => {
+            setCustomerInfo(cName, tableNumber);
+            setIsCustomerSearchModalOpen(false);
+          }}
+          onClose={() => setIsCustomerSearchModalOpen(false)}
+        />
+      )}
+
+      {isPinChangeModalOpen && (
+        <CashierPinChangeModal onClose={() => setIsPinChangeModalOpen(false)} />
+      )}
     </div>
   );
 };
