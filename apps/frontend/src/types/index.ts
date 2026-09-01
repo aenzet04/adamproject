@@ -221,7 +221,7 @@ export interface ProfitLossReport {
 export interface CustomerReview {
   id: string;
   customerName: string;
-  orderNumber: string;
+  orderNumber?: string;
   rating: number;
   comments?: string;
   comment?: string;
@@ -231,6 +231,7 @@ export interface CustomerReview {
   menuItemId?: string;
   menuItemName?: string;
   menuRating?: number;
+  sentiment?: 'positive' | 'neutral' | 'negative';
 }
 
 export interface ModuleLicense {
