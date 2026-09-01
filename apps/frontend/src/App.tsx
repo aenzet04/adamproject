@@ -219,6 +219,27 @@ export default function App() {
               </div>
             )}
 
+            {/* INVESTOR SLIDE DECK BUTTON */}
+            <div className="space-y-1 pt-1">
+              <button
+                type="button"
+                onClick={() => setIsInvestorDeckOpen(true)}
+                className={`w-full flex items-center ${
+                  isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+                } py-2 rounded-xl text-xs font-semibold transition-all bg-gradient-to-r from-red-600/10 via-rose-600/10 to-transparent hover:from-red-600/20 hover:to-rose-600/20 text-red-600 dark:text-red-400 border border-red-500/20`}
+                title="Slide Presentasi Investor PowerPoint"
+              >
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-base">🖥️</span>
+                  {!isSidebarCollapsed && <span>Investor Slide Deck</span>}
+                </div>
+                {!isSidebarCollapsed && (
+                  <span className="text-[9px] bg-red-600 text-white font-mono px-1.5 py-0.2 rounded-full font-bold">
+                    PITCH
+                  </span>
+                )}
+              </button>
+            </div>
             {/* INVESTOR SLIDE DECK BUTTON (KHUSUS OWNER & MANAJER) */}
             {(userRole === 'owner' || userRole === 'super_user' || (userRole as string) === 'general_manager' || (userRole as string) === 'branch_manager') && (
               <div className="space-y-1 pt-1">
