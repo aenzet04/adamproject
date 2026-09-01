@@ -439,10 +439,56 @@ export const RealtimeTeamChatView: React.FC = () => {
           </div>
         )}
 
-              <div
-                key={msg.id}
-                className={`flex items-start space-x-3 ${isMe ? 'flex-row-reverse space-x-reverse' : ''}`}
+        {/* DIRECT CHAT ADDON PAYWALL */}
+        {activeChannel === 'direct' && !isChatAddonActive ? (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="bg-white dark:bg-slate-900 border-2 border-red-500/40 rounded-3xl p-8 max-w-md text-center space-y-4 shadow-xl">
+              <div className="w-14 h-14 bg-red-100 dark:bg-red-950 text-red-600 rounded-2xl flex items-center justify-center text-3xl mx-auto">
+                🔒
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-slate-800 dark:text-slate-100">
+                  Modul Add-On Realtime Personal Chat
+                </h3>
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                  Fitur Personal DM 1-on-1 terenkripsi antar karyawan membutuhkan aktivasi lisensi Add-On Realtime Chat.
+                </p>
+              </div>
+              <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-mono font-bold text-red-600">
+                Biaya Add-On: Rp 49.000 / Bulan
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  unlockModule('chat');
+                  toast.success('Add-On Realtime Chat Diaktifkan', 'Fitur Personal DM kini dapat digunakan!');
+                }}
+                className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-2xl text-xs shadow-lg shadow-red-600/30 active:scale-95 transition-all"
               >
+                🔓 Buka Lisensi Add-On (Rp 49.000/bln)
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+            {channelMessages.length === 0 && (
+              <div className="text-center p-12 space-y-3">
+                <span className="text-4xl">💬</span>
+                <h4 className="font-bold text-sm text-slate-700 dark:text-slate-300">
+                  Belum ada pesan di percakapan ini
+                </h4>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Kirim pesan pertama, bagikan foto dokumen, polling suara, atau mention rekan kerja Anda.
+                </p>
+              </div>
+            )}
+            {channelMessages.map((msg) => {
+              const isMe = msg.senderId === currentUser.id;
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex items-start space-x-3 ${isMe ? 'flex-row-reverse space-x-reverse' : ''}`}
+                >
                 {/* Profile Photo */}
                 <img
                   src={
