@@ -223,12 +223,14 @@ export interface CustomerReview {
   customerName: string;
   orderNumber: string;
   rating: number;
-  comments: string;
+  comments?: string;
+  comment?: string;
   createdAt: string;
   branchId?: string;
   branchName: string;
   menuItemId?: string;
   menuItemName?: string;
+  menuRating?: number;
 }
 
 export interface ModuleLicense {
