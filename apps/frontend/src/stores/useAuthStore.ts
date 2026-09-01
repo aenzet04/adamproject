@@ -127,6 +127,9 @@ interface AuthState {
   loginWithOAuth: (provider: 'google' | 'github' | 'apple' | 'microsoft') => boolean;
   register: (profile: Partial<UserProfile> & { password?: string }) => boolean;
   quickLoginAs: (role: UserRole) => void;
+  switchRole: (role: UserRole) => void;
+  updateProfile: (updates: Partial<UserProfile>) => void;
+  updateAvatar: (avatarUrl: string) => void;
   logout: () => void;
 }
 
@@ -138,7 +141,6 @@ export const useAuthStore = create<AuthState>()(
       currentUser: INITIAL_PROFILES.owner,
 
       login: (email, passwordOrRole) => {
-        // Match profile by email or fallback to role
         let foundRole: UserRole = 'owner';
 
         if (passwordOrRole && Object.keys(INITIAL_PROFILES).includes(passwordOrRole as UserRole)) {
@@ -204,6 +206,19 @@ export const useAuthStore = create<AuthState>()(
           token: `quick-${role}-${Date.now()}`,
           currentUser: profile,
         });
+      },
+
+      switchRole: (role) => {
+        const profile = INITIAL_PROFILES[role] || INITIAL_PROFILES.owner;
+        set({ currentUser: profile });
+      },
+
+      updateProfile: (updates) => {
+        set({ currentUser: { ...get().currentUser, ...updates } });
+      },
+
+      updateAvatar: (avatarUrl) => {
+        set({ currentUser: { ...get().currentUser, avatarUrl } });
       },
 
       logout: () => {
