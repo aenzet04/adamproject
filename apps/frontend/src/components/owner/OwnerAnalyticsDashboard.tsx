@@ -5,6 +5,7 @@ import { useCustomerStore } from '../../stores/useCustomerStore';
 import { useModuleLicenseStore } from '../../stores/useModuleLicenseStore';
 import { useReviewStore } from '../../stores/useReviewStore';
 import { useShiftStore } from '../../stores/useShiftStore';
+import { InvestorPitchDeckModal } from '../presentation/InvestorPitchDeckModal';
 import { toast } from '../../stores/useToastStore';
 
 interface DailyRevenuePoint {
@@ -36,6 +37,7 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
   const [periodFilter, setPeriodFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('all');
   const [hoveredPoint, setHoveredPoint] = useState<DailyRevenuePoint | null>(null);
+  const [isInvestorDeckOpen, setIsInvestorDeckOpen] = useState(false);
 
   const { getTopSpenders } = useCustomerStore();
   const { subscriptionTier, remainingMonths, expiryDate } = useModuleLicenseStore();
@@ -88,20 +90,36 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Subscription Status Pill */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-2xl flex items-center space-x-3 shadow-sm w-full md:w-auto">
-          <span className="text-amber-500 text-lg">💎</span>
-          <div className="text-xs">
-            <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-1.5">
-              <span>Paket {subscriptionTier.toUpperCase()}</span>
-              <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded-full font-bold font-mono">
-                Sisa {remainingMonths} Bulan
-              </span>
+        {/* Action Button: Investor Slide Deck & Subscription Status */}
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <button
+            type="button"
+            onClick={() => setIsInvestorDeckOpen(true)}
+            className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold px-4 py-2 rounded-2xl text-xs flex items-center space-x-2 shadow-lg shadow-red-600/30 active:scale-95 transition-all"
+          >
+            <span>🖥️</span>
+            <span>Buka Investor Pitch Deck</span>
+            <span className="bg-white/20 text-white text-[9px] font-mono px-1.5 py-0.2 rounded font-bold">
+              PITCH
+            </span>
+          </button>
+
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-2xl flex items-center space-x-3 shadow-sm">
+            <span className="text-amber-500 text-lg">💎</span>
+            <div className="text-xs">
+              <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-1.5">
+                <span>Paket {subscriptionTier.toUpperCase()}</span>
+                <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded-full font-bold font-mono">
+                  Sisa {remainingMonths} Bulan
+                </span>
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono">Masa Aktif s/d {expiryDate}</div>
             </div>
-            <div className="text-[10px] text-slate-400 font-mono">Masa Aktif s/d {expiryDate}</div>
           </div>
         </div>
       </div>
+
+      {isInvestorDeckOpen && <InvestorPitchDeckModal onClose={() => setIsInvestorDeckOpen(false)} />}
 
       {/* 2. REALTIME LIVE NOTIFICATIONS FEED */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 md:p-5 shadow-sm space-y-3">
