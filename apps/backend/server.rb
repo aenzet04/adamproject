@@ -463,9 +463,22 @@ server.mount_proc '/api/v1/auth/send_email' do |req, res|
       html_content = payload['html'] || "<p>Token: #{payload['token']}</p>"
       token = payload['token'] || '000000'
 
+      # Send to Mailpit HTTP REST API on port 8025 (no browser CORS issue because Ruby is backend)
+      uri = URI('http://localhost:8025/api/v1/send')
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.open_timeout = 2
+      http.read_timeout = 2
       sent_success = false
       status_msg = ''
 
+      mailpit_req = Net::HTTP::Post.new(uri.path, { 'Content-Type' => 'application/json' })
+      mailpit_req.body = {
+        From: { Email: 'noreply@modula.id', Name: 'Modula Enterprise Security Core' },
+        To: [{ Email: to_email, Name: to_name }],
+        Subject: subject,
+        HTML: html_content,
+        Text: "#{subject}\n\nKode Token Otentikasi Anda: #{token}\n\nBerlaku 15 menit.\nPT Multi Industri Nusantara"
+      }.to_json
       # 1. Attempt HTTP REST API to Mailpit port 8025 (127.0.0.1)
       begin
         uri = URI('http://127.0.0.1:8025/api/v1/send')
@@ -473,6 +486,7 @@ server.mount_proc '/api/v1/auth/send_email' do |req, res|
         http.open_timeout = 2
         http.read_timeout = 2
 
+      mailpit_res = http.request(mailpit_req)
         mailpit_req = Net::HTTP::Post.new(uri.path, { 'Content-Type' => 'application/json' })
         mailpit_req.body = {
           From: { Email: 'noreply@modula.id', Name: 'Modula Enterprise Security Core' },
@@ -517,6 +531,9 @@ server.mount_proc '/api/v1/auth/send_email' do |req, res|
       res.status = 200
       res['Content-Type'] = 'application/json'
       res.body = {
+        status: 'success',
+        message: 'Email verifikasi berhasil dikirim ke Mailpit Inbox.',
+        mailpit_status: mailpit_res.code,
         status: sent_success ? 'success' : 'simulated',
         message: sent_success ? "Email verifikasi berhasil dikirim ke Mailpit Inbox (#{status_msg})." : "Email disimulasikan: #{status_msg}",
         token: token
@@ -526,6 +543,7 @@ server.mount_proc '/api/v1/auth/send_email' do |req, res|
       res['Content-Type'] = 'application/json'
       res.body = {
         status: 'simulated',
+        message: "Email dispatch simulation: #{e.message}",
         message: "Email dispatch: #{e.message}",
         token: token || '123456'
       }.to_json
