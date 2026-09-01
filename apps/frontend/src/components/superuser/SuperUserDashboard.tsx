@@ -352,7 +352,7 @@ export const SuperUserDashboard: React.FC = () => {
               </div>
 
               <div className="flex items-center space-x-2">
-                {brands.map((b) => (
+                {brands.map((b: Brand) => (
                   <button
                     key={b.id}
                     type="button"
@@ -398,7 +398,7 @@ export const SuperUserDashboard: React.FC = () => {
 
                   <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs">
                     <span className="font-mono text-purple-600 dark:text-purple-400 font-bold text-[11px]">
-                      Rp {mod.priceMonthly.toLocaleString('id-ID')}/bln
+                      Rp {(mod.priceMonthly || 0).toLocaleString('id-ID')}/bln
                     </span>
 
                     <button
@@ -602,7 +602,7 @@ export const SuperUserDashboard: React.FC = () => {
                   onChange={(e) => setTargetBrandIdForAudit(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2"
                 >
-                  {brands.map((b) => (
+                  {brands.map((b: Brand) => (
                     <option key={b.id} value={b.id}>
                       {b.name} ({b.industryType.toUpperCase()})
                     </option>
