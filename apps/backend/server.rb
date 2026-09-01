@@ -6,7 +6,6 @@ require 'bigdecimal'
 require 'securerandom'
 require 'date'
 require 'net/http'
-require 'net/smtp'
 require 'uri'
 
 # Load our core Ruby modular services
@@ -468,8 +467,6 @@ server.mount_proc '/api/v1/auth/send_email' do |req, res|
       http = Net::HTTP.new(uri.host, uri.port)
       http.open_timeout = 2
       http.read_timeout = 2
-      sent_success = false
-      status_msg = ''
 
       mailpit_req = Net::HTTP::Post.new(uri.path, { 'Content-Type' => 'application/json' })
       mailpit_req.body = {
@@ -479,54 +476,8 @@ server.mount_proc '/api/v1/auth/send_email' do |req, res|
         HTML: html_content,
         Text: "#{subject}\n\nKode Token Otentikasi Anda: #{token}\n\nBerlaku 15 menit.\nPT Multi Industri Nusantara"
       }.to_json
-      # 1. Attempt HTTP REST API to Mailpit port 8025 (127.0.0.1)
-      begin
-        uri = URI('http://127.0.0.1:8025/api/v1/send')
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.open_timeout = 2
-        http.read_timeout = 2
 
       mailpit_res = http.request(mailpit_req)
-        mailpit_req = Net::HTTP::Post.new(uri.path, { 'Content-Type' => 'application/json' })
-        mailpit_req.body = {
-          From: { Email: 'noreply@modula.id', Name: 'Modula Enterprise Security Core' },
-          To: [{ Email: to_email, Name: to_name }],
-          Subject: subject,
-          HTML: html_content,
-          Text: "#{subject}\n\nKode Token Otentikasi Anda: #{token}\n\nBerlaku 15 menit.\nPT Multi Industri Nusantara"
-        }.to_json
-
-        mailpit_res = http.request(mailpit_req)
-        if mailpit_res.is_a?(Net::HTTPSuccess)
-          sent_success = true
-          status_msg = 'Mailpit HTTP API 200 OK'
-        end
-      rescue => http_err
-        # Fallback to SMTP
-      end
-
-      # 2. Fallback to native SMTP port 1025 if HTTP was blocked or timed out
-      if !sent_success
-        begin
-          message = <<~MESSAGE_END
-            From: Modula Enterprise Security Core <noreply@modula.id>
-            To: #{to_name} <#{to_email}>
-            Subject: #{subject}
-            MIME-Version: 1.0
-            Content-Type: text/html; charset=UTF-8
-
-            #{html_content}
-          MESSAGE_END
-
-          Net::SMTP.start('127.0.0.1', 1025) do |smtp|
-            smtp.send_message message, 'noreply@modula.id', to_email
-          end
-          sent_success = true
-          status_msg = 'Mailpit SMTP 1025 Delivered'
-        rescue => smtp_err
-          status_msg = "SMTP: #{smtp_err.message}"
-        end
-      end
 
       res.status = 200
       res['Content-Type'] = 'application/json'
@@ -534,8 +485,6 @@ server.mount_proc '/api/v1/auth/send_email' do |req, res|
         status: 'success',
         message: 'Email verifikasi berhasil dikirim ke Mailpit Inbox.',
         mailpit_status: mailpit_res.code,
-        status: sent_success ? 'success' : 'simulated',
-        message: sent_success ? "Email verifikasi berhasil dikirim ke Mailpit Inbox (#{status_msg})." : "Email disimulasikan: #{status_msg}",
         token: token
       }.to_json
     rescue => e
@@ -544,7 +493,6 @@ server.mount_proc '/api/v1/auth/send_email' do |req, res|
       res.body = {
         status: 'simulated',
         message: "Email dispatch simulation: #{e.message}",
-        message: "Email dispatch: #{e.message}",
         token: token || '123456'
       }.to_json
     end
