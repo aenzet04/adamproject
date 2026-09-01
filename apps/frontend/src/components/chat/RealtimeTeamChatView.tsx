@@ -5,6 +5,7 @@ import { useInternalChatStore, ChatMessage } from '../../stores/useInternalChatS
 import { useTenantStore } from '../../stores/useTenantStore';
 import { useStaffStore, BrandEmployee } from '../../stores/useStaffStore';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useModuleLicenseStore } from '../../stores/useModuleLicenseStore';
 import { EnterpriseEmojiPicker } from './EnterpriseEmojiPicker';
 import { toast } from '../../stores/useToastStore';
 
@@ -12,6 +13,8 @@ export const RealtimeTeamChatView: React.FC = () => {
   const { currentBrand, currentBranch } = useTenantStore();
   const { currentUser } = useAuthStore();
   const { employees } = useStaffStore();
+  const { isModuleUnlocked, unlockModule } = useModuleLicenseStore();
+  const isChatAddonActive = isModuleUnlocked('chat');
   const {
     messages,
     sendMessage,
