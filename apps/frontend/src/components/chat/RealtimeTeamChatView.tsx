@@ -657,6 +657,7 @@ export const RealtimeTeamChatView: React.FC = () => {
           })}
           <div ref={chatBottomRef} />
         </div>
+      )}
 
         {/* 4. MENTION AUTOCOMPLETE POPUP */}
         {isMentionOpen && (
