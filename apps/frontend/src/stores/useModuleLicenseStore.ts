@@ -10,6 +10,7 @@ interface ModuleLicenseState {
   expiryDate: string;
   customReceiptFooter: string;
   modules: ModuleLicense[];
+  isModuleUnlocked: (moduleCode: string) => boolean;
   setSubscriptionTier: (tier: SubscriptionTier) => void;
   setCustomReceiptFooter: (footer: string) => void;
   toggleModuleLock: (moduleCode: string) => void;
@@ -61,23 +62,33 @@ const DEFAULT_MODULES: ModuleLicense[] = [
   },
   {
     id: 'mod-05',
-    code: 'hr',
-    name: 'SDM, Presisi Absensi & Payroll',
-    description: 'Radius geofence outlet, split shift kasir/barista, dan slip gaji terintegrasi kas.',
-    category: 'hr',
-    isUnlocked: false,
-    priceMonthly: 199000,
-    featuresIncluded: ['Geofencing GPS', 'Shift Management', 'Payroll Slip'],
+    code: 'chat',
+    name: 'Realtime Team Chat & DM',
+    description: 'Chat grup brand & cabang, direct personal message, polling live, dan emoji suite.',
+    category: 'core',
+    isUnlocked: true,
+    priceMonthly: 49000,
+    featuresIncluded: ['Brand Chat', 'Branch Chat', 'Personal DM', 'Polling & Lampiran Foto'],
   },
   {
     id: 'mod-06',
-    code: 'ai_advisor',
-    name: 'AI Executive Strategic Advisor',
-    description: 'Matriks produk Stars vs Deadstock dan rekomendasi margin profit otomatis.',
-    category: 'analytics',
+    code: 'hr',
+    name: 'Payroll, KPI & Mutasi Karyawan',
+    description: 'Manajemen hierarki karyawan, slip gaji, mutasi penugasan antar outlet, & shift check-in.',
+    category: 'enterprise',
+    isUnlocked: true,
+    priceMonthly: 179000,
+    featuresIncluded: ['Mutasi Cabang', 'Shift Planner', 'Gaji & Insentif', 'Log Disiplin'],
+  },
+  {
+    id: 'mod-07',
+    code: 'analytics',
+    name: 'Executive AI Advisor & Forecaster',
+    description: 'Prediksi omzet, analisa margin COGS, deteksi kebocoran kas, & rekomendasi restock.',
+    category: 'enterprise',
     isUnlocked: true,
     priceMonthly: 349000,
-    featuresIncluded: ['Matrix Bintang vs Mati', 'Rekomendasi Bundling', 'Prediksi Penjualan'],
+    featuresIncluded: ['AI Restock Prediction', 'Loss Detection', 'Margin Analysis', 'Weekly Forecast'],
   },
 ];
 
@@ -85,69 +96,55 @@ export const useModuleLicenseStore = create<ModuleLicenseState>()(
   persist(
     (set, get) => ({
       subscriptionTier: 'enterprise',
-      remainingMonths: 8,
-      expiryDate: '01 Mei 2027',
-      customReceiptFooter: 'Terima Kasih Atas Kunjungan Anda • IG: @kopinusantara.id',
+      remainingMonths: 12,
+      expiryDate: '2027-08-31',
+      customReceiptFooter: 'Terima kasih atas kunjungan Anda! Ikuti Instagram kami @kopinusantara.id',
       modules: DEFAULT_MODULES,
 
-      setSubscriptionTier: (tier) => {
-        let updatedModules = [...get().modules];
-        if (tier === 'starter') {
-          updatedModules = updatedModules.map((m) => ({
-            ...m,
-            isUnlocked: m.code === 'pos' || m.code === 'crm',
-          }));
-        } else if (tier === 'business') {
-          updatedModules = updatedModules.map((m) => ({
-            ...m,
-            isUnlocked: m.code === 'pos' || m.code === 'crm' || m.code === 'finance' || m.code === 'inventory',
-          }));
-        } else if (tier === 'enterprise') {
-          updatedModules = updatedModules.map((m) => ({
-            ...m,
-            isUnlocked: true,
-          }));
-        }
-        set({ subscriptionTier: tier, modules: updatedModules });
+      isModuleUnlocked: (moduleCode) => {
+        const mod = get().modules.find((m) => m.code === moduleCode);
+        return mod ? mod.isUnlocked : true;
       },
+
+      setSubscriptionTier: (tier) => set({ subscriptionTier: tier }),
 
       setCustomReceiptFooter: (footer) => set({ customReceiptFooter: footer }),
 
-      toggleModuleLock: (code) => {
+      toggleModuleLock: (moduleCode) => {
         set({
           modules: get().modules.map((m) =>
-            m.code === code ? { ...m, isUnlocked: !m.isUnlocked } : m
+            m.code === moduleCode ? { ...m, isUnlocked: !m.isUnlocked } : m
           ),
         });
       },
 
-      unlockModule: (code) => {
+      unlockModule: (moduleCode) => {
         set({
           modules: get().modules.map((m) =>
-            m.code === code ? { ...m, isUnlocked: true } : m
+            m.code === moduleCode ? { ...m, isUnlocked: true } : m
           ),
         });
       },
 
-      lockModule: (code) => {
+      lockModule: (moduleCode) => {
         set({
           modules: get().modules.map((m) =>
-            m.code === code ? { ...m, isUnlocked: false } : m
+            m.code === moduleCode ? { ...m, isUnlocked: false } : m
           ),
         });
       },
 
       resetToDefault: () => {
         set({
-          subscriptionTier: 'enterprise',
-          remainingMonths: 8,
-          expiryDate: '01 Mei 2027',
           modules: DEFAULT_MODULES,
+          subscriptionTier: 'enterprise',
+          remainingMonths: 12,
+          expiryDate: '2027-08-31',
         });
       },
     }),
     {
-      name: 'modula_saas_module_licenses',
+      name: 'modula_module_license_store',
     }
   )
 );
