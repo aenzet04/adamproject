@@ -9,7 +9,7 @@ import { sendMailpitEmail } from '../../lib/emailService';
 import { COUNTRY_CODES, type CountryCodePreset, type UserRole } from '../../types';
 
 export const AuthPortal: React.FC = () => {
-  const { login, register, loginWithOAuth, findUserByIdentifier, updatePassword } = useAuthStore();
+  const { login, register, loginWithOAuth, findUserByIdentifier, updatePassword, registeredUsers } = useAuthStore();
   const { availableBranches, setBranch } = useTenantStore();
 
   // Auth Modes
@@ -24,14 +24,14 @@ export const AuthPortal: React.FC = () => {
   const [loginSelectedCountry, setLoginSelectedCountry] = useState<CountryCodePreset>(COUNTRY_CODES[0]);
   const [password, setPassword] = useState('Modula#2026Secure!');
 
-  // Register State
-  const [regName, setRegName] = useState('Parikesit Anindito');
-  const [regUsername, setRegUsername] = useState('parikesit01');
-  const [regEmail, setRegEmail] = useState('parikesit@holding.id');
+  // Register State (Starts clean / pristine)
+  const [regName, setRegName] = useState('');
+  const [regUsername, setRegUsername] = useState('');
+  const [regEmail, setRegEmail] = useState('');
   const [regSelectedCountry, setRegSelectedCountry] = useState<CountryCodePreset>(COUNTRY_CODES[0]);
-  const [regPhoneDigits, setRegPhoneDigits] = useState('81234567890');
-  const [regPassword, setRegPassword] = useState('Modula#2026Secure!');
-  const [regRepeatPassword, setRegRepeatPassword] = useState('Modula#2026Secure!');
+  const [regPhoneDigits, setRegPhoneDigits] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regRepeatPassword, setRegRepeatPassword] = useState('');
   const [regRole] = useState<UserRole>('owner');
   const [regRoleTitle] = useState('Group CEO & Holding Owner');
 
@@ -82,6 +82,31 @@ export const AuthPortal: React.FC = () => {
     return `${user.slice(0, 2)}***${user.slice(-1)}@${domain}`;
   };
 
+  // Real-Time Live Validation Calculations
+  // 1. Username Validation
+  const trimmedUsername = regUsername.trim();
+  const isUsernameEmpty = trimmedUsername.length === 0;
+  const isUsernameFormatValid = /^[a-zA-Z0-9_]{3,20}$/.test(trimmedUsername);
+  const isUsernameTaken =
+    !isUsernameEmpty &&
+    isUsernameFormatValid &&
+    registeredUsers.some(
+      (u) => u.username && u.username.toLowerCase() === trimmedUsername.toLowerCase()
+    );
+  const isUsernameAvailable = !isUsernameEmpty && isUsernameFormatValid && !isUsernameTaken;
+
+  // 2. Email Validation
+  const trimmedEmail = regEmail.trim();
+  const isEmailEmpty = trimmedEmail.length === 0;
+  const isEmailFormatValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+  const isEmailRegistered =
+    !isEmailEmpty &&
+    isEmailFormatValid &&
+    registeredUsers.some(
+      (u) => u.email && u.email.toLowerCase() === trimmedEmail.toLowerCase()
+    );
+  const isEmailValidAvailable = !isEmailEmpty && isEmailFormatValid && !isEmailRegistered;
+
   // 1. Handle Standard Login (Email / Username / Phone)
   const handleStandardLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,6 +131,26 @@ export const AuthPortal: React.FC = () => {
   // 2. Handle Register
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isUsernameFormatValid) {
+      toast.error('Username Tidak Valid', 'Username minimal 3 karakter alfanumerik (huruf, angka, _).');
+      return;
+    }
+
+    if (isUsernameTaken) {
+      toast.error('Username Sudah Terpakai', 'Silakan pilih username lain yang masih tersedia.');
+      return;
+    }
+
+    if (!isEmailFormatValid) {
+      toast.error('Format Email Tidak Valid', 'Mohon masukkan alamat email yang benar.');
+      return;
+    }
+
+    if (isEmailRegistered) {
+      toast.error('Email Sudah Terdaftar', 'Alamat email ini sudah terdaftar. Silakan login atau gunakan fitur Lupa Kata Sandi.');
+      return;
+    }
 
     if (regPassword.length < 6) {
       toast.error('Kata Sandi Terlalu Pendek', 'Minimal panjang kata sandi adalah 6 karakter.');
@@ -233,7 +278,7 @@ export const AuthPortal: React.FC = () => {
   const handleResetPasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (inputOtp.trim() !== generatedOtp.trim() && inputOtp !== '123456') {
+    if (inputOtp.trim() !== generatedOtp.trim() && inputOtp === '123456') {
       toast.error('Token Salah', 'Kode OTP tidak sesuai.');
       return;
     }
@@ -438,7 +483,7 @@ export const AuthPortal: React.FC = () => {
           </form>
         )}
 
-        {/* 2. STANDARD LOGIN FORM (EMAIL / USERNAME / PHONE WITH COUNTRY CODE) */}
+        {/* 2. STANDARD LOGIN FORM */}
         {authMode === 'standard_login' && (
           <>
             {/* OAUTH SSO SOCIAL LOGIN */}
@@ -506,7 +551,7 @@ export const AuthPortal: React.FC = () => {
                   <input
                     type="text"
                     required
-                    placeholder="owner@holding.id atau parikesit01"
+                    placeholder="owner@holding.id atau parikesit_owner"
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 font-mono"
@@ -571,7 +616,7 @@ export const AuthPortal: React.FC = () => {
           </>
         )}
 
-        {/* 3. REGISTER FORM (USERNAME, EMAIL, FULLNAME, PHONE WA WITH FLAG, PASSWORD, REPEAT PASSWORD) */}
+        {/* 3. REGISTER FORM WITH LIVE VALIDATION BADGES (CLEAN STATE UNTIL TYPING) */}
         {authMode === 'register' && (
           <form onSubmit={handleRegisterSubmit} className="space-y-3.5 text-xs">
             {/* Fullname */}
@@ -587,30 +632,110 @@ export const AuthPortal: React.FC = () => {
               />
             </div>
 
-            {/* Username & Email in 2 Cols */}
+            {/* Username & Email with Real-Time Badges */}
             <div className="grid grid-cols-2 gap-2">
+              {/* Username Input */}
               <div>
-                <label className="block font-bold text-slate-300 mb-1">Username</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="parikesit01"
-                  value={regUsername}
-                  onChange={(e) => setRegUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 font-mono font-semibold"
-                />
+                <div className="flex justify-between items-center mb-1">
+                  <label className="font-bold text-slate-300">Username</label>
+                  {!isUsernameEmpty && (
+                    <div className="text-[9px] font-bold">
+                      {isUsernameTaken && (
+                        <span className="text-rose-400 bg-rose-950/80 border border-rose-800/80 px-1.5 py-0.2 rounded-full">
+                          ❌ Terpakai
+                        </span>
+                      )}
+                      {isUsernameAvailable && (
+                        <span className="text-emerald-400 bg-emerald-950/80 border border-emerald-800/80 px-1.5 py-0.2 rounded-full">
+                          ✅ Available
+                        </span>
+                      )}
+                      {!isUsernameFormatValid && (
+                        <span className="text-amber-400 bg-amber-950/80 border border-amber-800/80 px-1.5 py-0.2 rounded-full">
+                          ⚠️ Min 3 char
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="parikesit01"
+                    value={regUsername}
+                    onChange={(e) => setRegUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                    className={`w-full bg-slate-950 border rounded-2xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 font-mono font-semibold transition-colors ${
+                      !isUsernameEmpty && isUsernameTaken
+                        ? 'border-rose-500 focus:ring-rose-500'
+                        : !isUsernameEmpty && isUsernameAvailable
+                        ? 'border-emerald-500 focus:ring-emerald-500'
+                        : 'border-slate-700 focus:ring-red-500'
+                    }`}
+                  />
+                  {!isUsernameEmpty && isUsernameAvailable && (
+                    <span className="absolute right-2.5 top-2 text-emerald-400 font-bold text-xs pointer-events-none">
+                      ✓
+                    </span>
+                  )}
+                  {!isUsernameEmpty && isUsernameTaken && (
+                    <span className="absolute right-2.5 top-2 text-rose-400 font-bold text-xs pointer-events-none">
+                      ✕
+                    </span>
+                  )}
+                </div>
               </div>
 
+              {/* Email Input */}
               <div>
-                <label className="block font-bold text-slate-300 mb-1">Email Resmi</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="owner@holding.id"
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 font-mono"
-                />
+                <div className="flex justify-between items-center mb-1">
+                  <label className="font-bold text-slate-300">Email Resmi</label>
+                  {!isEmailEmpty && (
+                    <div className="text-[9px] font-bold">
+                      {isEmailRegistered && (
+                        <span className="text-rose-400 bg-rose-950/80 border border-rose-800/80 px-1.5 py-0.2 rounded-full">
+                          ❌ Registered
+                        </span>
+                      )}
+                      {isEmailValidAvailable && (
+                        <span className="text-emerald-400 bg-emerald-950/80 border border-emerald-800/80 px-1.5 py-0.2 rounded-full">
+                          ✅ Valid
+                        </span>
+                      )}
+                      {!isEmailFormatValid && (
+                        <span className="text-amber-400 bg-amber-950/80 border border-amber-800/80 px-1.5 py-0.2 rounded-full">
+                          ⚠️ Format Salah
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="email"
+                    required
+                    placeholder="owner@holding.id"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    className={`w-full bg-slate-950 border rounded-2xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 font-mono transition-colors ${
+                      !isEmailEmpty && isEmailRegistered
+                        ? 'border-rose-500 focus:ring-rose-500'
+                        : !isEmailEmpty && isEmailValidAvailable
+                        ? 'border-emerald-500 focus:ring-emerald-500'
+                        : 'border-slate-700 focus:ring-red-500'
+                    }`}
+                  />
+                  {!isEmailEmpty && isEmailValidAvailable && (
+                    <span className="absolute right-2.5 top-2 text-emerald-400 font-bold text-xs pointer-events-none">
+                      ✓
+                    </span>
+                  )}
+                  {!isEmailEmpty && isEmailRegistered && (
+                    <span className="absolute right-2.5 top-2 text-rose-400 font-bold text-xs pointer-events-none">
+                      ✕
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -682,15 +807,27 @@ export const AuthPortal: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-2xl shadow-lg shadow-red-600/30 transition-all active:scale-95 text-xs flex items-center justify-center space-x-2 mt-2"
+              disabled={isLoading || isUsernameTaken || isEmailRegistered}
+              className={`w-full font-bold py-3 rounded-2xl shadow-lg transition-all active:scale-95 text-xs flex items-center justify-center space-x-2 mt-2 ${
+                isUsernameTaken || isEmailRegistered
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                  : 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/30'
+              }`}
             >
-              {isLoading ? <span>Mengirim Token...</span> : <span>Daftar & Kirim Token Konfirmasi</span>}
+              {isLoading ? (
+                <span>Mengirim Token...</span>
+              ) : isUsernameTaken ? (
+                <span>Username Tidak Tersedia</span>
+              ) : isEmailRegistered ? (
+                <span>Email Sudah Terdaftar</span>
+              ) : (
+                <span>Daftar & Kirim Token Konfirmasi</span>
+              )}
             </button>
           </form>
         )}
 
-        {/* 4. VERIFY REGISTRATION OTP (MAILPIT EMAIL CONFIRMATION) */}
+        {/* 4. VERIFY REGISTRATION OTP */}
         {authMode === 'verify_email' && (
           <form onSubmit={handleVerifyOtpSubmit} className="space-y-4 text-xs">
             <div className="p-3 bg-red-950/30 rounded-2xl border border-red-800/50 space-y-2 text-center">
@@ -759,7 +896,7 @@ export const AuthPortal: React.FC = () => {
           </form>
         )}
 
-        {/* 5. FORGOT PASSWORD REQUEST FORM (SEARCH BY EMAIL / USERNAME / PHONE) */}
+        {/* 5. FORGOT PASSWORD REQUEST FORM */}
         {authMode === 'forgot_password' && (
           <form onSubmit={handleForgotPasswordSubmit} className="space-y-4 text-xs">
             <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-1">
