@@ -5,6 +5,8 @@ require 'json'
 require 'bigdecimal'
 require 'securerandom'
 require 'date'
+require 'net/http'
+require 'uri'
 
 # Load our core Ruby modular services
 require_relative 'engines/finance_engine/app/services/finance_engine/auto_posting_service'
