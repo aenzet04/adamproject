@@ -90,15 +90,6 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Subscription Status Pill */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-2xl flex items-center space-x-3 shadow-sm w-full md:w-auto">
-          <span className="text-amber-500 text-lg">💎</span>
-          <div className="text-xs">
-            <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-1.5">
-              <span>Paket {subscriptionTier.toUpperCase()}</span>
-              <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded-full font-bold font-mono">
-                Sisa {remainingMonths} Bulan
-              </span>
         {/* Action Button: Investor Slide Deck & Subscription Status */}
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <button
@@ -124,7 +115,6 @@ export const OwnerAnalyticsDashboard: React.FC = () => {
               </div>
               <div className="text-[10px] text-slate-400 font-mono">Masa Aktif s/d {expiryDate}</div>
             </div>
-            <div className="text-[10px] text-slate-400 font-mono">Masa Aktif s/d {expiryDate}</div>
           </div>
         </div>
       </div>
