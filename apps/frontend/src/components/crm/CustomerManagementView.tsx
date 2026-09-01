@@ -133,7 +133,7 @@ export const CustomerManagementView: React.FC = () => {
 
       {/* TOP SPENDER PODIUM CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {topSpenders.map((c, idx) => (
+        {topSpenders.map((c: any, idx: number) => (
           <div
             key={c.id}
             className={`p-5 rounded-3xl border flex flex-col justify-between shadow-sm relative overflow-hidden transition-all ${
@@ -183,7 +183,7 @@ export const CustomerManagementView: React.FC = () => {
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {branchReports.map((br) => (
+          {branchReports.map((br: any) => (
             <div
               key={br.branchId}
               className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1"
@@ -243,7 +243,7 @@ export const CustomerManagementView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
-              {filteredCustomers.map((c) => (
+              {filteredCustomers.map((c: any) => (
                 <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                   <td className="py-3 font-bold text-slate-800 dark:text-slate-100 font-sans">
                     <div>{c.name}</div>
