@@ -121,9 +121,29 @@ export interface User {
   isDefaultPin?: boolean;
 }
 
+export interface CountryCodePreset {
+  code: string;
+  dialCode: string;
+  name: string;
+  flag: string;
+  example: string;
+}
+
+export const COUNTRY_CODES: CountryCodePreset[] = [
+  { code: 'ID', dialCode: '+62', name: 'Indonesia', flag: '🇮🇩', example: '81234567890' },
+  { code: 'SG', dialCode: '+65', name: 'Singapura', flag: '🇸🇬', example: '81234567' },
+  { code: 'MY', dialCode: '+60', name: 'Malaysia', flag: '🇲🇾', example: '123456789' },
+  { code: 'US', dialCode: '+1', name: 'Amerika Serikat', flag: '🇺🇸', example: '2025550123' },
+  { code: 'AU', dialCode: '+61', name: 'Australia', flag: '🇦🇺', example: '412345678' },
+  { code: 'JP', dialCode: '+81', name: 'Jepang', flag: '🇯🇵', example: '9012345678' },
+  { code: 'GB', dialCode: '+44', name: 'Inggris', flag: '🇬🇧', example: '7911123456' },
+  { code: 'SA', dialCode: '+966', name: 'Arab Saudi', flag: '🇸🇦', example: '512345678' },
+];
+
 export interface UserProfile {
   id: string;
   name: string;
+  username?: string;
   email: string;
   role: UserRole;
   roleTitle?: string;
@@ -132,6 +152,7 @@ export interface UserProfile {
   brandId?: string;
   branchId?: string;
   phoneNumber?: string;
+  password?: string;
 }
 
 export interface ProductVariant {
