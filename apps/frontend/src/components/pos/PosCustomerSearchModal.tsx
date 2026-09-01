@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useCustomerStore, Customer } from '../../stores/useCustomerStore';
+import { useCustomerStore, CustomerMember } from '../../stores/useCustomerStore';
 import { useTenantStore } from '../../stores/useTenantStore';
 import { toast } from '../../stores/useToastStore';
 
@@ -15,7 +15,7 @@ export const PosCustomerSearchModal: React.FC<PosCustomerSearchModalProps> = ({
   onClose,
 }) => {
   const { customers, addCustomer } = useCustomerStore();
-  const { currentBranch, currentBrand } = useTenantStore();
+  const { currentBranch } = useTenantStore();
 
   const [query, setQuery] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
@@ -42,12 +42,11 @@ export const PosCustomerSearchModal: React.FC<PosCustomerSearchModalProps> = ({
       email: newEmail.trim() || undefined,
       branchId: currentBranch?.id || 'br-01',
       branchName: currentBranch?.name || 'Outlet Grand Indonesia',
-      brandId: currentBrand?.id || 'b-01',
       tier: 'Silver',
-      totalSpend: 0,
-      loyaltyPoints: 10, // Welcome points
-      joinDate: new Date().toISOString().split('T')[0],
-      totalTransactions: 0,
+      points: 10, // Welcome points
+      lifetimeSpend: 0,
+      visitCount: 0,
+      joinedDate: new Date().toISOString().split('T')[0],
     });
 
     toast.success('Member Baru Terdaftar', `${newName} (+10 Poin Welcome Bonus)`);
@@ -121,7 +120,7 @@ export const PosCustomerSearchModal: React.FC<PosCustomerSearchModalProps> = ({
                     key={c.id}
                     onClick={() => {
                       onSelectCustomer(c.name, c.phone);
-                      toast.success('Konsumen Terpilih', `${c.name} (${c.tier} - ${c.loyaltyPoints} Poin)`);
+                      toast.success('Konsumen Terpilih', `${c.name} (${c.tier} - ${c.points} Poin)`);
                       onClose();
                     }}
                     className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 hover:bg-red-50 dark:hover:bg-red-950/40 border border-slate-200 dark:border-slate-800 flex justify-between items-center cursor-pointer transition-all group"
@@ -142,13 +141,13 @@ export const PosCustomerSearchModal: React.FC<PosCustomerSearchModalProps> = ({
                         </span>
                       </div>
                       <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                        📱 {c.phone} • Belanja: Rp {c.totalSpend.toLocaleString('id-ID')}
+                        📱 {c.phone} • Belanja: Rp {c.lifetimeSpend.toLocaleString('id-ID')}
                       </div>
                     </div>
 
                     <div className="text-right">
                       <div className="font-bold font-mono text-emerald-600 dark:text-emerald-400 text-xs">
-                        {c.loyaltyPoints} Poin
+                        {c.points} Poin
                       </div>
                       <span className="text-[9px] text-slate-400 font-mono">Pilih Tamu ➔</span>
                     </div>
