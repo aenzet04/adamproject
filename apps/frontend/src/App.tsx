@@ -11,11 +11,11 @@ import { BrandAdminDashboard } from './components/admin/BrandAdminDashboard';
 import { CustomerManagementView } from './components/crm/CustomerManagementView';
 import { InventoryManagementView } from './components/inventory/InventoryManagementView';
 import { StockOpnameView } from './components/inventory/StockOpnameView';
+import { RealtimeTeamChatView } from './components/chat/RealtimeTeamChatView';
 import { CustomerReviewPage } from './components/reviews/CustomerReviewPage';
 import { BenchmarkViewer } from './components/benchmark/BenchmarkViewer';
 import { BugTicketingCenter } from './components/tickets/BugTicketingCenter';
 import { SoftDeleteManager } from './components/trash/SoftDeleteManager';
-import { BrandTeamChatWidget } from './components/chat/BrandTeamChatWidget';
 import { OnboardingWizardModal } from './components/onboarding/OnboardingWizardModal';
 import { InvestorPitchDeckModal } from './components/presentation/InvestorPitchDeckModal';
 import { AuthPortal } from './components/auth/AuthPortal';
@@ -31,7 +31,7 @@ import { toast } from './stores/useToastStore';
 export default function App() {
   const { isAuthenticated, currentUser, logout } = useAuthStore();
   const [activeModule, setActiveModule] = useState<
-    'pos' | 'crm' | 'finance' | 'inventory' | 'opname' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'benchmark' | 'tickets' | 'trash' | 'swagger' | 'database' | 'docs'
+    'pos' | 'crm' | 'chat' | 'inventory' | 'opname' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'benchmark' | 'tickets' | 'trash' | 'swagger' | 'database' | 'docs' | 'finance'
   >('owner');
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -144,7 +144,6 @@ export default function App() {
       <PageTransitionPreloader activeModuleKey={activeModule} />
       <ToastContainer />
       <MultiTierSwitcher />
-      <BrandTeamChatWidget />
       <OnboardingWizardModal />
 
       {/* Global Investor Presentation Slide Deck Modal */}
@@ -305,6 +304,32 @@ export default function App() {
               {!isSidebarCollapsed && isModuleLocked('pos') && <span className="text-[10px]">🔒</span>}
             </button>
 
+            {/* REALTIME TEAM CHAT (DEDICATED FULL VIEW ALA TELEGRAM/WHATSAPP) */}
+            <button
+              onClick={() => handleSelectModule('chat')}
+              className={`w-full flex items-center ${
+                isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+              } py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeModule === 'chat'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+              title="Realtime Team Chat (Brand & Cabang)"
+            >
+              <div className="flex items-center space-x-2.5">
+                <span className="text-base">💬</span>
+                {!isSidebarCollapsed && <span>Realtime Team Chat</span>}
+              </div>
+              {!isSidebarCollapsed && (
+                <div className="flex items-center space-x-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-mono px-1.5 rounded font-bold">
+                    LIVE
+                  </span>
+                </div>
+              )}
+            </button>
+
             <button
               onClick={() => handleSelectModule('crm')}
               className={`w-full flex items-center ${
@@ -341,7 +366,7 @@ export default function App() {
               {!isSidebarCollapsed && isModuleLocked('inventory') && <span className="text-[10px]">🔒</span>}
             </button>
 
-            {/* STOK OPNAME SIDEBAR MENU (HIGHLIGHTED) */}
+            {/* STOK OPNAME SIDEBAR MENU */}
             <button
               onClick={() => handleSelectModule('opname')}
               className={`w-full flex items-center ${
@@ -501,6 +526,7 @@ export default function App() {
           {activeModule === 'owner' && <OwnerAnalyticsDashboard />}
           {activeModule === 'brand_admin' && <BrandAdminDashboard />}
           {activeModule === 'superuser' && <SuperUserDashboard />}
+          {activeModule === 'chat' && <RealtimeTeamChatView />}
           {activeModule === 'crm' && (
             isModuleLocked('crm') ? (
               <div className="p-12 text-center space-y-4">
