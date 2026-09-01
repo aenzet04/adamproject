@@ -1,8 +1,59 @@
+export type UserRole =
+  | 'super_user'
+  | 'owner'
+  | 'general_manager'
+  | 'branch_manager'
+  | 'admin_brand'
+  | 'admin_system'
+  | 'warehouse_staff'
+  | 'cashier'
+  | 'staff'
+  | 'staff_it';
+
+export enum UserRoleEnum {
+  SUPER_USER = 'super_user',
+  OWNER = 'owner',
+  GENERAL_MANAGER = 'general_manager',
+  BRANCH_MANAGER = 'branch_manager',
+  ADMIN_BRAND = 'admin_brand',
+  ADMIN_SYSTEM = 'admin_system',
+  WAREHOUSE_STAFF = 'warehouse_staff',
+  CASHIER = 'cashier',
+  STAFF = 'staff',
+  STAFF_IT = 'staff_it',
+}
+
+export enum SalesChannelEnum {
+  DINE_IN = 'DINE_IN',
+  TAKE_AWAY = 'TAKE_AWAY',
+  GRABFOOD = 'GRABFOOD',
+  GOFOOD = 'GOFOOD',
+  SHOPEEFOOD = 'SHOPEEFOOD',
+  MAXIM = 'MAXIM',
+}
+
+export enum PaymentMethodEnum {
+  CASH = 'CASH',
+  QRIS = 'QRIS',
+  EDC_BCA = 'EDC_BCA',
+  EDC_MANDIRI = 'EDC_MANDIRI',
+  TRANSFER_BANK = 'TRANSFER_BANK',
+  CUSTOMER_CREDIT = 'CUSTOMER_CREDIT',
+}
+
+// REGEX CONSTANTS FOR VALIDATION
+export const REGEX_PATTERNS = {
+  EMAIL: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+  PHONE: /^(\+62|62|0)8[1-9][0-9]{6,10}$/,
+  PIN: /^[0-9]{4,6}$/,
+  SKU: /^[A-Z0-9-_]{3,20}$/,
+};
+
 export interface Tenant {
   id: string;
   name: string;
   subdomain: string;
-  legalEntityType: 'PT' | 'CV' | 'PERORANGAN';
+  legalEntityType: 'PT' | 'CV' | 'PERORANGAN' | 'PT' | 'CV';
   taxId?: string;
   status: 'active' | 'suspended';
   featureFlags: Record<string, boolean>;
@@ -54,116 +105,56 @@ export interface Warehouse {
   code: string;
   isPrimary: boolean;
   costingMethod: 'moving_average' | 'fifo' | 'standard';
+  isTrial?: boolean;
 }
 
-export type UserRole = 'super_user' | 'owner' | 'admin_brand' | 'cashier';
-
-export interface UserProfile {
+export interface User {
   id: string;
+  tenantId?: string;
+  brandId?: string;
+  branchId?: string;
   name: string;
   email: string;
   role: UserRole;
-  roleTitle: string;
-  avatarUrl: string;
-  tenantId: string;
-  brandId?: string;
-  branchId?: string;
-  phoneNumber?: string;
-  posPin?: string;
+  avatarUrl?: string;
+  pin?: string;
+  isDefaultPin?: boolean;
+}
+
+export interface ProductVariant {
+  id: string;
+  name: string;
+  sku: string;
+  barcode?: string;
+  sellingPrice: number;
+  standardCost: number;
 }
 
 export interface Product {
   id: string;
-  tenantId: string;
-  brandId: string;
-  name: string;
   sku: string;
-  barcode?: string;
-  productType: 'inventory' | 'non_inventory' | 'composite' | 'service';
-  uomBase: string;
+  name: string;
+  category: string;
   sellingPrice: number;
   standardCost: number;
-  trackInventory: boolean;
-  isActive: boolean;
-  stockOnHand?: number;
-  averageCost?: number;
-}
-
-export interface CategorizedProduct extends Product {
-  imageEmoji: string;
-  categoryName: string;
-}
-
-export interface CartItem {
-  productId: string;
-  productName: string;
-  sku?: string;
-  quantity: number;
-  unitPrice: number;
-  discountAmount: number;
-  discountRate?: number;
-  taxAmount?: number;
-  unitCogs?: number;
-  subtotal: number;
-  notes?: string;
-}
-
-export interface PaymentAllocation {
-  chartOfAccountId: string;
-  paymentMethod: 'cash' | 'edc_bca' | 'edc_mandiri' | 'qris' | 'transfer_bank' | 'customer_credit' | string;
-  amount: number;
-  changeGiven: number;
-  referenceNumber?: string;
-}
-
-export interface ProfitLossReport {
-  periodStart: string;
-  periodEnd: string;
-  revenues: Array<{ code: string; name: string; amount: number }>;
-  totalRevenue: number;
-  cogs: Array<{ code: string; name: string; amount: number }>;
-  totalCogs: number;
-  grossProfit: number;
-  operatingExpenses: Array<{ code: string; name: string; amount: number }>;
-  totalOperatingExpense: number;
-  netIncome: number;
-}
-
-export interface CustomerReview {
-  id: string;
-  branchId: string;
-  branchName: string;
-  customerName: string;
-  rating: number;
-  menuItemId?: string;
-  menuItemName?: string;
-  menuRating?: number;
-  comment: string;
-  createdAt: string;
-  sentiment: 'positive' | 'neutral' | 'negative';
+  currentStock: number;
+  unit: string;
+  barcode?: string;
+  imageUrl?: string;
+  variants?: ProductVariant[];
+  hasVariants?: boolean;
+  minStockAlert?: number;
+  costingMethod?: 'moving_average' | 'fifo' | 'standard';
 }
 
 export interface ModuleLicense {
   id: string;
+  code: string;
   name: string;
-  code: 'pos' | 'crm' | 'finance' | 'inventory' | 'hr' | 'audit' | 'ai_insights' | 'ai_advisor' | string;
-  icon?: string;
-  category?: string;
   description: string;
-  pricePerMonth?: number;
-  priceMonthly?: number;
+  category: 'core' | 'finance' | 'inventory' | 'enterprise';
   isUnlocked: boolean;
+  priceMonthly?: number;
+  priceAnnual?: number;
   featuresIncluded?: string[];
-  expiresAt?: string;
-}
-
-export interface SplitBillPerson {
-  personId: string;
-  personName: string;
-  assignedItems: Array<{ productId: string; quantity: number; amount: number }>;
-  customAmount: number;
-  isPaid: boolean;
-  paymentMethod?: string;
-  paidAmount?: number;
-  changeGiven?: number;
 }
