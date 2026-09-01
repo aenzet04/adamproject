@@ -459,8 +459,9 @@ export const PosTerminal: React.FC = () => {
     const backendResult = await submitPosCheckoutLive(payload);
     const orderNo = backendResult?.order?.order_number || `ORD-MODULA-${Date.now().toString().slice(-6)}`;
 
-    if (selectedMemberId) {
-      recordPurchase(selectedMemberId, grandTotal);
+    const matchedCustomer = customers.find((c) => c.name === customerName);
+    if (matchedCustomer) {
+      recordPurchase(matchedCustomer.id, grandTotal, Math.floor(grandTotal / 10000));
     }
 
     setLastCompletedOrder({
@@ -491,28 +492,6 @@ export const PosTerminal: React.FC = () => {
     setIsSplitBillOpen(false);
     handleFinalizeCheckout();
   };
-
-  const handleQuickCreateCustomer = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickCustName || !quickCustPhone) return;
-
-    const newCust = addCustomer({
-      name: quickCustName,
-      phone: quickCustPhone,
-      branchId: currentBranch?.id || 'br-01',
-      branchName: currentBranch?.name || 'Outlet Grand Indonesia',
-      tier: 'Bronze',
-    });
-
-    setSelectedMemberId(newCust.id);
-    setCustomerInfo(newCust.name, tableNumber, newCust.id, newCust.tier);
-    toast.success('Member Terdaftar (Shortcut F3)', `${newCust.name} siap ditransaksikan.`);
-    setIsQuickAddCustomerOpen(false);
-    setQuickCustName('');
-    setQuickCustPhone('');
-  };
-
-  const selectedMember = customers.find((c) => c.id === selectedMemberId);
 
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-3.5rem)] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors overflow-hidden">
