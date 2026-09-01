@@ -23,6 +23,7 @@ import { FaqView } from './components/public/FaqView';
 import { TermsAndConditionsView } from './components/public/TermsAndConditionsView';
 import { AboutUsView } from './components/public/AboutUsView';
 import { AuthPortal } from './components/auth/AuthPortal';
+import { UserProfileModal } from './components/profile/UserProfileModal';
 import { ToastContainer } from './components/atoms/ToastContainer';
 import { PageTransitionPreloader } from './components/atoms/PageTransitionPreloader';
 import { useTenantStore } from './stores/useTenantStore';
@@ -35,6 +36,7 @@ import { toast } from './stores/useToastStore';
 export default function App() {
   const { isAuthenticated, currentUser, logout } = useAuthStore();
   const [isLandingPageMode, setIsLandingPageMode] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [activeModule, setActiveModule] = useState<
     | 'pos'
     | 'crm'
@@ -243,8 +245,13 @@ export default function App() {
 
           <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block" />
 
-          {/* User Profile Chip */}
-          <div className="flex items-center space-x-2 pl-1">
+          {/* User Profile Chip (Clickable for Profile & Security) */}
+          <button
+            type="button"
+            onClick={() => setIsProfileModalOpen(true)}
+            className="flex items-center space-x-2 pl-1 hover:opacity-80 transition-opacity text-left cursor-pointer p-1 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800"
+            title="Buka Pengaturan Profil, SOP & Ubah Kata Sandi"
+          >
             <div className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
               {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
             </div>
@@ -256,9 +263,14 @@ export default function App() {
                 {currentUser.role.replace('_', ' ')}
               </div>
             </div>
-          </div>
+          </button>
         </div>
       </header>
+
+      {/* Profile & Security Modal */}
+      {isProfileModalOpen && (
+        <UserProfileModal onClose={() => setIsProfileModalOpen(false)} />
+      )}
 
       {/* MAIN CONTAINER */}
       <div className="flex-1 flex overflow-hidden relative">
