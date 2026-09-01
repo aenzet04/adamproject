@@ -125,10 +125,10 @@ interface InternalChatState {
   sendMessage: (params: {
     brandId: string;
     branchId?: string;
-    scope: 'brand' | 'branch';
+    scope?: 'brand' | 'branch';
     senderId: string;
     senderName: string;
-    senderUsername: string;
+    senderUsername?: string;
     senderRole: string;
     senderAvatar?: string;
     text: string;
@@ -142,10 +142,10 @@ interface InternalChatState {
   createPoll: (params: {
     brandId: string;
     branchId?: string;
-    scope: 'brand' | 'branch';
+    scope?: 'brand' | 'branch';
     senderId: string;
     senderName: string;
-    senderUsername: string;
+    senderUsername?: string;
     senderRole: string;
     senderAvatar?: string;
     question: string;
@@ -187,10 +187,10 @@ export const useInternalChatStore = create<InternalChatState>()(
           id: `msg-${Date.now().toString().slice(-6)}`,
           brandId: params.brandId,
           branchId: params.branchId,
-          scope: params.scope,
+          scope: params.scope || 'brand',
           senderId: params.senderId,
           senderName: params.senderName,
-          senderUsername: params.senderUsername,
+          senderUsername: params.senderUsername || `@${params.senderName.toLowerCase().replace(/\s+/g, '.')}`,
           senderRole: params.senderRole,
           senderAvatar: params.senderAvatar,
           text: params.text,
@@ -225,10 +225,10 @@ export const useInternalChatStore = create<InternalChatState>()(
           id: `msg-${Date.now().toString().slice(-6)}`,
           brandId: params.brandId,
           branchId: params.branchId,
-          scope: params.scope,
+          scope: params.scope || 'brand',
           senderId: params.senderId,
           senderName: params.senderName,
-          senderUsername: params.senderUsername,
+          senderUsername: params.senderUsername || `@${params.senderName.toLowerCase().replace(/\s+/g, '.')}`,
           senderRole: params.senderRole,
           senderAvatar: params.senderAvatar,
           text: `📊 Polling: ${params.question}`,
