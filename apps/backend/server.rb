@@ -378,6 +378,71 @@ server.mount_proc '/api/v1/dev/seed' do |req, res|
   }.to_json
 end
 
+# 11. FAQ & KNOWLEDGE BASE API
+server.mount_proc '/api/v1/faq' do |req, res|
+  enable_cors(res)
+  if req.request_method == 'OPTIONS'
+    res.status = 200
+    next
+  end
+
+  res.status = 200
+  res['Content-Type'] = 'application/json'
+  res.body = {
+    status: 'success',
+    platform: 'Modula Enterprise',
+    version: '3.2.0-enterprise',
+    categories: ['pos', 'finance', 'security', 'saas', 'hardware'],
+    timestamp: Time.now.iso8601
+  }.to_json
+end
+
+# 12. TERMS & CONDITIONS API
+server.mount_proc '/api/v1/terms' do |req, res|
+  enable_cors(res)
+  if req.request_method == 'OPTIONS'
+    res.status = 200
+    next
+  end
+
+  res.status = 200
+  res['Content-Type'] = 'application/json'
+  res.body = {
+    status: 'success',
+    contract_version: 'v3.2-Legal',
+    jurisdiction: 'Republik Indonesia',
+    sla_uptime: '99.9%',
+    privacy_protocol: 'Zero-Knowledge Isolation',
+    timestamp: Time.now.iso8601
+  }.to_json
+end
+
+# 13. ABOUT & CREATOR API
+server.mount_proc '/api/v1/about' do |req, res|
+  enable_cors(res)
+  if req.request_method == 'OPTIONS'
+    res.status = 200
+    next
+  end
+
+  res.status = 200
+  res['Content-Type'] = 'application/json'
+  res.body = {
+    app_name: 'Modula Enterprise',
+    creator: 'parikesitad-pm',
+    creator_github: 'https://github.com/parikesitad-pm',
+    target_repository: 'https://github.com/aenzet04/adamproject.git',
+    tech_stack: {
+      frontend: 'React 18.3 + TypeScript + Vite + TailwindCSS',
+      backend: 'Ruby 3.2 + Modular Rails Engines',
+      database: 'MariaDB / MySQL 8.0 InnoDB (utf8mb4)',
+      email_sandbox: 'Mailpit (SMTP: 1025, Web: 8025)'
+    },
+    release_version: 'v3.2.0-enterprise',
+    timestamp: Time.now.iso8601
+  }.to_json
+end
+
 trap('INT') { server.shutdown }
 puts "🚀 Ruby Enterprise API Server listening live on http://localhost:#{PORT}"
 server.start
