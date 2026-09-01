@@ -154,6 +154,7 @@ export interface Product {
   uomBase?: string;
   sellingPrice: number;
   standardCost: number;
+  averageCost?: number;
   currentStock?: number;
   stockOnHand?: number;
   minStockLevel?: number;
@@ -174,6 +175,8 @@ export interface CartItem {
   sku: string;
   quantity: number;
   unitPrice: number;
+  unitCogs?: number;
+  discountAmount?: number;
   subtotal: number;
   notes?: string;
   assignedPersonId?: string;
@@ -189,11 +192,15 @@ export interface PaymentAllocation {
 }
 
 export interface SplitBillPerson {
-  id: string;
-  name: string;
+  id?: string;
+  personId?: string;
+  name?: string;
+  personName?: string;
   phone?: string;
-  itemIds: string[];
-  totalAmount: number;
+  itemIds?: string[];
+  assignedItems?: Array<{ productId: string; quantity: number; amount: number }>;
+  totalAmount?: number;
+  customAmount?: number;
   isPaid: boolean;
   paymentMethod?: string;
 }
@@ -218,6 +225,7 @@ export interface CustomerReview {
   rating: number;
   comments: string;
   createdAt: string;
+  branchId?: string;
   branchName: string;
 }
 
