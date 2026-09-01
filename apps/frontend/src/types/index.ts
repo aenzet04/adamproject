@@ -53,7 +53,7 @@ export interface Tenant {
   id: string;
   name: string;
   subdomain: string;
-  legalEntityType: 'PT' | 'CV' | 'PERORANGAN' | 'PT' | 'CV';
+  legalEntityType: 'PT' | 'CV' | 'PERORANGAN';
   taxId?: string;
   status: 'active' | 'suspended';
   featureFlags: Record<string, boolean>;
@@ -121,6 +121,19 @@ export interface User {
   isDefaultPin?: boolean;
 }
 
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  roleTitle?: string;
+  avatarUrl?: string;
+  tenantId?: string;
+  brandId?: string;
+  branchId?: string;
+  phoneNumber?: string;
+}
+
 export interface ProductVariant {
   id: string;
   name: string;
@@ -132,19 +145,80 @@ export interface ProductVariant {
 
 export interface Product {
   id: string;
+  tenantId?: string;
+  brandId?: string;
   sku: string;
   name: string;
   category: string;
+  productType?: 'inventory' | 'service' | 'composite';
+  uomBase?: string;
   sellingPrice: number;
   standardCost: number;
-  currentStock: number;
-  unit: string;
+  currentStock?: number;
+  stockOnHand?: number;
+  minStockLevel?: number;
+  minStockAlert?: number;
+  unit?: string;
   barcode?: string;
   imageUrl?: string;
+  trackInventory?: boolean;
+  isActive?: boolean;
   variants?: ProductVariant[];
   hasVariants?: boolean;
-  minStockAlert?: number;
   costingMethod?: 'moving_average' | 'fifo' | 'standard';
+}
+
+export interface CartItem {
+  productId: string;
+  productName: string;
+  sku: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  notes?: string;
+  assignedPersonId?: string;
+  assignedPersonName?: string;
+}
+
+export interface PaymentAllocation {
+  chartOfAccountId: string;
+  paymentMethod: string;
+  amount: number;
+  changeGiven: number;
+  referenceNumber?: string;
+}
+
+export interface SplitBillPerson {
+  id: string;
+  name: string;
+  phone?: string;
+  itemIds: string[];
+  totalAmount: number;
+  isPaid: boolean;
+  paymentMethod?: string;
+}
+
+export interface ProfitLossReport {
+  periodStart: string;
+  periodEnd: string;
+  revenues: Array<{ code: string; name: string; amount: number }>;
+  totalRevenue: number;
+  cogs: Array<{ code: string; name: string; amount: number }>;
+  totalCogs: number;
+  grossProfit: number;
+  operatingExpenses: Array<{ code: string; name: string; amount: number }>;
+  totalOperatingExpense: number;
+  netIncome: number;
+}
+
+export interface CustomerReview {
+  id: string;
+  customerName: string;
+  orderNumber: string;
+  rating: number;
+  comments: string;
+  createdAt: string;
+  branchName: string;
 }
 
 export interface ModuleLicense {
@@ -152,7 +226,7 @@ export interface ModuleLicense {
   code: string;
   name: string;
   description: string;
-  category: 'core' | 'finance' | 'inventory' | 'enterprise';
+  category: 'core' | 'finance' | 'inventory' | 'enterprise' | 'hr' | 'analytics' | string;
   isUnlocked: boolean;
   priceMonthly?: number;
   priceAnnual?: number;
