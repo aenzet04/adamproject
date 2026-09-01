@@ -98,6 +98,14 @@ export const InventoryManagementView: React.FC = () => {
   const [vTerms, setVTerms] = useState<VendorAgent['paymentTerms']>('TOP_14');
   const [vAddress, setVAddress] = useState('');
 
+  // Add Warehouse & Trial Mode State
+  const [isAddWarehouseModalOpen, setIsAddWarehouseModalOpen] = useState(false);
+  const [isWarehouseTrialMode, setIsWarehouseTrialMode] = useState(false);
+  const [newWhName, setNewWhName] = useState('');
+  const [newWhCode, setNewWhCode] = useState('');
+  const [newWhBranchId, setNewWhBranchId] = useState('br-01');
+  const [newWhCosting, setNewWhCosting] = useState<'moving_average' | 'fifo' | 'standard'>('moving_average');
+
   // Search & Filters in Catalog
   const [catalogSearch, setCatalogSearch] = useState('');
   const [selectedCatFilter, setSelectedCatFilter] = useState('all');
