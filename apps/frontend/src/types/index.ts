@@ -228,6 +228,7 @@ export interface CustomerReview {
   branchId?: string;
   branchName: string;
   menuItemId?: string;
+  menuItemName?: string;
 }
 
 export interface ModuleLicense {
