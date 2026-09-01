@@ -5,6 +5,7 @@ import { useModuleLicenseStore, SubscriptionTier } from '../../stores/useModuleL
 import { useTenantStore } from '../../stores/useTenantStore';
 import { useInternalChatStore } from '../../stores/useInternalChatStore';
 import { toast } from '../../stores/useToastStore';
+import type { Brand } from '../../types';
 
 interface TenantOwnerAccount {
   id: string;
@@ -113,7 +114,8 @@ export const SuperUserDashboard: React.FC = () => {
     toggleModuleLock,
   } = useModuleLicenseStore();
 
-  const { brands } = useTenantStore();
+  const { availableBrands } = useTenantStore();
+  const brands = availableBrands || [];
   const { inspectionSessions, authorizeSuperUserTicket, isSuperUserAuthorizedForBrand } = useInternalChatStore();
 
   const [activeTab, setActiveTab] = useState<'owners' | 'modules' | 'billing' | 'privacy' | 'changelog'>('owners');
