@@ -217,31 +217,49 @@ export async function sendMailpitEmail(payload: EmailPayload): Promise<{ success
 </html>
   `;
 
-  // 1. Primary Dispatch: Call Ruby Backend API Proxy (Port 3001) to bypass browser CORS block on Mailpit
+  const dispatchPayload = JSON.stringify({
+    to: payload.to,
+    name: payload.name,
+    subject: payload.subject,
+    html: enterpriseHtml,
+    token: payload.token,
+  });
+
+  // 1. Primary Dispatch: Call Same-Origin Vite Proxy `/api/v1/auth/send_email`
   try {
-    const backendRes = await fetch('http://localhost:3001/api/v1/auth/send_email', {
+    const proxyRes = await fetch('/api/v1/auth/send_email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: payload.to,
-        name: payload.name,
-        subject: payload.subject,
-        html: enterpriseHtml,
-        token: payload.token,
-      }),
+      body: dispatchPayload,
     });
 
-    if (backendRes.ok) {
-      console.log('[EmailService] Enterprise email dispatched via Ruby API to Mailpit:', payload.token);
+    if (proxyRes.ok) {
+      console.log('[EmailService] Dispatched via Same-Origin Vite Proxy -> Ruby -> Mailpit:', payload.token);
+      return { success: true, token: payload.token };
+    }
+  } catch (proxyErr) {
+    // try direct Ruby backend
+  }
+
+  // 2. Direct Ruby Backend API (Port 3001)
+  try {
+    const directRubyRes = await fetch('http://127.0.0.1:3001/api/v1/auth/send_email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: dispatchPayload,
+    });
+
+    if (directRubyRes.ok) {
+      console.log('[EmailService] Dispatched via Direct 127.0.0.1:3001 -> Mailpit:', payload.token);
       return { success: true, token: payload.token };
     }
   } catch (backendErr) {
-    console.warn('[EmailService] Ruby backend proxy unavailable, executing fallback dispatch...');
+    // try Mailpit proxy
   }
 
-  // 2. Secondary Fallback: Direct Mailpit API call
+  // 3. Same-Origin Vite Proxy to Mailpit `/mailpit-api/api/v1/send`
   try {
-    await fetch('http://localhost:8025/api/v1/send', {
+    const mailpitProxyRes = await fetch('/mailpit-api/api/v1/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -249,11 +267,16 @@ export async function sendMailpitEmail(payload: EmailPayload): Promise<{ success
         To: [{ Email: payload.to, Name: payload.name }],
         Subject: payload.subject,
         HTML: enterpriseHtml,
-        Text: `${payload.subject}\n\nHalo ${payload.name},\nKode Token Verifikasi Resmi Anda adalah: ${payload.token}\n\nBerlaku selama 15 menit.\nModula Enterprise - PT Multi Industri Nusantara`,
+        Text: `${payload.subject}\n\nKode Token Anda: ${payload.token}`,
       }),
     });
-  } catch (err) {
-    console.log('[EmailService] Local simulation token:', payload.token);
+
+    if (mailpitProxyRes.ok) {
+      console.log('[EmailService] Dispatched via Vite Proxy -> Mailpit:', payload.token);
+      return { success: true, token: payload.token };
+    }
+  } catch (mailpitProxyErr) {
+    // fallback simulation
   }
 
   return { success: true, token: payload.token };
