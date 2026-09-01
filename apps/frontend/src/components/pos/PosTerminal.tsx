@@ -579,7 +579,7 @@ export const PosTerminal: React.FC = () => {
 
           {/* Quick Add Customer Shortcut Button (F3) */}
           <button
-            onClick={() => setIsQuickAddCustomerOpen(true)}
+            onClick={() => setIsCustomerSearchModalOpen(true)}
             className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-2xl text-xs font-bold flex items-center space-x-1.5 shadow-sm transition-all active:scale-95"
             title="Tambah / Cari Pelanggan Cepat [F3]"
           >
@@ -724,7 +724,7 @@ export const PosTerminal: React.FC = () => {
               type="text"
               placeholder="Meja #"
               value={tableNumber}
-              onChange={(e) => setCustomerInfo(customerName, e.target.value, selectedMemberId, selectedMember?.tier)}
+              onChange={(e) => setCustomerInfo(customerName, e.target.value)}
               className="w-20 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-red-500 focus:outline-none font-mono font-bold text-center shadow-sm"
             />
 
@@ -738,17 +738,18 @@ export const PosTerminal: React.FC = () => {
             </button>
           </div>
 
-          {selectedMember && (
+          {customerName && (
             <div className="bg-red-50 dark:bg-red-950/40 p-2 rounded-xl border border-red-200 dark:border-red-800/40 flex justify-between items-center text-xs">
               <div className="flex items-center space-x-1.5">
-                <span className="bg-red-600 text-white text-[9px] font-mono px-1.5 py-0.2 rounded font-bold">
-                  {selectedMember.tier}
-                </span>
-                <span className="font-bold text-red-900 dark:text-red-200">{selectedMember.name}</span>
+                <span className="font-bold text-red-900 dark:text-red-200">{customerName}</span>
               </div>
-              <div className="text-[11px] font-mono font-bold text-amber-600 dark:text-amber-400">
-                ⭐ {selectedMember.points} Pts
-              </div>
+              <button
+                type="button"
+                onClick={() => setCustomerInfo('', tableNumber)}
+                className="text-[10px] text-rose-500 font-bold hover:underline"
+              >
+                ✕ Hapus
+              </button>
             </div>
           )}
         </div>
