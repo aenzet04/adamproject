@@ -1126,65 +1126,6 @@ export const PosTerminal: React.FC = () => {
         <ShiftManagementModal onClose={() => setIsShiftModalOpen(false)} />
       )}
 
-      {/* QUICK ADD CUSTOMER SHORTCUT MODAL (F3) */}
-      {isQuickAddCustomerOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div className="flex items-center space-x-2">
-                <span className="text-red-600 font-bold">⌨️ [F3]</span>
-                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                  Tambah Member Cepat Kasir
-                </h3>
-              </div>
-              <button onClick={() => setIsQuickAddCustomerOpen(false)} className="text-slate-400 font-bold">✕</button>
-            </div>
-
-            <form onSubmit={handleQuickCreateCustomer} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Pelanggan</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Bpk. Irwan"
-                  value={quickCustName}
-                  onChange={(e) => setQuickCustName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">No. WhatsApp (081...)</label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="081234567890"
-                  value={quickCustPhone}
-                  onChange={(e) => setQuickCustPhone(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-mono"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsQuickAddCustomerOpen(false)}
-                  className="px-4 py-2 text-slate-500 font-semibold"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="bg-red-600 hover:bg-red-500 text-white font-bold px-5 py-2 rounded-xl shadow-md"
-                >
-                  Simpan & Pilih Member
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* PAYMENT MODAL */}
       {isPaymentModalOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
