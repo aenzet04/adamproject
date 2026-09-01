@@ -470,10 +470,12 @@ server.mount_proc '/api/v1/auth/send_email' do |req, res|
 
       mailpit_req = Net::HTTP::Post.new(uri.path, { 'Content-Type' => 'application/json' })
       mailpit_req.body = {
+        From: { Email: 'security@modula.id', Name: 'Modula Security Core' },
         From: { Email: 'noreply@modula.id', Name: 'Modula Enterprise Security Core' },
         To: [{ Email: to_email, Name: to_name }],
         Subject: subject,
         HTML: html_content,
+        Text: "#{subject}\n\nKode Token Anda: #{token}"
         Text: "#{subject}\n\nKode Token Otentikasi Anda: #{token}\n\nBerlaku 15 menit.\nPT Multi Industri Nusantara"
       }.to_json
 
