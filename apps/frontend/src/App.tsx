@@ -3,7 +3,7 @@ import { MultiTierSwitcher } from './components/navigation/MultiTierSwitcher';
 import { PosTerminal } from './components/pos/PosTerminal';
 import { FinancialStatementsViewer } from './components/finance/FinancialStatementsViewer';
 import { SwaggerApiViewer } from './components/swagger/SwaggerApiViewer';
-import { DatabaseManager } from './components/database/DatabaseManager';
+import { DatabaseManagerView } from './components/database/DatabaseManagerView';
 import { DocumentationViewer } from './components/docs/DocumentationViewer';
 import { OwnerAnalyticsDashboard } from './components/owner/OwnerAnalyticsDashboard';
 import { SuperUserDashboard } from './components/superuser/SuperUserDashboard';
@@ -18,6 +18,7 @@ import { BugTicketingCenter } from './components/tickets/BugTicketingCenter';
 import { SoftDeleteManager } from './components/trash/SoftDeleteManager';
 import { OnboardingWizardModal } from './components/onboarding/OnboardingWizardModal';
 import { InvestorPitchDeckModal } from './components/presentation/InvestorPitchDeckModal';
+import { PublicLandingPage } from './components/landing/PublicLandingPage';
 import { AuthPortal } from './components/auth/AuthPortal';
 import { ToastContainer } from './components/atoms/ToastContainer';
 import { PageTransitionPreloader } from './components/atoms/PageTransitionPreloader';
@@ -30,6 +31,7 @@ import { toast } from './stores/useToastStore';
 
 export default function App() {
   const { isAuthenticated, currentUser, logout } = useAuthStore();
+  const [isLandingPageMode, setIsLandingPageMode] = useState(false);
   const [activeModule, setActiveModule] = useState<
     'pos' | 'crm' | 'chat' | 'inventory' | 'opname' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'benchmark' | 'tickets' | 'trash' | 'swagger' | 'database' | 'docs' | 'finance'
   >('owner');
@@ -100,31 +102,51 @@ export default function App() {
           { id: 'br-03', tenantId: 't-01', brandId: 'b-02', name: 'Store Kelapa Gading', code: 'KG-01', branchType: 'store', geofenceRadiusMeters: 100, address: 'Mall Kelapa Gading 3', city: 'Jakarta Utara', phone: '021-4585123', operatingHours: '09:00 - 22:00 WIB', isActive: true },
         ],
         warehouses: [
-          { id: 'wh-01', tenantId: 't-01', branchId: 'br-01', name: 'Gudang Utama Barista GI', code: 'WH-GI-MAIN', isPrimary: true, costingMethod: 'moving_average' },
-          { id: 'wh-02', tenantId: 't-01', branchId: 'br-02', name: 'Gudang Outlet Senopati', code: 'WH-SNP-MAIN', isPrimary: true, costingMethod: 'moving_average' },
+          { id: 'wh-01', tenantId: 't-01', branchId: 'br-01', name: 'Gudang Utama Raw Material', code: 'WH-RM-01', isPrimary: true, costingMethod: 'moving_average' },
+          { id: 'wh-02', tenantId: 't-01', branchId: 'br-01', name: 'Gudang Packaging & Supplies', code: 'WH-PKG-02', isPrimary: false, costingMethod: 'moving_average' },
+          { id: 'wh-03', tenantId: 't-01', branchId: 'br-02', name: 'Gudang Outlet Senopati', code: 'WH-SNP-01', isPrimary: true, costingMethod: 'fifo' },
         ],
       });
     }
-  }, [setHierarchicalData, theme, setTheme, currentTenant]);
+  }, [theme, currentTenant]);
 
   if (isGuestReviewMode) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col justify-between">
+      <>
+        <ToastContainer />
         <CustomerReviewPage />
-        <div className="text-center pb-4 text-xs text-slate-500">
-          <button
-            onClick={() => setIsGuestReviewMode(false)}
-            className="text-red-400 font-bold hover:underline"
-          >
-            ← Kembali ke Modula App Dashboard
-          </button>
-        </div>
-      </div>
+      </>
+    );
+  }
+
+  // PUBLIC LANDING PAGE AT "/"
+  if (isLandingPageMode) {
+    return (
+      <>
+        <ToastContainer />
+        <PublicLandingPage onEnterApp={() => setIsLandingPageMode(false)} />
+      </>
     );
   }
 
   if (!isAuthenticated) {
-    return <AuthPortal />;
+    return (
+      <>
+        <ToastContainer />
+        <div className="relative">
+          <div className="absolute top-4 right-4 z-50">
+            <button
+              type="button"
+              onClick={() => setIsLandingPageMode(true)}
+              className="bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-700 px-4 py-2 rounded-2xl text-xs font-bold transition-all"
+            >
+              🌐 Lihat Landing Page & Harga
+            </button>
+          </div>
+          <AuthPortal />
+        </div>
+      </>
+    );
   }
 
   const isModuleLocked = (code: string) => {
@@ -132,96 +154,152 @@ export default function App() {
     return mod ? !mod.isUnlocked : false;
   };
 
-  const userRole = currentUser.role;
-
-  const handleSelectModule = (mod: any) => {
+  const handleSelectModule = (mod: typeof activeModule) => {
     setActiveModule(mod);
     setIsMobileSidebarOpen(false);
   };
 
+  const userRole = currentUser.role;
+  const isSuperUser = userRole === 'super_user';
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors relative">
-      <PageTransitionPreloader activeModuleKey={activeModule} />
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-100 dark:bg-slate-950 font-sans transition-colors duration-200">
+      <PageTransitionPreloader activePath={activeModule} />
       <ToastContainer />
-      <MultiTierSwitcher />
       <OnboardingWizardModal />
 
-      {/* Global Investor Presentation Slide Deck Modal */}
-      {isInvestorDeckOpen && <InvestorPitchDeckModal onClose={() => setIsInvestorDeckOpen(false)} />}
+      {isInvestorDeckOpen && (
+        <InvestorPitchDeckModal onClose={() => setIsInvestorDeckOpen(false)} />
+      )}
 
-      {/* Floating Mobile Sidebar Toggle Button */}
-      <button
-        onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-        className="md:hidden fixed bottom-4 left-4 z-50 bg-red-600 hover:bg-red-500 text-white p-3.5 rounded-full shadow-2xl shadow-red-600/50 flex items-center justify-center transition-all active:scale-90"
-        title="Buka Menu Modul"
-      >
-        <span className="text-base">{isMobileSidebarOpen ? '✕' : '☰'}</span>
-      </button>
+      {/* TOPBAR NAVIGATION */}
+      <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-4 flex items-center justify-between z-30 shrink-0 shadow-sm">
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+            className="md:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            ☰
+          </button>
+          <MultiTierSwitcher />
+        </div>
 
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* MOBILE SIDEBAR BACKDROP */}
-        {isMobileSidebarOpen && (
-          <div
-            onClick={() => setIsMobileSidebarOpen(false)}
-            className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-40"
-          />
-        )}
+        {/* Top bar right items */}
+        <div className="flex items-center space-x-2.5">
+          <button
+            type="button"
+            onClick={() => setIsLandingPageMode(true)}
+            className="hidden sm:flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700"
+            title="Buka Landing Page Publik & Katalog Harga"
+          >
+            <span>🌐</span>
+            <span>Landing Page</span>
+          </button>
 
-        {/* LEFT SIDEBAR NAVIGATION (AUTOHIDE / COLLAPSIBLE ALA GEMINI CHATGPT) */}
+          <button
+            type="button"
+            onClick={() => openOnboarding()}
+            className="hidden sm:flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700"
+            title="Setup Ulang Identitas Bisnis"
+          >
+            <span>🧙‍♂️</span>
+            <span>Setup Bisnis</span>
+          </button>
+
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:scale-105 transition-all text-xs"
+            title="Ubah Tema"
+          >
+            {theme === 'dark' ? '☀️ Terang' : '🌙 Gelap'}
+          </button>
+
+          <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block" />
+
+          {/* User Profile Chip */}
+          <div className="flex items-center space-x-2 pl-1">
+            <div className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+              {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+            </div>
+            <div className="hidden sm:block text-left">
+              <div className="font-bold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[120px]">
+                {currentUser.name}
+              </div>
+              <div className="text-[10px] text-red-600 dark:text-red-400 font-mono capitalize">
+                {currentUser.role.replace('_', ' ')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* MAIN CONTAINER */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* SIDEBAR NAVIGATION */}
         <aside
-          className={`fixed md:relative top-0 bottom-0 left-0 z-40 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-2.5 transition-all duration-300 shadow-xl md:shadow-sm overflow-y-auto ${
-            isMobileSidebarOpen
-              ? 'translate-x-0 w-64'
-              : '-translate-x-full md:translate-x-0'
-          } ${isSidebarCollapsed ? 'md:w-16' : 'md:w-64'}`}
+          className={`
+            fixed md:static inset-y-0 left-0 z-40
+            ${isSidebarCollapsed ? 'w-16' : 'w-64'}
+            bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800
+            transition-all duration-300 ease-in-out flex flex-col justify-between p-3
+            ${isMobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}
+          `}
         >
-          <div className="space-y-1 pt-10 md:pt-0">
-            {/* AUTOHIDE / COLLAPSE TOGGLE BUTTON (TOP OF SIDEBAR) */}
-            <div className="hidden md:flex justify-between items-center px-1 mb-2">
-              {!isSidebarCollapsed && (
-                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
-                  Modula Menu
-                </span>
-              )}
+          <div className="space-y-4 overflow-y-auto pr-1">
+            {/* Collapse Toggle */}
+            <div className="hidden md:flex justify-end">
               <button
-                type="button"
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition-all mx-auto"
-                title={isSidebarCollapsed ? 'Buka Sidebar (Expand)' : 'Sembunyikan Sidebar (Collapse ala Gemini)'}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                title={isSidebarCollapsed ? 'Buka Sidebar' : 'Perkecil Sidebar'}
               >
-                <span className="text-xs">{isSidebarCollapsed ? '➔' : '❮'}</span>
+                {isSidebarCollapsed ? '➔' : '⬅'}
               </button>
             </div>
 
-            {/* EXECUTIVE & MANAGEMENT */}
-            {(userRole === 'owner' || userRole === 'super_user') && (
+            {/* 1. EXECUTIVE SUITE GROUP */}
+            {(userRole === 'owner' || isSuperUser || (userRole as string) === 'general_manager' || (userRole as string) === 'branch_manager' || userRole === 'admin_brand') && (
               <div className="space-y-1">
                 {!isSidebarCollapsed && (
                   <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                    Executive
+                    👑 Executive Suite
                   </div>
                 )}
 
-                <button
-                  onClick={() => handleSelectModule('owner')}
-                  className={`w-full flex items-center ${
-                    isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
-                  } py-2 rounded-xl text-xs font-semibold transition-all ${
-                    activeModule === 'owner'
-                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                  title="Owner Dashboard & AI"
-                >
-                  <span className="text-base">👑</span>
-                  {!isSidebarCollapsed && <span>Owner Dashboard</span>}
-                </button>
-              </div>
-            )}
+                {isSuperUser && (
+                  <button
+                    onClick={() => handleSelectModule('superuser')}
+                    className={`w-full flex items-center ${
+                      isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
+                    } py-2 rounded-xl text-xs font-semibold transition-all ${
+                      activeModule === 'superuser'
+                        ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                    title="Platform Director & SaaS Licensing"
+                  >
+                    <span className="text-base">⚡</span>
+                    {!isSidebarCollapsed && <span>Super User Director</span>}
+                  </button>
+                )}
 
-            {/* INVESTOR SLIDE DECK BUTTON (KHUSUS OWNER & MANAJER) */}
-            {(userRole === 'owner' || userRole === 'super_user' || (userRole as string) === 'general_manager' || (userRole as string) === 'branch_manager') && (
-              <div className="space-y-1 pt-1">
+                {(userRole === 'owner' || (userRole as string) === 'general_manager') && (
+                  <button
+                    onClick={() => handleSelectModule('owner')}
+                    className={`w-full flex items-center ${
+                      isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
+                    } py-2 rounded-xl text-xs font-semibold transition-all ${
+                      activeModule === 'owner'
+                        ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                    title="Owner Dashboard & AI Advisor"
+                  >
+                    <span className="text-base">👑</span>
+                    {!isSidebarCollapsed && <span>Owner Dashboard</span>}
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => setIsInvestorDeckOpen(true)}
@@ -240,11 +318,7 @@ export default function App() {
                     </span>
                   )}
                 </button>
-              </div>
-            )}
 
-            {(userRole === 'admin_brand' || userRole === 'owner' || userRole === 'super_user') && (
-              <div className="space-y-1 pt-1">
                 <button
                   onClick={() => handleSelectModule('brand_admin')}
                   className={`w-full flex items-center ${
@@ -262,157 +336,225 @@ export default function App() {
               </div>
             )}
 
-            {userRole === 'super_user' && (
+            {/* 2. OPERATIONAL MODULES (HIDDEN FOR SUPER USER) */}
+            {!isSuperUser && (
               <div className="space-y-1 pt-1">
+                {!isSidebarCollapsed && (
+                  <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    🛒 Operasional & Toko
+                  </div>
+                )}
+
                 <button
-                  onClick={() => handleSelectModule('superuser')}
+                  onClick={() => handleSelectModule('pos')}
                   className={`w-full flex items-center ${
-                    isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
+                    isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
                   } py-2 rounded-xl text-xs font-semibold transition-all ${
-                    activeModule === 'superuser'
+                    activeModule === 'pos'
                       ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
-                  title="Super User & Licensing"
+                  title="Kasir POS & Dapur"
                 >
-                  <span className="text-base">⚡</span>
-                  {!isSidebarCollapsed && <span>Super User & Licensing</span>}
+                  <div className="flex items-center space-x-2.5">
+                    <span className="text-base">🛒</span>
+                    {!isSidebarCollapsed && <span>Kasir POS Terminal</span>}
+                  </div>
+                  {!isSidebarCollapsed && isModuleLocked('pos') && <span className="text-[10px]">🔒</span>}
                 </button>
+
+                <button
+                  onClick={() => handleSelectModule('inventory')}
+                  className={`w-full flex items-center ${
+                    isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+                  } py-2 rounded-xl text-xs font-semibold transition-all ${
+                    activeModule === 'inventory'
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                  title="Gudang, Stok & SCM"
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <span className="text-base">📦</span>
+                    {!isSidebarCollapsed && <span>Gudang & SCM</span>}
+                  </div>
+                  {!isSidebarCollapsed && isModuleLocked('inventory') && <span className="text-[10px]">🔒</span>}
+                </button>
+
+                <button
+                  onClick={() => handleSelectModule('opname')}
+                  className={`w-full flex items-center ${
+                    isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+                  } py-2 rounded-xl text-xs font-semibold transition-all ${
+                    activeModule === 'opname'
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                  title="Stok Opname Fisik Gudang"
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <span className="text-base">📋</span>
+                    {!isSidebarCollapsed && <span>Stok Opname</span>}
+                  </div>
+                  {!isSidebarCollapsed && (
+                    <span className="text-[9px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono px-1.5 py-0.2 rounded-full font-bold">
+                      AUDIT
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => handleSelectModule('crm')}
+                  className={`w-full flex items-center ${
+                    isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+                  } py-2 rounded-xl text-xs font-semibold transition-all ${
+                    activeModule === 'crm'
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                  title="CRM & Loyalitas Member"
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <span className="text-base">👥</span>
+                    {!isSidebarCollapsed && <span>CRM & Member</span>}
+                  </div>
+                  {!isSidebarCollapsed && isModuleLocked('crm') && <span className="text-[10px]">🔒</span>}
+                </button>
+
+                {(userRole === 'owner' || (userRole as string) === 'general_manager' || (userRole as string) === 'branch_manager') && (
+                  <button
+                    onClick={() => handleSelectModule('finance')}
+                    className={`w-full flex items-center ${
+                      isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+                    } py-2 rounded-xl text-xs font-semibold transition-all ${
+                      activeModule === 'finance'
+                        ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                    title="Akuntansi & GL PSAK"
+                  >
+                    <div className="flex items-center space-x-2.5">
+                      <span className="text-base">📊</span>
+                      {!isSidebarCollapsed && <span>Akuntansi & GL</span>}
+                    </div>
+                    {!isSidebarCollapsed && isModuleLocked('finance') && <span className="text-[10px]">🔒</span>}
+                  </button>
+                )}
               </div>
             )}
 
-            {/* OPERATIONAL MODULES */}
-            {!isSidebarCollapsed && (
-              <div className="pt-3 px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                Operasional
-              </div>
-            )}
-
-            <button
-              onClick={() => handleSelectModule('pos')}
-              className={`w-full flex items-center ${
-                isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
-              } py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'pos'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-              title="Kasir POS & Dapur"
-            >
-              <div className="flex items-center space-x-2.5">
-                <span className="text-base">🛒</span>
-                {!isSidebarCollapsed && <span>Kasir POS & Dapur</span>}
-              </div>
-              {!isSidebarCollapsed && isModuleLocked('pos') && <span className="text-[10px]">🔒</span>}
-            </button>
-
-            {/* REALTIME TEAM CHAT (DEDICATED FULL VIEW ALA TELEGRAM/WHATSAPP) */}
-            <button
-              onClick={() => handleSelectModule('chat')}
-              className={`w-full flex items-center ${
-                isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
-              } py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'chat'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-              title="Realtime Team Chat (Brand & Cabang)"
-            >
-              <div className="flex items-center space-x-2.5">
-                <span className="text-base">💬</span>
-                {!isSidebarCollapsed && <span>Realtime Team Chat</span>}
-              </div>
+            {/* 3. TEAM COLLABORATION GROUP */}
+            <div className="space-y-1 pt-1">
               {!isSidebarCollapsed && (
-                <div className="flex items-center space-x-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-mono px-1.5 rounded font-bold">
-                    LIVE
-                  </span>
+                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  💬 Kolaborasi Tim
                 </div>
               )}
-            </button>
 
-            <button
-              onClick={() => handleSelectModule('crm')}
-              className={`w-full flex items-center ${
-                isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
-              } py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'crm'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-              title="CRM & Loyalitas Member"
-            >
-              <div className="flex items-center space-x-2.5">
-                <span className="text-base">👥</span>
-                {!isSidebarCollapsed && <span>CRM & Member</span>}
-              </div>
-              {!isSidebarCollapsed && isModuleLocked('crm') && <span className="text-[10px]">🔒</span>}
-            </button>
-
-            <button
-              onClick={() => handleSelectModule('inventory')}
-              className={`w-full flex items-center ${
-                isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
-              } py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'inventory'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-              title="Gudang, Stok & SCM"
-            >
-              <div className="flex items-center space-x-2.5">
-                <span className="text-base">📦</span>
-                {!isSidebarCollapsed && <span>Gudang & SCM</span>}
-              </div>
-              {!isSidebarCollapsed && isModuleLocked('inventory') && <span className="text-[10px]">🔒</span>}
-            </button>
-
-            {/* STOK OPNAME SIDEBAR MENU */}
-            <button
-              onClick={() => handleSelectModule('opname')}
-              className={`w-full flex items-center ${
-                isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
-              } py-2 rounded-xl text-xs font-semibold transition-all ${
-                activeModule === 'opname'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-              title="Stok Opname Fisik Gudang"
-            >
-              <div className="flex items-center space-x-2.5">
-                <span className="text-base">📋</span>
-                {!isSidebarCollapsed && <span>Stok Opname</span>}
-              </div>
-              {!isSidebarCollapsed && (
-                <span className="text-[9px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono px-1.5 py-0.2 rounded-full font-bold">
-                  AUDIT
-                </span>
-              )}
-            </button>
-
-            {(userRole === 'owner' || userRole === 'super_user') && (
               <button
-                onClick={() => handleSelectModule('finance')}
+                onClick={() => handleSelectModule('chat')}
                 className={`w-full flex items-center ${
                   isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
                 } py-2 rounded-xl text-xs font-semibold transition-all ${
-                  activeModule === 'finance'
+                  activeModule === 'chat'
                     ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
-                title="Akuntansi & GL PSAK"
+                title="Realtime Team Chat (Brand & Cabang)"
               >
                 <div className="flex items-center space-x-2.5">
-                  <span className="text-base">📊</span>
-                  {!isSidebarCollapsed && <span>Akuntansi & GL</span>}
+                  <span className="text-base">💬</span>
+                  {!isSidebarCollapsed && <span>Realtime Team Chat</span>}
                 </div>
-                {!isSidebarCollapsed && isModuleLocked('finance') && <span className="text-[10px]">🔒</span>}
+                {!isSidebarCollapsed && (
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                    <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-mono px-1.5 rounded font-bold">
+                      LIVE
+                    </span>
+                  </div>
+                )}
               </button>
-            )}
+            </div>
 
-            {/* GOVERNANCE & TICKETS */}
-            <div className="pt-2">
+            {/* 4. R&D & ENGINEERING LABS (VISIBLE TO ALL, DB FOR SUPERUSER) */}
+            <div className="space-y-1 pt-1">
+              {!isSidebarCollapsed && (
+                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  🔬 R&D & Engineering Labs
+                </div>
+              )}
+
+              <button
+                onClick={() => handleSelectModule('benchmark')}
+                className={`w-full flex items-center ${
+                  isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
+                } py-2 rounded-xl text-xs font-semibold transition-all ${
+                  activeModule === 'benchmark'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+                title="Speed Benchmark & Stress Test"
+              >
+                <span className="text-base">🚀</span>
+                {!isSidebarCollapsed && <span>Hardware Benchmark</span>}
+              </button>
+
+              <button
+                onClick={() => handleSelectModule('docs')}
+                className={`w-full flex items-center ${
+                  isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
+                } py-2 rounded-xl text-xs font-semibold transition-all ${
+                  activeModule === 'docs'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+                title="Dokumentasi Modula"
+              >
+                <span className="text-base">📚</span>
+                {!isSidebarCollapsed && <span>Dokumentasi Sistem</span>}
+              </button>
+
+              <button
+                onClick={() => handleSelectModule('swagger')}
+                className={`w-full flex items-center ${
+                  isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
+                } py-2 rounded-xl text-xs font-semibold transition-all ${
+                  activeModule === 'swagger'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+                title="Swagger API Specification"
+              >
+                <span className="text-base">📑</span>
+                {!isSidebarCollapsed && <span>Swagger API Specs</span>}
+              </button>
+
+              {/* DATABASE MANAGER - STRICTLY SUPER USER ONLY */}
+              {isSuperUser && (
+                <button
+                  onClick={() => handleSelectModule('database')}
+                  className={`w-full flex items-center ${
+                    isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+                  } py-2 rounded-xl text-xs font-semibold transition-all ${
+                    activeModule === 'database'
+                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                  title="Database Schema & Query Manager"
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <span className="text-base">🗄️</span>
+                    {!isSidebarCollapsed && <span>Database Manager</span>}
+                  </div>
+                  {!isSidebarCollapsed && (
+                    <span className="text-[9px] bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-mono px-1.5 py-0.2 rounded font-bold">
+                      SU
+                    </span>
+                  )}
+                </button>
+              )}
+
               <button
                 onClick={() => handleSelectModule('tickets')}
                 className={`w-full flex items-center ${
@@ -440,40 +582,7 @@ export default function App() {
                 title="Soft-Delete & Trash"
               >
                 <span className="text-base">🗑️</span>
-                {!isSidebarCollapsed && <span>Soft-Delete</span>}
-              </button>
-            </div>
-
-            {/* BENCHMARK & TOOLS */}
-            <div className="pt-2">
-              <button
-                onClick={() => handleSelectModule('benchmark')}
-                className={`w-full flex items-center ${
-                  isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
-                } py-2 rounded-xl text-xs font-semibold transition-all ${
-                  activeModule === 'benchmark'
-                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-                title="Speed Benchmark"
-              >
-                <span className="text-base">🚀</span>
-                {!isSidebarCollapsed && <span>Benchmark</span>}
-              </button>
-
-              <button
-                onClick={() => handleSelectModule('docs')}
-                className={`w-full flex items-center ${
-                  isSidebarCollapsed ? 'justify-center px-2' : 'space-x-2.5 px-3'
-                } py-2 rounded-xl text-xs font-semibold transition-all ${
-                  activeModule === 'docs'
-                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-                title="Dokumentasi Modula"
-              >
-                <span className="text-base">📚</span>
-                {!isSidebarCollapsed && <span>Dokumentasi</span>}
+                {!isSidebarCollapsed && <span>Soft-Delete Trash</span>}
               </button>
             </div>
           </div>
@@ -545,7 +654,17 @@ export default function App() {
             )
           )}
           {activeModule === 'inventory' && (
-            isModuleLocked('inventory') ? (
+            isSuperUser ? (
+              <div className="p-12 text-center space-y-4">
+                <span className="text-5xl">🛡️</span>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
+                  Akses Gudang Operasional Terisolasi (Zero-Knowledge Privacy)
+                </h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  Super User dibatasi dari manipulasi persediaan fisik cabang. Ajukan tiket inspeksi audit jika diperlukan.
+                </p>
+              </div>
+            ) : isModuleLocked('inventory') ? (
               <div className="p-12 text-center space-y-4">
                 <span className="text-5xl">🔒</span>
                 <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
@@ -559,13 +678,37 @@ export default function App() {
               <InventoryManagementView />
             )
           )}
-          {activeModule === 'opname' && <StockOpnameView />}
+          {activeModule === 'opname' && (
+            isSuperUser ? (
+              <div className="p-12 text-center space-y-4">
+                <span className="text-5xl">🛡️</span>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
+                  Akses Stok Opname Terisolasi
+                </h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  Super User dibatasi dari audit fisik outlet demi integritas tenant isolation.
+                </p>
+              </div>
+            ) : (
+              <StockOpnameView />
+            )
+          )}
           {activeModule === 'benchmark' && <BenchmarkViewer />}
           {activeModule === 'tickets' && <BugTicketingCenter />}
           {activeModule === 'trash' && <SoftDeleteManager />}
           {activeModule === 'reviews' && <CustomerReviewPage />}
           {activeModule === 'pos' && (
-            isModuleLocked('pos') ? (
+            isSuperUser ? (
+              <div className="p-12 text-center space-y-4">
+                <span className="text-5xl">🛡️</span>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
+                  Akses Kasir POS Terisolasi (Zero-Knowledge Privacy)
+                </h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  Super User tidak diperkenankan melakukan transaksi kasir toko. Login sebagai Kasir atau Owner untuk menggunakan POS Terminal.
+                </p>
+              </div>
+            ) : isModuleLocked('pos') ? (
               <div className="p-12 text-center space-y-4">
                 <span className="text-5xl">🔒</span>
                 <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
@@ -596,7 +739,7 @@ export default function App() {
           )}
           {activeModule === 'docs' && <DocumentationViewer />}
           {activeModule === 'swagger' && <SwaggerApiViewer />}
-          {activeModule === 'database' && <DatabaseManager />}
+          {activeModule === 'database' && <DatabaseManagerView />}
         </main>
       </div>
     </div>
