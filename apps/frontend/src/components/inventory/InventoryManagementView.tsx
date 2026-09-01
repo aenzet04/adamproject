@@ -1877,6 +1877,101 @@ export const InventoryManagementView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* MODAL TAMBAH GUDANG BARU */}
+      {isAddWarehouseModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-xs">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-xl">🏭</span>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  Tambah Gudang / Warehouse Baru
+                </h3>
+              </div>
+              <button onClick={() => setIsAddWarehouseModalOpen(false)} className="text-slate-400 font-bold">✕</button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                toast.success('Gudang Baru Dibuat', `${newWhName} (${newWhCode})`);
+                setIsAddWarehouseModalOpen(false);
+                setNewWhName('');
+                setNewWhCode('');
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Gudang:</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Gudang Transit Jakarta Barat"
+                  value={newWhName}
+                  onChange={(e) => setNewWhName(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Kode Gudang:</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="WH-JKT-03"
+                    value={newWhCode}
+                    onChange={(e) => setNewWhCode(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Metode Biaya (Costing):</label>
+                  <select
+                    value={newWhCosting}
+                    onChange={(e) => setNewWhCosting(e.target.value as any)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono"
+                  >
+                    <option value="moving_average">Moving Average (PSAK)</option>
+                    <option value="fifo">FIFO (First In First Out)</option>
+                    <option value="standard">Standard Cost</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Alokasi Cabang Terkait:</label>
+                <select
+                  value={newWhBranchId}
+                  onChange={(e) => setNewWhBranchId(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs"
+                >
+                  <option value="br-01">Outlet Grand Indonesia (Jakarta Pusat)</option>
+                  <option value="br-02">Outlet Senopati (Jakarta Selatan)</option>
+                  <option value="br-03">Store Kelapa Gading (Jakarta Utara)</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsAddWarehouseModalOpen(false)}
+                  className="px-4 py-2 text-slate-500 font-semibold"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="bg-red-600 hover:bg-red-500 text-white font-bold px-5 py-2 rounded-xl shadow-md"
+                >
+                  Buat Gudang
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
