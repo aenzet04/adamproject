@@ -164,6 +164,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-100 dark:bg-slate-950 font-sans transition-colors duration-200">
+      <PageTransitionPreloader activePath={activeModule} />
       <PageTransitionPreloader activeModuleKey={activeModule} />
       <ToastContainer />
       <OnboardingWizardModal />

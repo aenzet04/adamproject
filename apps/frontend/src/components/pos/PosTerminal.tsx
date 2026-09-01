@@ -333,6 +333,7 @@ export const PosTerminal: React.FC = () => {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isSplitBillOpen, setIsSplitBillOpen] = useState(false);
+  const [isQuickAddCustomerOpen, setIsQuickAddCustomerOpen] = useState(false);
   const [isCustomerSearchModalOpen, setIsCustomerSearchModalOpen] = useState(false);
   const [isPinChangeModalOpen, setIsPinChangeModalOpen] = useState(false);
   const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
@@ -353,6 +354,11 @@ export const PosTerminal: React.FC = () => {
   const [tenderAmount, setTenderAmount] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
+
+  // Quick Customer Form
+  const [quickCustName, setQuickCustName] = useState('');
+  const [quickCustPhone, setQuickCustPhone] = useState('');
 
   const [lastCompletedOrder, setLastCompletedOrder] = useState<{
     orderNumber: string;
@@ -371,6 +377,7 @@ export const PosTerminal: React.FC = () => {
 
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
+  // Keyboard Shortcuts: F2 for Barcode, F3 for Customer, F4 for Shift, F8 for Table Hold, F9 for Payment
   // Keyboard Shortcuts: F2 for Barcode, F3 for Customer CRM, F4 for Shift, F8 for Table Hold, F9 for Payment
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -379,6 +386,7 @@ export const PosTerminal: React.FC = () => {
         barcodeInputRef.current?.focus();
       } else if (e.key === 'F3') {
         e.preventDefault();
+        setIsQuickAddCustomerOpen(true);
         setIsCustomerSearchModalOpen(true);
       } else if (e.key === 'F4') {
         e.preventDefault();
@@ -459,6 +467,8 @@ export const PosTerminal: React.FC = () => {
     const backendResult = await submitPosCheckoutLive(payload);
     const orderNo = backendResult?.order?.order_number || `ORD-MODULA-${Date.now().toString().slice(-6)}`;
 
+    if (selectedMemberId) {
+      recordPurchase(selectedMemberId, grandTotal);
     const matchedCustomer = customers.find((c) => c.name === customerName);
     if (matchedCustomer) {
       recordPurchase(matchedCustomer.id, grandTotal, Math.floor(grandTotal / 10000));
@@ -492,6 +502,28 @@ export const PosTerminal: React.FC = () => {
     setIsSplitBillOpen(false);
     handleFinalizeCheckout();
   };
+
+  const handleQuickCreateCustomer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickCustName || !quickCustPhone) return;
+
+    const newCust = addCustomer({
+      name: quickCustName,
+      phone: quickCustPhone,
+      branchId: currentBranch?.id || 'br-01',
+      branchName: currentBranch?.name || 'Outlet Grand Indonesia',
+      tier: 'Bronze',
+    });
+
+    setSelectedMemberId(newCust.id);
+    setCustomerInfo(newCust.name, tableNumber, newCust.id, newCust.tier);
+    toast.success('Member Terdaftar (Shortcut F3)', `${newCust.name} siap ditransaksikan.`);
+    setIsQuickAddCustomerOpen(false);
+    setQuickCustName('');
+    setQuickCustPhone('');
+  };
+
+  const selectedMember = customers.find((c) => c.id === selectedMemberId);
 
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-3.5rem)] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors overflow-hidden">
@@ -579,6 +611,7 @@ export const PosTerminal: React.FC = () => {
 
           {/* Quick Add Customer Shortcut Button (F3) */}
           <button
+            onClick={() => setIsQuickAddCustomerOpen(true)}
             onClick={() => setIsCustomerSearchModalOpen(true)}
             className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-2xl text-xs font-bold flex items-center space-x-1.5 shadow-sm transition-all active:scale-95"
             title="Tambah / Cari Pelanggan Cepat [F3]"
@@ -703,6 +736,30 @@ export const PosTerminal: React.FC = () => {
         {/* Customer, Table Number & Cart Display Layout Options Button */}
         <div className="p-3 border-b border-slate-200 dark:border-slate-800 space-y-2 bg-slate-50/70 dark:bg-slate-900">
           <div className="flex items-center space-x-2">
+            <div className="flex-1 relative">
+              <select
+                value={selectedMemberId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedMemberId(id);
+                  const member = customers.find((c) => c.id === id);
+                  if (member) {
+                    setCustomerInfo(member.name, tableNumber, member.id, member.tier);
+                    toast.info('Member Terpilih', `${member.name} (${member.tier})`);
+                  } else {
+                    setCustomerInfo('', tableNumber);
+                  }
+                }}
+                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2.5 py-1.5 text-slate-800 dark:text-slate-200 font-semibold focus:ring-1 focus:ring-red-500 focus:outline-none"
+              >
+                <option value="">👤 Cari Member [F3]...</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.tier} - {c.points} Pts) - {c.phone}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button
               type="button"
               onClick={() => setIsCustomerSearchModalOpen(true)}
@@ -724,6 +781,7 @@ export const PosTerminal: React.FC = () => {
               type="text"
               placeholder="Meja #"
               value={tableNumber}
+              onChange={(e) => setCustomerInfo(customerName, e.target.value, selectedMemberId, selectedMember?.tier)}
               onChange={(e) => setCustomerInfo(customerName, e.target.value)}
               className="w-20 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-xl px-2 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-red-500 focus:outline-none font-mono font-bold text-center shadow-sm"
             />
@@ -738,10 +796,18 @@ export const PosTerminal: React.FC = () => {
             </button>
           </div>
 
+          {selectedMember && (
           {customerName && (
             <div className="bg-red-50 dark:bg-red-950/40 p-2 rounded-xl border border-red-200 dark:border-red-800/40 flex justify-between items-center text-xs">
               <div className="flex items-center space-x-1.5">
+                <span className="bg-red-600 text-white text-[9px] font-mono px-1.5 py-0.2 rounded font-bold">
+                  {selectedMember.tier}
+                </span>
+                <span className="font-bold text-red-900 dark:text-red-200">{selectedMember.name}</span>
                 <span className="font-bold text-red-900 dark:text-red-200">{customerName}</span>
+              </div>
+              <div className="text-[11px] font-mono font-bold text-amber-600 dark:text-amber-400">
+                ⭐ {selectedMember.points} Pts
               </div>
               <button
                 type="button"
@@ -1125,6 +1191,65 @@ export const PosTerminal: React.FC = () => {
       {/* SHIFT MANAGEMENT MODAL [F4] */}
       {isShiftModalOpen && (
         <ShiftManagementModal onClose={() => setIsShiftModalOpen(false)} />
+      )}
+
+      {/* QUICK ADD CUSTOMER SHORTCUT MODAL (F3) */}
+      {isQuickAddCustomerOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-red-600 font-bold">⌨️ [F3]</span>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  Tambah Member Cepat Kasir
+                </h3>
+              </div>
+              <button onClick={() => setIsQuickAddCustomerOpen(false)} className="text-slate-400 font-bold">✕</button>
+            </div>
+
+            <form onSubmit={handleQuickCreateCustomer} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Pelanggan</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Bpk. Irwan"
+                  value={quickCustName}
+                  onChange={(e) => setQuickCustName(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">No. WhatsApp (081...)</label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="081234567890"
+                  value={quickCustPhone}
+                  onChange={(e) => setQuickCustPhone(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-mono"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsQuickAddCustomerOpen(false)}
+                  className="px-4 py-2 text-slate-500 font-semibold"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="bg-red-600 hover:bg-red-500 text-white font-bold px-5 py-2 rounded-xl shadow-md"
+                >
+                  Simpan & Pilih Member
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* PAYMENT MODAL */}

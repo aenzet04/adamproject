@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import type { ProfitLossReport } from '../../types';
 import { InvestorPitchDeckModal } from '../presentation/InvestorPitchDeckModal';
+import { exportToExcelCsv, triggerPrintPdf } from '../../lib/exportUtils';
 import { exportToExcelCsv, triggerPrintPdf, exportToPptxPresentation } from '../../lib/exportUtils';
 import { toast } from '../../stores/useToastStore';
 
@@ -39,11 +40,14 @@ export const FinancialStatementsViewer: React.FC = () => {
   const handleExportExcel = () => {
     const headers = ['Kode Akun', 'Nama Pos Akun', 'Tipe Akun', 'Jumlah Nominal (Rp)'];
     const rows = [
+      ...data.revenues.map((r) => [r.code, r.name, 'Pendapatan Penjualan', r.amount.toLocaleString('id-ID')]),
       ...data.revenues.map((r: { code: string; name: string; amount: number }) => [r.code, r.name, 'Pendapatan Penjualan', r.amount.toLocaleString('id-ID')]),
       ['4999-00', 'TOTAL PENDAPATAN', 'TOTAL', data.totalRevenue.toLocaleString('id-ID')],
+      ...data.cogs.map((c) => [c.code, c.name, 'Beban Pokok Penjualan (HPP)', c.amount.toLocaleString('id-ID')]),
       ...data.cogs.map((c: { code: string; name: string; amount: number }) => [c.code, c.name, 'Beban Pokok Penjualan (HPP)', c.amount.toLocaleString('id-ID')]),
       ['5199-00', 'TOTAL HPP', 'TOTAL', data.totalCogs.toLocaleString('id-ID')],
       ['3999-01', 'LABA KOTOR (GROSS PROFIT)', 'PROFIT', data.grossProfit.toLocaleString('id-ID')],
+      ...data.operatingExpenses.map((o) => [o.code, o.name, 'Beban Operasional', o.amount.toLocaleString('id-ID')]),
       ...data.operatingExpenses.map((o: { code: string; name: string; amount: number }) => [o.code, o.name, 'Beban Operasional', o.amount.toLocaleString('id-ID')]),
       ['5299-00', 'TOTAL BEBAN OPERASIONAL', 'TOTAL', data.totalOperatingExpense.toLocaleString('id-ID')],
       ['3999-99', 'LABA BERSIH (NET INCOME)', 'NET PROFIT', data.netIncome.toLocaleString('id-ID')],
@@ -102,6 +106,7 @@ export const FinancialStatementsViewer: React.FC = () => {
           </p>
         </div>
 
+        {/* Action Buttons: Slide Deck, Export Excel & Export PDF */}
         {/* Action Buttons: Slide Deck, Export Excel, Export PPTX & Export PDF */}
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -205,6 +210,7 @@ export const FinancialStatementsViewer: React.FC = () => {
               1. Pendapatan Usaha (Revenues)
             </span>
             <div className="space-y-1.5">
+              {data.revenues.map((rev) => (
               {data.revenues.map((rev: { code: string; name: string; amount: number }) => (
                 <div
                   key={rev.code}
@@ -234,6 +240,7 @@ export const FinancialStatementsViewer: React.FC = () => {
               2. Beban Pokok Penjualan (HPP / COGS)
             </span>
             <div className="space-y-1.5">
+              {data.cogs.map((c) => (
               {data.cogs.map((c: { code: string; name: string; amount: number }) => (
                 <div
                   key={c.code}
@@ -271,6 +278,7 @@ export const FinancialStatementsViewer: React.FC = () => {
               3. Beban Operasional & Umum (OpEx)
             </span>
             <div className="space-y-1.5">
+              {data.operatingExpenses.map((exp) => (
               {data.operatingExpenses.map((exp: { code: string; name: string; amount: number }) => (
                 <div
                   key={exp.code}
