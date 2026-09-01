@@ -1,8 +1,8 @@
-# 👑 MODULA v3.1.0-enterprise — Enterprise Multi-Tenant Modular SaaS ERP-POS & Financial Core
+# 👑 MODULA v3.2.0-enterprise — Enterprise Multi-Tenant Modular SaaS ERP-POS & Financial Core
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue.svg)]()
-[![Version](https://img.shields.io/badge/Version-v3.1.0--enterprise-purple.svg)]()
+[![Version](https://img.shields.io/badge/Version-v3.2.0--enterprise-purple.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue.svg)]()
 [![React](https://img.shields.io/badge/React-18.3-cyan.svg)]()
 [![Vite](https://img.shields.io/badge/Vite-5.4-purple.svg)]()
@@ -22,37 +22,56 @@
 
 ---
 
-## 🚀 Changelog Versi Terbaru: Modula v3.1.0-enterprise (Release Sprint)
+## 🚀 Changelog Versi Terbaru: Modula v3.2.0-enterprise (Release Sprint)
 
-### 🛡️ 1. Zero-Knowledge Privacy Protocol & Etika Bisnis Super User
-- **Isolasi Privasi Ketat:** Super User / Platform Developer **tidak dapat mengintip data internal transaksi POS, laporan laba rugi, maupun obrolan internal cabang** milik Brand secara sepihak.
-- **Audit Inspection Ticket Gateway (`#TCK-XXXXXX`):** Super User wajib mengajukan tiket permohonan audit resmi kepada Owner/GM dan harus disetujui terlebih dahulu sebelum inspeksi diagnostik diizinkan aktif.
+### 🔐 1. Manajemen Keamanan PIN Kasir (Default `0000` & Wajib Ubah PIN)
+- **Pembuatan Kasir Baru:** Saat admin menambahkan staf dengan peran `cashier`, form input PIN dinamis otomatis muncul dengan default `0000`.
+- **Enforcement Modal Ganti PIN:** Saat kasir login untuk pertama kali dengan PIN bawaan, sistem menampilkan banner peringatan keamanan merah dan modal interaktif wajib ganti PIN (4-6 digit numeric regex).
 
-### 🐷 2. Enterprise Emoji & Reaction Suite (Babi Hoki, Gen Z & Lansia Friendly)
-- **Koleksi Emoji Lengkap dengan Glosarium Korporat:**
-  - 🐷 **Babi Hoki & Swine Synergy:** `🐷` *(Swine Optimization - Simbol Pembawa Cuan)*, `🥓` *(Bacon ROI - Margin Gurih)*, `🐖` *(Babi Gesit SCM)*, `🐽` *(Snout Margin)*, `🐗` *(Ekspansi Brutal)*.
-  - ⚡ **Gen Z Core:** `💀` *(Dead/Ketar-Ketir Target Q3)*, `🗿` *(Sigma Disiplin PSAK)*, `🔥` *(Menyala Abangkuh - Rekor Sales)*, `💅` *(Slay Budgeting)*, `🧢` *(No Cap - Data Riil)*, `🤡` *(Clown Costing)*, `✨` *(Aesthetic Synergy)*.
-  - 👴 **Lansia & Restu Holding:** `🙏` *(Matur Nuwun / Berkah)*, `☕` *(Ngopi Santai)*, `👴` *(Sesepuh Holding)*, `👵` *(Petuah Eyang)*, `👍` *(Jempol Bapak-Bapak ACC Cair)*.
-  - 📈 **Corporate Synergy:** `🚀` *(To The Moon)*, `💼` *(Actionable Roadmap)*, `💸` *(Cuan Maksimal)*, `📊` *(Pivot Matrix)*.
-- **Interactive Reactions:** Reaksi cepat pada tiap balon pesan chat dengan counter suara interaktif.
+### 💳 2. Perpanjangan Langganan Fleksibel & Notifikasi Tagihan
+- **Opsi Durasi Perpanjangan:** Menu Super User kini mendukung perpanjangan fleksibel:
+  - `+1 Bulan (Bulanan)`
+  - `+3 Bulan (Triwulan)`
+  - `+6 Bulan (Semester)`
+  - `+12 Bulan (Tahunan)`
+- **Auto-Billing WhatsApp & Mailpit:** Pengiriman invoice instan ke nomor WhatsApp Owner dan testing email via Mailpit.
 
-### ⚡ 3. Live Hardware Stress Benchmark Suite
-- Penambahan mesin stress testing di modul Benchmark (`BenchmarkViewer.tsx`):
-  - 100,000 Payload JSON loop test (< 1 ms).
-  - 1,000,000 kalkulasi arithmetic BigInt/Float per detik (> 120,000 Ops/s).
-  - Verifikasi DOM reflow 60 FPS tanpa frame drop dengan predikat **A+ ENTERPRISE GRADE**.
+### 🌐 3. Public SaaS Landing Page & Katalog Harga Add-On
+- **Landing Page Publik di Root (`/`):**
+  - Paket Starter UMKM (`Rp 149.000/bln`), Business Menengah (`Rp 349.000/bln`), dan Enterprise Holding (`Rp 799.000/bln`).
+  - Toggle Switch Diskon Tahunan Hemat 25%.
+  - Add-On Modular Catalogue (Realtime Chat Rp 49k, AI Forecaster Rp 349k, dll).
+  - Tombol CTA *"Luncurkan Demo Enterprise"* untuk masuk langsung ke aplikasi.
 
-### 💬 4. Executive Direct Messaging (1-on-1 DM) & Happening Now Live Beacon
-- **Direct 1-on-1 Chat:** Owner & General Manager dapat mengklik profil karyawan di sidebar chat untuk memulai percakapan pribadi langsung (*Personal DM*).
-- **Happening Now Live Beacon:** Banner siaran langsung di bagian atas ruang chat yang dapat di-update oleh Owner/GM untuk mengumumkan promo kilat atau status operasional penting ke seluruh staf.
+### 📑 4. PowerPoint (.pptx) Executive Presentation Exporter
+- **Ekspor Presentasi PPTX 1-Klik:** Di samping PDF dan Excel CSV, modul Akuntansi & Keuangan kini memiliki tombol `[ 📑 Export PPTX ]` untuk men-generate deck presentasi eksekutif berformat `.pptx` bagi investor.
 
-### 👑 5. Super User Platform Director Suite
-- **Manajemen Akun Owner & Holding:** Direktori multi-owner (*PT, CV, Perorangan*), total brand & cabang, serta status aktif.
-- **Granular Per-Brand Module Licensing:** Buka/kunci modul (*POS, Akuntansi GL, Gudang SCM, Stok Opname, CRM, Chat*) per brand secara independen.
-- **Pelacak Sisa Masa Aktif SaaS (Subscription Expiry Tracker):**
-  - Pemantauan masa aktif & hitung mundur jatuh tempo (*Warning < 30 Hari*).
-  - Tombol 1-klik perpanjangan langganan `+12 Bulan` dan broadcast notifikasi tagihan via WhatsApp / Mailpit.
-- **Semantic Versioning & Health Monitor:** Riwayat rilis semantik GitHub dan pelacak status backend Ruby (Port 3001) & Mailpit (Port 8025).
+### 🏭 5. Multi-Warehouse Creation & 14-Day Trial Sandbox Mode
+- **Modal Tambah Gudang Baru:** Pembuatan gudang dengan pilihan metode kalkulasi HPP (*Moving Average PSAK, FIFO, Standard*).
+- **Mode Simulasi Trial Gudang (14 Hari):** Switch interaktif untuk menguji transfer stok dan restock gudang tanpa memengaruhi neraca keuangan riil.
+
+### 🔬 6. R&D & Engineering Labs Sidebar Navigation
+- **Struktur Sidebar Baru Terorganisir:**
+  1. `👑 Executive Suite`: Owner Dashboard, Investor Slide Deck, Brand & Staff Admin, Super User Director.
+  2. `🛒 Operasional & Toko` *(Strictly Hidden & Isolated untuk Super User demi Privasi)*: Kasir POS, Gudang SCM, Stok Opname, CRM & Member, Akuntansi & GL.
+  3. `💬 Kolaborasi Tim`: Realtime Team Chat (Brand & Branch).
+  4. `🔬 R&D & Engineering Labs` *(Tersedia untuk semua role)*:
+     - 🚀 Hardware Stress Benchmark Suite.
+     - 📚 Dokumentasi Modula.
+     - 📑 Swagger API Specs.
+     - 🗄️ Database Manager *(Eksklusif Super User)*.
+     - 🎫 Tiket Insiden Bug.
+     - 🗑️ Soft-Delete Trash Manager.
+
+### 🗄️ 7. Super User Database Manager & Zero-Knowledge Schema Explorer
+- Eksplorasi 11 tabel relasional internal dengan pemantauan ukuran memori dan jumlah baris real-time.
+- Interactive SQL Query Runner, Live Snapshot Backup, dan status enkripsi AES-256 GCM.
+
+### ✏️ 8. Edit Data Karyawan & Reset PIN
+- Modal `✏️ Edit Data Karyawan` di Brand Admin Dashboard untuk memperbarui profil, nomor telepon, shift, mutasi cabang, dan reset PIN kasir ke `0000`.
+
+### 👥 9. Lightweight CRM Customer Search Modal `[F3]`
+- Modal pencarian instan member CRM dengan keyboard shortcut `[F3]`, pencarian instan nama/nomor HP, dan pendaftaran kilat tamu baru dengan welcome bonus 10 poin.
 
 ---
 
@@ -68,38 +87,41 @@
 
 ---
 
-## 🛠️ Stack Teknologi & Layanan Server
+## 🏗️ Struktur Arsitektur Multi-Tenant
 
-- **Frontend:** React 18.3, TypeScript 5.5, Vite 5.4, TailwindCSS 3.4
-- **Email Testing Server:** Mailpit (SMTP: `1025`, Web UI: `http://localhost:8025/`)
-- **Tipografi:** Google Font Ubuntu & Ubuntu Mono
-- **Audio Synthesizer:** Web Audio API (Chime + Dual-Tone Error Buzzer)
-- **CI/CD:** GitHub Actions CI Pipeline
-- **Backend API:** Ruby 3.2 / Sinatra / Rails API (Port: `3001`)
-- **Database Engine:** MySQL 8.0 & MariaDB Compatible
-
----
-
-## 🏃 Cara Menjalankan Aplikasi
-
-```bash
-# 1. Jalankan Mailpit Email Server (Background)
-mailpit &
-
-# 2. Jalankan Backend Ruby API (Port 3001)
-ruby apps/backend/server.rb &
-
-# 3. Masuk ke direktori frontend & jalankan (Port 3000)
-cd apps/frontend
-npm install
-npm run build
-npm run dev
+```
+Modula Enterprise Holding Core
+├── 🏢 Tenants (Holding Company / Badan Hukum PT, CV)
+│   ├── 🏷️ Brands (Unit Bisnis & Sektor Usaha: F&B, Retail, Jasa, dll)
+│   │   ├── 🏪 Branches / Outlets (Toko Fisik & Geofence Location)
+│   │   │   ├── 📦 Warehouses (Gudang Bahan Baku, Packaging, Central Kitchen)
+│   │   │   └── 🛒 POS Terminals & Kasir (Dual Payment, Split Bill, Kitchen Ticket)
+│   │   └── 👥 Staff & Karyawan (Owner, GM, Branch Manager, Kasir PIN, Gudang, IT)
+│   └── 📊 General Ledger PSAK & Chart of Accounts
 ```
 
-Akses portal aplikasi di:
-- **Modula Core:** `http://localhost:3000/`
-- **Mailpit Email Web UI:** `http://localhost:8025/`
-- **Customer Guest Review Portal:** `http://localhost:3000/review`
+---
+
+## 🛠️ Panduan Instalasi & Menjalankan Sistem
+
+```bash
+# 1. Clone repository
+git clone https://github.com/aenzet04/adamproject.git
+cd adamproject
+
+# 2. Setup & Jalankan Frontend Vite
+cd apps/frontend
+npm install
+npm run dev
+
+# 3. Setup & Jalankan Backend Ruby API (Terminal Baru)
+cd apps/backend
+bundle install
+ruby server.rb
+
+# 4. Testing Email dengan Mailpit
+# SMTP Port: 1025 | Web Dashboard: http://localhost:8025/
+```
 
 ---
-*Dikembangkan dengan standar arsitektur enterprise oleh **parikesitad-pm**.*
+© 2026 **Modula Enterprise**. Engineered by [parikesitad-pm](https://github.com/parikesitad-pm).
