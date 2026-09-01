@@ -24,9 +24,11 @@ export type Customer = CustomerMember;
 
 interface CustomerStoreState {
   customers: CustomerMember[];
-  addCustomer: (data: Partial<CustomerMember> & { name: string; phone: string }) => void;
-  recordPurchase: (customerId: string, amount: number, pointsEarned: number) => void;
+  addCustomer: (data: Partial<CustomerMember> & { name: string; phone: string }) => CustomerMember;
+  recordPurchase: (customerId: string, amount: number, pointsEarned?: number) => void;
   updateCustomerTier: (customerId: string, tier: CustomerMember['tier']) => void;
+  getTopSpenders: (limit?: number) => CustomerMember[];
+  searchCustomers: (query: string) => CustomerMember[];
 }
 
 const INITIAL_CUSTOMERS: CustomerMember[] = [
@@ -119,9 +121,10 @@ export const useCustomerStore = create<CustomerStoreState>()(
         };
 
         set({ customers: [newCustomer, ...get().customers] });
+        return newCustomer;
       },
 
-      recordPurchase: (customerId, amount, pointsEarned) => {
+      recordPurchase: (customerId, amount, pointsEarned = Math.floor(amount / 10000)) => {
         set({
           customers: get().customers.map((c) => {
             if (c.id === customerId) {
@@ -153,6 +156,22 @@ export const useCustomerStore = create<CustomerStoreState>()(
         set({
           customers: get().customers.map((c) => (c.id === customerId ? { ...c, tier } : c)),
         });
+      },
+
+      getTopSpenders: (limit = 10) => {
+        return [...get().customers]
+          .sort((a, b) => (b.lifetimeSpend || b.totalSpend || 0) - (a.lifetimeSpend || a.totalSpend || 0))
+          .slice(0, limit);
+      },
+
+      searchCustomers: (query) => {
+        const q = query.toLowerCase();
+        return get().customers.filter(
+          (c) =>
+            c.name.toLowerCase().includes(q) ||
+            c.phone.includes(q) ||
+            (c.email && c.email.toLowerCase().includes(q))
+        );
       },
     }),
     {
