@@ -52,7 +52,10 @@ export const RealtimeTeamChatView: React.FC = () => {
   const branchId = currentBranch?.id || 'br-01';
   const currentHappeningNow = happeningNowStatuses[brandId];
 
-  const isExecutive = currentUser.role === 'owner' || currentUser.role === 'general_manager';
+  const isExecutive =
+    (currentUser.role as string) === 'owner' ||
+    (currentUser.role as string) === 'general_manager' ||
+    (currentUser.role as string) === 'super_user';
 
   // Filter messages based on active channel & brand isolation
   const channelMessages = messages.filter((m) => {
