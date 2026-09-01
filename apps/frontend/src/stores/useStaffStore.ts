@@ -8,7 +8,8 @@ export type BrandStaffRole =
   | 'admin_system'
   | 'warehouse_staff'
   | 'cashier'
-  | 'staff';
+  | 'staff'
+  | 'staff_it';
 
 export interface TransferHistoryLog {
   id: string;
@@ -36,6 +37,8 @@ export interface BrandEmployee {
   status: 'active' | 'on_duty' | 'on_break' | 'off';
   avatar: string;
   joinedDate: string;
+  pin?: string;
+  isDefaultPin?: boolean;
   transferHistory: TransferHistoryLog[];
 }
 
@@ -43,6 +46,7 @@ interface StaffState {
   employees: BrandEmployee[];
   addEmployee: (data: Omit<BrandEmployee, 'id' | 'transferHistory'>) => void;
   updateEmployee: (id: string, updates: Partial<BrandEmployee>) => void;
+  changePin: (id: string, newPin: string) => void;
   transferStaffBranch: (
     staffId: string,
     toBranchId: string,
@@ -68,137 +72,122 @@ const INITIAL_EMPLOYEES: BrandEmployee[] = [
     shift: 'Flexible Executive Shift',
     status: 'active',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
-    joinedDate: '2025-01-10',
+    joinedDate: '2026-01-01',
     transferHistory: [],
   },
   {
     id: 'emp-02',
     brandId: 'b-01',
     brandName: 'Kopi Nusantara Roastery',
-    name: 'Bambang Wijaya',
+    name: 'Bambang Supriyadi (GM)',
     email: 'bambang.gm@kopinusantara.id',
-    phone: '081388776655',
+    phone: '081288776655',
     role: 'general_manager',
     roleTitle: 'General Manager Operasional',
     branchId: 'br-all',
     branchName: 'Headquarters / All Branches',
-    shift: 'General Shift (08:00 - 17:00)',
+    shift: 'Shift Reguler Pagi (08:00 - 17:00)',
     status: 'active',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80',
-    joinedDate: '2025-02-01',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&auto=format&fit=crop&q=80',
+    joinedDate: '2026-01-15',
     transferHistory: [],
   },
   {
     id: 'emp-03',
     brandId: 'b-01',
     brandName: 'Kopi Nusantara Roastery',
-    name: 'Rian Setyadi',
+    name: 'Rian Kurniawan',
     email: 'rian.manager@kopinusantara.id',
-    phone: '081311223344',
+    phone: '081377889900',
     role: 'branch_manager',
-    roleTitle: 'Branch Manager Outlet GI',
+    roleTitle: 'Manajer Outlet Grand Indonesia',
     branchId: 'br-01',
     branchName: 'Outlet Grand Indonesia',
-    shift: 'Shift Pagi (07:00 - 15:30)',
-    status: 'on_duty',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
-    joinedDate: '2025-03-15',
-    transferHistory: [
-      {
-        id: 'tf-001',
-        fromBranchId: 'br-02',
-        fromBranchName: 'Outlet Senopati',
-        toBranchId: 'br-01',
-        toBranchName: 'Outlet Grand Indonesia',
-        transferDate: '2026-06-01',
-        reason: 'Promosi jabatan Manajer Outlet Flagship GI',
-        approvedBy: 'Parikesit (Owner)',
-      },
-    ],
+    shift: 'Shift Middle (11:00 - 19:00)',
+    status: 'active',
+    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=120&auto=format&fit=crop&q=80',
+    joinedDate: '2026-02-01',
+    transferHistory: [],
   },
   {
     id: 'emp-04',
     brandId: 'b-01',
     brandName: 'Kopi Nusantara Roastery',
-    name: 'Ahmad Fauzi',
-    email: 'ahmad.it@kopinusantara.id',
-    phone: '081744332211',
-    role: 'admin_system',
-    roleTitle: 'Admin IT & POS System Specialist',
+    name: 'Siti Rahma',
+    email: 'siti.kasir@kopinusantara.id',
+    phone: '081234567890',
+    role: 'cashier',
+    roleTitle: 'Kasir POS Senior',
     branchId: 'br-01',
     branchName: 'Outlet Grand Indonesia',
-    shift: 'General Shift (09:00 - 18:00)',
+    shift: 'Shift Pagi (07:00 - 15:00)',
     status: 'active',
-    avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=120&auto=format&fit=crop&q=80',
-    joinedDate: '2025-04-10',
-    transferHistory: [],
-  },
-  {
-    id: 'emp-09',
-    brandId: 'b-01',
-    brandName: 'Kopi Nusantara Roastery',
-    name: 'Hendra Saputra',
-    email: 'hendra.gudang@kopinusantara.id',
-    phone: '081233445566',
-    role: 'warehouse_staff',
-    roleTitle: 'Staf Gudang & SCM Supplier Lead',
-    branchId: 'br-01',
-    branchName: 'Outlet Grand Indonesia',
-    shift: 'Shift Pagi (06:30 - 15:00)',
-    status: 'on_duty',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&auto=format&fit=crop&q=80',
-    joinedDate: '2025-05-01',
-    transferHistory: [],
+    pin: '0000',
+    isDefaultPin: true,
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80',
+    joinedDate: '2026-03-01',
+    transferHistory: [
+      {
+        id: 'tf-01',
+        fromBranchId: 'br-02',
+        fromBranchName: 'Outlet Senopati',
+        toBranchId: 'br-01',
+        toBranchName: 'Outlet Grand Indonesia',
+        transferDate: '2026-08-15',
+        reason: 'Rotasi kebutuhan kasir senior di GI',
+        approvedBy: 'Parikesit (Owner)',
+      },
+    ],
   },
   {
     id: 'emp-05',
     brandId: 'b-01',
     brandName: 'Kopi Nusantara Roastery',
-    name: 'Siti Rahma',
-    email: 'siti.rahma@outlet.kopinusantara.id',
-    phone: '081987654321',
-    role: 'cashier',
-    roleTitle: 'Senior Cashier & Head Barista',
+    name: 'Andi Saputra',
+    email: 'andi.barista@kopinusantara.id',
+    phone: '081399001122',
+    role: 'staff',
+    roleTitle: 'Head Barista & Roaster',
     branchId: 'br-01',
     branchName: 'Outlet Grand Indonesia',
     shift: 'Shift Pagi (07:00 - 15:00)',
-    status: 'on_duty',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80',
-    joinedDate: '2025-05-12',
+    status: 'active',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80',
+    joinedDate: '2026-03-15',
     transferHistory: [],
   },
   {
     id: 'emp-06',
     brandId: 'b-01',
     brandName: 'Kopi Nusantara Roastery',
-    name: 'Nadia Safitri',
-    email: 'nadia.csh@outlet.kopinusantara.id',
-    phone: '081822334455',
-    role: 'cashier',
-    roleTitle: 'Kasir Frontliner',
-    branchId: 'br-02',
-    branchName: 'Outlet Senopati',
-    shift: 'Shift Siang (14:00 - 22:00)',
+    name: 'Hadi Gunawan',
+    email: 'hadi.gudang@kopinusantara.id',
+    phone: '081266554433',
+    role: 'warehouse_staff',
+    roleTitle: 'Staf Gudang & SCM',
+    branchId: 'br-01',
+    branchName: 'Outlet Grand Indonesia',
+    shift: 'Shift Pagi (08:00 - 17:00)',
     status: 'active',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80',
-    joinedDate: '2025-07-20',
+    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=120&auto=format&fit=crop&q=80',
+    joinedDate: '2026-04-01',
     transferHistory: [],
   },
   {
     id: 'emp-07',
     brandId: 'b-01',
     brandName: 'Kopi Nusantara Roastery',
-    name: 'Dimas Pratama',
-    email: 'dimas.pastry@outlet.kopinusantara.id',
-    phone: '081566778899',
-    role: 'staff',
-    roleTitle: 'Kitchen Pastry Cook',
-    branchId: 'br-01',
-    branchName: 'Outlet Grand Indonesia',
-    shift: 'Shift Pagi (06:00 - 14:00)',
-    status: 'on_break',
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=120&auto=format&fit=crop&q=80',
-    joinedDate: '2025-08-01',
+    name: 'Dimas Wicaksono',
+    email: 'dimas.it@kopinusantara.id',
+    phone: '081277889900',
+    role: 'admin_system',
+    roleTitle: 'Admin Sistem & Infrastruktur IT',
+    branchId: 'br-all',
+    branchName: 'Headquarters / All Branches',
+    shift: 'Shift Reguler IT (09:00 - 18:00)',
+    status: 'active',
+    avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=120&auto=format&fit=crop&q=80',
+    joinedDate: '2026-01-20',
     transferHistory: [],
   },
 ];
@@ -209,28 +198,39 @@ export const useStaffStore = create<StaffState>()(
       employees: INITIAL_EMPLOYEES,
 
       addEmployee: (data) => {
+        const isCashier = data.role === 'cashier';
         const newEmp: BrandEmployee = {
           ...data,
-          id: `emp-${Date.now().toString().slice(-6)}`,
+          id: `emp-${Date.now().toString().slice(-4)}`,
+          pin: isCashier ? (data.pin || '0000') : undefined,
+          isDefaultPin: isCashier ? true : undefined,
           transferHistory: [],
         };
-        set({ employees: [newEmp, ...get().employees] });
+        set({ employees: [...get().employees, newEmp] });
       },
 
       updateEmployee: (id, updates) => {
         set({
-          employees: get().employees.map((e) => (e.id === id ? { ...e, ...updates } : e)),
+          employees: get().employees.map((emp) => (emp.id === id ? { ...emp, ...updates } : emp)),
         });
       },
 
-      transferStaffBranch: (staffId, toBranchId, toBranchName, reason, approvedBy = 'Owner / General Manager') => {
-        const current = get().employees.find((e) => e.id === staffId);
-        if (!current) return;
+      changePin: (id, newPin) => {
+        set({
+          employees: get().employees.map((emp) =>
+            emp.id === id ? { ...emp, pin: newPin, isDefaultPin: false } : emp
+          ),
+        });
+      },
+
+      transferStaffBranch: (staffId, toBranchId, toBranchName, reason, approvedBy = 'Owner Approved') => {
+        const employee = get().employees.find((e) => e.id === staffId);
+        if (!employee) return;
 
         const newLog: TransferHistoryLog = {
-          id: `tf-${Date.now().toString().slice(-6)}`,
-          fromBranchId: current.branchId,
-          fromBranchName: current.branchName,
+          id: `tf-${Date.now().toString().slice(-4)}`,
+          fromBranchId: employee.branchId,
+          fromBranchName: employee.branchName,
           toBranchId,
           toBranchName,
           transferDate: new Date().toISOString().split('T')[0],
@@ -238,18 +238,19 @@ export const useStaffStore = create<StaffState>()(
           approvedBy,
         };
 
-        set({
-          employees: get().employees.map((e) =>
-            e.id === staffId
-              ? {
-                  ...e,
-                  branchId: toBranchId,
-                  branchName: toBranchName,
-                  transferHistory: [newLog, ...e.transferHistory],
-                }
-              : e
-          ),
+        const updated = get().employees.map((emp) => {
+          if (emp.id === staffId) {
+            return {
+              ...emp,
+              branchId: toBranchId,
+              branchName: toBranchName,
+              transferHistory: [newLog, ...emp.transferHistory],
+            };
+          }
+          return emp;
         });
+
+        set({ employees: updated });
       },
 
       removeEmployee: (id) => {
@@ -257,7 +258,7 @@ export const useStaffStore = create<StaffState>()(
       },
     }),
     {
-      name: 'modula_staff_employees_store',
+      name: 'modula_staff_store',
     }
   )
 );
