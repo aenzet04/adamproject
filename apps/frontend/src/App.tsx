@@ -19,6 +19,9 @@ import { SoftDeleteManager } from './components/trash/SoftDeleteManager';
 import { OnboardingWizardModal } from './components/onboarding/OnboardingWizardModal';
 import { InvestorPitchDeckModal } from './components/presentation/InvestorPitchDeckModal';
 import { PublicLandingPage } from './components/landing/PublicLandingPage';
+import { FaqView } from './components/public/FaqView';
+import { TermsAndConditionsView } from './components/public/TermsAndConditionsView';
+import { AboutUsView } from './components/public/AboutUsView';
 import { AuthPortal } from './components/auth/AuthPortal';
 import { ToastContainer } from './components/atoms/ToastContainer';
 import { PageTransitionPreloader } from './components/atoms/PageTransitionPreloader';
@@ -33,7 +36,27 @@ export default function App() {
   const { isAuthenticated, currentUser, logout } = useAuthStore();
   const [isLandingPageMode, setIsLandingPageMode] = useState(false);
   const [activeModule, setActiveModule] = useState<
-    'pos' | 'crm' | 'chat' | 'inventory' | 'opname' | 'hr' | 'audit' | 'owner' | 'superuser' | 'brand_admin' | 'reviews' | 'benchmark' | 'tickets' | 'trash' | 'swagger' | 'database' | 'docs' | 'finance'
+    | 'pos'
+    | 'crm'
+    | 'chat'
+    | 'inventory'
+    | 'opname'
+    | 'hr'
+    | 'audit'
+    | 'owner'
+    | 'superuser'
+    | 'brand_admin'
+    | 'reviews'
+    | 'benchmark'
+    | 'tickets'
+    | 'trash'
+    | 'swagger'
+    | 'database'
+    | 'docs'
+    | 'finance'
+    | 'faq'
+    | 'terms'
+    | 'about'
   >('owner');
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -48,8 +71,12 @@ export default function App() {
   const [isGuestReviewMode, setIsGuestReviewMode] = useState<boolean>(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.pathname === '/review') {
-      setIsGuestReviewMode(true);
+    if (typeof window !== 'undefined') {
+      const p = window.location.pathname.toLowerCase();
+      if (p === '/review') setIsGuestReviewMode(true);
+      else if (p === '/faq') setActiveModule('faq');
+      else if (p === '/terms' || p === '/term&cond' || p === '/terms-and-conditions') setActiveModule('terms');
+      else if (p === '/about' || p === '/about-us') setActiveModule('about');
     }
   }, []);
 
@@ -477,7 +504,7 @@ export default function App() {
               </button>
             </div>
 
-            {/* 4. R&D & ENGINEERING LABS (VISIBLE TO ALL, DB FOR SUPERUSER) */}
+            {/* 4. R&D & ENGINEERING LABS */}
             <div className="space-y-1 pt-1">
               {!isSidebarCollapsed && (
                 <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -616,6 +643,37 @@ export default function App() {
               </div>
             )}
 
+            {/* SIDEBAR FOOTER LINKS (FAQ, TERMS, ABOUT, COPYRIGHT) */}
+            {!isSidebarCollapsed && (
+              <div className="px-1 py-1 space-y-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800/60 pt-2">
+                <div className="flex justify-between items-center text-[10px]">
+                  <button
+                    onClick={() => handleSelectModule('faq')}
+                    className="hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  >
+                    ❓ FAQ
+                  </button>
+                  <span>•</span>
+                  <button
+                    onClick={() => handleSelectModule('terms')}
+                    className="hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  >
+                    📜 Syarat & Ketentuan
+                  </button>
+                  <span>•</span>
+                  <button
+                    onClick={() => handleSelectModule('about')}
+                    className="hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  >
+                    ℹ️ Tentang Kami
+                  </button>
+                </div>
+                <div className="text-[9px] text-center text-slate-400 dark:text-slate-500 font-mono pt-1">
+                  © 2026 Modula Enterprise. All rights reserved.
+                </div>
+              </div>
+            )}
+
             <button
               onClick={() => {
                 logout();
@@ -638,6 +696,9 @@ export default function App() {
           {activeModule === 'brand_admin' && <BrandAdminDashboard />}
           {activeModule === 'superuser' && <SuperUserDashboard />}
           {activeModule === 'chat' && <RealtimeTeamChatView />}
+          {activeModule === 'faq' && <FaqView onBackToHome={() => handleSelectModule('owner')} />}
+          {activeModule === 'terms' && <TermsAndConditionsView onBackToHome={() => handleSelectModule('owner')} />}
+          {activeModule === 'about' && <AboutUsView onBackToHome={() => handleSelectModule('owner')} />}
           {activeModule === 'crm' && (
             isModuleLocked('crm') ? (
               <div className="p-12 text-center space-y-4">
