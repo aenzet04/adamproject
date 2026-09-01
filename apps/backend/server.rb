@@ -445,6 +445,60 @@ server.mount_proc '/api/v1/about' do |req, res|
   }.to_json
 end
 
+# 14. AUTH CONFIRMATION & RESET EMAIL DISPATCH (SERVER-TO-SERVER TO MAILPIT / SMTP)
+server.mount_proc '/api/v1/auth/send_email' do |req, res|
+  enable_cors(res)
+  if req.request_method == 'OPTIONS'
+    res.status = 200
+    next
+  end
+
+  if req.request_method == 'POST'
+    begin
+      payload = JSON.parse(req.body)
+      to_email = payload['to'] || 'user@example.com'
+      to_name = payload['name'] || 'User'
+      subject = payload['subject'] || 'Modula Security Token'
+      html_content = payload['html'] || "<p>Token: #{payload['token']}</p>"
+      token = payload['token'] || '000000'
+
+      # Send to Mailpit HTTP REST API on port 8025 (no browser CORS issue because Ruby is backend)
+      uri = URI('http://localhost:8025/api/v1/send')
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.open_timeout = 2
+      http.read_timeout = 2
+
+      mailpit_req = Net::HTTP::Post.new(uri.path, { 'Content-Type' => 'application/json' })
+      mailpit_req.body = {
+        From: { Email: 'security@modula.id', Name: 'Modula Security Core' },
+        To: [{ Email: to_email, Name: to_name }],
+        Subject: subject,
+        HTML: html_content,
+        Text: "#{subject}\n\nKode Token Anda: #{token}"
+      }.to_json
+
+      mailpit_res = http.request(mailpit_req)
+
+      res.status = 200
+      res['Content-Type'] = 'application/json'
+      res.body = {
+        status: 'success',
+        message: 'Email verifikasi berhasil dikirim ke Mailpit Inbox.',
+        mailpit_status: mailpit_res.code,
+        token: token
+      }.to_json
+    rescue => e
+      res.status = 200
+      res['Content-Type'] = 'application/json'
+      res.body = {
+        status: 'simulated',
+        message: "Email dispatch simulation: #{e.message}",
+        token: token || '123456'
+      }.to_json
+    end
+  end
+end
+
 trap('INT') { server.shutdown }
 puts "🚀 Ruby Enterprise API Server listening live on http://localhost:#{PORT}"
 server.start
