@@ -52,8 +52,30 @@ export async function sendMailpitEmail(payload: EmailPayload): Promise<{ success
     </html>
   `;
 
+  // 1. Primary Dispatch: Call Ruby Backend API proxy (Port 3001) to bypass browser CORS block on Mailpit
   try {
-    // Attempt sending directly via Mailpit API if running
+    const backendRes = await fetch('http://localhost:3001/api/v1/auth/send_email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: payload.to,
+        name: payload.name,
+        subject: payload.subject,
+        html: htmlBody,
+        token: payload.token,
+      }),
+    });
+
+    if (backendRes.ok) {
+      console.log('[EmailService] Dispatched via Ruby API backend to Mailpit:', payload.token);
+      return { success: true, token: payload.token };
+    }
+  } catch (backendErr) {
+    console.warn('[EmailService] Ruby backend not responding, attempting fallback dispatch...');
+  }
+
+  // 2. Secondary Fallback: Direct Mailpit API call (if Mailpit was started with CORS allowed)
+  try {
     await fetch('http://localhost:8025/api/v1/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -66,7 +88,7 @@ export async function sendMailpitEmail(payload: EmailPayload): Promise<{ success
       }),
     });
   } catch (err) {
-    console.log('[EmailService] Mailpit API sent/simulated:', payload.token);
+    console.log('[EmailService] Local simulation token:', payload.token);
   }
 
   return { success: true, token: payload.token };
